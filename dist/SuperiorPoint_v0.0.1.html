@@ -110,6 +110,11 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
  .cover.card-tilting svg{will-change:transform;box-shadow:0 9px 18px #20221e19;backface-visibility:hidden}
 }
 @media(prefers-reduced-motion:reduce){.cover.card-tilting svg{transform:none!important;will-change:auto;box-shadow:none}}
+
+/* Match the page itself, without a padded mat or SVG letterboxing. */
+.cover{height:auto;aspect-ratio:var(--cover-aspect,16 / 9);box-sizing:content-box;padding:0;display:block;background:transparent}
+.cover:hover{background:transparent}
+.cover svg{display:block;width:100%;height:100%}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
 <main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
@@ -2215,6 +2220,7 @@ function v24OfflineExportBootstrap(width,height){
       card.dataset.projectId = doc.id;
       const cover = document.createElement("button");
       cover.className = "cover";
+      cover.style.setProperty("--cover-aspect", `${doc.canvas.width} / ${doc.canvas.height}`);
       cover.setAttribute("aria-label", "\u6253\u5F00 " + doc.title);
       if (doc.slides.length) {
         try {

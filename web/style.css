@@ -89,3 +89,8 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
  .cover.card-tilting svg{will-change:transform;box-shadow:0 9px 18px #20221e19;backface-visibility:hidden}
 }
 @media(prefers-reduced-motion:reduce){.cover.card-tilting svg{transform:none!important;will-change:auto;box-shadow:none}}
+
+/* Match the page itself, without a padded mat or SVG letterboxing. */
+.cover{height:auto;aspect-ratio:var(--cover-aspect,16 / 9);box-sizing:content-box;padding:0;display:block;background:transparent}
+.cover:hover{background:transparent}
+.cover svg{display:block;width:100%;height:100%}
