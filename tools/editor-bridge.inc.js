@@ -6,11 +6,14 @@
   let spBridgeStarted=false,spBridgeReadOnly=true,spBridgeRevision=0,spBridgeEpoch=0;
   let spBridgeBaseline=null,spBridgeLatest='',spBridgeSending=null,spBridgeQueue=[],spBridgeSequence=0;
   let spBridgeFailure=null,spBridgeCapturing=false,spBridgeComposing=false;
+  let v15Dragging=null;
   let spBridgeWaiters=[],spBridgeCommandSerial=Promise.resolve();
   const spBridgeClone=value=>JSON.parse(JSON.stringify(value));
   const spBridgePost=(type,data={})=>parent.postMessage({spCandidate:1,channel:spBridgeChannel,type,...data},'*');
   function spBridgeStatus(){
     if(!spBridgeStarted)return;
+    // End the gesture at its current draft; cancelling would discard recovery data.
+    if(spBridgeReadOnly&&(drag||timingDrag||v15Dragging)){drag=null;timingDrag=null;v15Dragging=null;renderCanvas();renderTimeline();}
     const pending=!!spBridgeSending||spBridgeQueue.length>0;
     // A pending commit is already isolated in the snapshot queue. Blocking input
     // here would silently swallow real keystrokes between postMessage and ack.

@@ -32,7 +32,7 @@ function replace(label,needle,replacement){
  html=html.replace(needle,()=>replacement);patches.push(label);
 }
 const csp="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'";
-const gate=`window.__SPEmbeddedGate={locked:true};for(const kind of ['click','dblclick','pointerdown','pointerup','mousedown','mouseup','keydown','beforeinput','input','change','paste','cut','drop','dragstart'])window.addEventListener(kind,e=>{if(window.__SPEmbeddedGate.locked){e.preventDefault();e.stopImmediatePropagation();}},true);`;
+const gate=`window.__SPEmbeddedGate={locked:true};for(const kind of ['click','dblclick','pointerdown','pointermove','pointerup','mousedown','mouseup','keydown','beforeinput','input','change','paste','cut','drop','dragstart'])window.addEventListener(kind,e=>{if(window.__SPEmbeddedGate.locked){e.preventDefault();e.stopImmediatePropagation();}},true);`;
 const escapeScript=s=>s.replace(/<\/script/gi,'<\\/script');
 replace('embedded CSP + early interaction gate','<head>\n<meta charset="utf-8">',`<head>\n<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><script>${gate}</script><style id="sp-candidate-reveal-css">${revealCSS}</style><script id="sp-candidate-reveal-code">${escapeScript(revealJS)}</script>`);
 // Editor UI preferences remain local to this embedded session, not host origin storage.
@@ -104,6 +104,8 @@ html=html.replaceAll('保存状态以上方工作台为准','保存状态见文�
 html=patchEffectGallery(html);patches.push('visual effects gallery and isolated hover previews');
 const panels=await read('tools/editor-panel-layout.inc.js');
 new Script(panels,{filename:'editor-panel-layout.js'});
+// Let the bridge end the timeline gesture when its writer session ends.
+replace('bridge-owned timeline gesture','    let v15Dragging=null;','');
 const bridge=(await read('tools/editor-bridge.inc.js')).replace('bindEvents();v17BindEvents();', 'bindEvents();spPanelLayoutBoot();v17BindEvents();');
 const pictures=await read('tools/editor-v038-image.inc.js');
 // Reuse the canonical raster byte inspector rather than a divergent iframe copy.

@@ -1,12 +1,12 @@
 import {JSDOM,VirtualConsole} from 'jsdom';
 import {editorCandidateHTML} from '../../vendor/editor-integrated.js';
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
-export async function candidateHarness(project,{readOnly=false}={}){
+export async function candidateHarness(project,{readOnly=false,html=editorCandidateHTML}={}){
  const channel='test-candidate-channel',messages=[],errors=[];
  let reads=0,writes=0,opens=0,window;
  const parent={postMessage(message){messages.push(message);}};
  const virtualConsole=new VirtualConsole();virtualConsole.on('jsdomError',error=>{if(!String(error.message).includes('HTMLCanvasElement'))errors.push(error);});
- const dom=new JSDOM(editorCandidateHTML.replace('__SP_BRIDGE_CHANNEL__',channel),{
+ const dom=new JSDOM(html.replace('__SP_BRIDGE_CHANNEL__',channel),{
   url:'https://candidate.invalid/',runScripts:'dangerously',pretendToBeVisual:true,virtualConsole,
   beforeParse(w){window=w;Object.defineProperty(w,'parent',{value:parent});
    Object.defineProperty(w,'localStorage',{get(){reads++;return{getItem(){reads++;return null;},setItem(){writes++;}};}});
