@@ -4,6 +4,8 @@ import type {SPDocument, Operation} from '../../core/document-core.js';
 import {errors, requireScope, ServiceError, transaction} from '../contracts.js';
 import type {Actor, Database, Transaction} from '../contracts.js';
 import {checkTokenActor} from '../auth/token-service.js';
+import {ThemeService} from './theme-service.js';
+import {planThemeApplication} from '../../core/theme-application.js';
 import {checkAdminActor} from './admin-service.js';
 
 type Mutation = {expectedRevision: number; clientMutationId: string; leaseToken?: string};
@@ -92,19 +94,60 @@ export class ProjectService {
   get(actor: Actor,id: string,{trash=false}: {trash?:boolean}={}) {return this.read(actor,id,'projects:read',trash);}
   getForExport(actor: Actor,id: string) {return this.read(actor,id,'projects:export');}
 
+  private async historical(client:Transaction,id:string,revision:number):Promise<SPDocument> {
+    if(!Number.isSafeInteger(revision)||revision<0)throw errors.invalid('历史修订号无效');
+    const row=(await client.query('SELECT document_jsonb FROM project_revisions WHERE project_id=$1 AND revision=$2',[id,revision])).rows[0];
+    if(!row)throw errors.missing();return row.document_jsonb;
+  }
+
+  async listRevisions(actor:Actor,id:string) {
+    requireScope(actor,'projects:read',id);
+    return transaction(this.db,async client=>{await this.active(client,actor);const project=await this.owned(client,actor,id);if(project.deleted_at)throw errors.missing();
+      const result=await client.query(`SELECT revision,document_jsonb->>'title' AS title,source,created_at AS "createdAt",jsonb_array_length(document_jsonb->'slides') AS "slideCount" FROM project_revisions WHERE project_id=$1 ORDER BY revision DESC`,[id]);
+      return result.rows.map(row=>({...row,revision:Number(row.revision),createdAt:row.createdAt.toISOString()}));
+    });
+  }
+
+  async getRevision(actor:Actor,id:string,revision:number) {
+    requireScope(actor,'projects:read',id);
+    return transaction(this.db,async client=>{await this.active(client,actor);const project=await this.owned(client,actor,id);if(project.deleted_at)throw errors.missing();return this.historical(client,id,revision);});
+  }
+
+  async revisionDiff(actor:Actor,id:string,from:number,to:number) {
+    requireScope(actor,'projects:read',id);
+    return transaction(this.db,async client=>{await this.active(client,actor);const project=await this.owned(client,actor,id);if(project.deleted_at)throw errors.missing();
+      const before=await this.historical(client,id,from),after=await this.historical(client,id,to);
+      const changes=(left:{id:string}[],right:{id:string}[])=>{
+        const a=new Map(left.map(value=>[value.id,value])),b=new Map(right.map(value=>[value.id,value]));
+        return [...new Set([...a.keys(),...b.keys()])].flatMap(id=>!a.has(id)?[{id,status:'added'}]:!b.has(id)?[{id,status:'removed'}]:stable(a.get(id))!==stable(b.get(id))?[{id,status:'modified'}]:[]);
+      };
+      return {projectId:id,fromRevision:from,toRevision:to,titleChanged:before.title!==after.title,slideOrderChanged:stable(before.slides.map(s=>s.id))!==stable(after.slides.map(s=>s.id)),slides:changes(before.slides,after.slides).map(change=>({...change,elements:changes(before.slides.find(s=>s.id===change.id)?.elements??[],after.slides.find(s=>s.id===change.id)?.elements??[])})),assetsChanged:stable(before.assets)!==stable(after.assets),themeChanged:stable(before.extensions.theme??null)!==stable(after.extensions.theme??null)};
+    });
+  }
+
+  async restoreRevision(actor:Actor,id:string,request:Mutation&{revision:number}) {
+    if(!Number.isSafeInteger(request.revision)||request.revision<0)throw errors.invalid('历史修订号无效');
+    return this.mutate(actor,id,request,'project.history_restore',{revision:request.revision},async(current,client)=>{
+      if(request.revision>=current.revision)throw errors.invalid('只能恢复较早的历史修订');
+      const historical=await this.historical(client,id,request.revision);
+      const restored=importDocument({...historical,id:current.id,revision:current.revision,metadata:{...historical.metadata,createdAt:current.metadata.createdAt}});
+      return coreCall(()=>new DocumentCore(current).edit([{type:'replaceContent',document:restored}],{expectedRevision:request.expectedRevision}));
+    },{leaseToken:request.leaseToken,snapshot:true});
+  }
+
   private async lease(client: Transaction, id: string): Promise<LeaseRow | undefined> {
     const result = await client.query<LeaseRow>('SELECT actor_id,holder,fencing_token,expires_at,expires_at>clock_timestamp() AS active FROM project_locks WHERE project_id=$1', [id]);
     return result.rows[0];
   }
 
-  private async writeLease(client: Transaction, actor: Actor, id: string, token?: string, required = false) {
+  private async writeLease(client: Transaction, actor: Actor, id: string, token?: string, required = false, atomicMcp = false) {
     const lease = await this.lease(client, id);
     if (token !== undefined && (!lease?.active || lease.actor_id !== actor.id || lease.fencing_token !== token)) throw conflict('LOCK_LOST', '项目写入租约已失效');
     if (required && token === undefined) throw conflict('LOCK_LOST', '完整快照提交需要有效租约');
-    if (lease?.active && token === undefined) throw conflict('PROJECT_BUSY', '项目正在另一编辑会话中写入');
+    if (lease?.active && token === undefined && !(atomicMcp && actor.source === 'mcp' && lease.actor_id === actor.id)) throw conflict('PROJECT_BUSY', '项目正在另一编辑会话中写入');
   }
 
-  private async mutate(actor: Actor, id: string, request: Mutation, action: string, payload: Record<string, unknown>, change: (document: SPDocument) => SPDocument, {restore = false, remove = false, leaseToken, snapshot = false}: {restore?: boolean; remove?: boolean; leaseToken?: string; snapshot?: boolean} = {}) {
+  private async mutate(actor: Actor, id: string, request: Mutation, action: string, payload: Record<string, unknown>, change: (document: SPDocument, client:Transaction) => SPDocument | Promise<SPDocument>, {restore = false, remove = false, leaseToken, snapshot = false}: {restore?: boolean; remove?: boolean; leaseToken?: string; snapshot?: boolean} = {}) {
     requireScope(actor, remove || restore ? 'projects:delete' : 'projects:write', id);
     if (!Number.isSafeInteger(request.expectedRevision) || request.expectedRevision < 0 || typeof request.clientMutationId !== 'string' || !request.clientMutationId.trim() || request.clientMutationId.length > 128 || (request.leaseToken !== undefined && typeof request.leaseToken !== 'string')) throw errors.invalid();
     const {leaseToken: _leaseAuthority, ...semanticPayload}=payload;
@@ -118,9 +161,9 @@ export class ProjectService {
         return receipt.rows[0].result_jsonb as SPDocument;
       }
       if (restore ? !row.deleted_at : Boolean(row.deleted_at)) throw errors.missing();
-      await this.writeLease(client, actor, id, leaseToken, snapshot);
+      await this.writeLease(client, actor, id, leaseToken, snapshot, ['project.edit','project.theme'].includes(action) && !snapshot);
       if (Number(row.revision) !== request.expectedRevision) throw conflict('REVISION_CONFLICT', '项目已有更新版本', {expectedRevision: request.expectedRevision, actualRevision: Number(row.revision)});
-      const document = coreCall(() => change(row.document_jsonb));
+      let document:SPDocument;try{document=await change(row.document_jsonb,client);}catch(error){if(error instanceof CoreError||error instanceof SyntaxError)throw errors.invalid('文档或操作无效');throw error;}
       const text = documentJSON(document);
       if (leaseToken !== undefined) await this.writeLease(client, actor, id, leaseToken, snapshot);
       await client.query('UPDATE projects SET title=$2,revision=$3,document_jsonb=$4,deleted_at=CASE WHEN $5 THEN clock_timestamp() WHEN $6 THEN NULL ELSE deleted_at END,updated_at=clock_timestamp() WHERE id=$1', [id, document.title, document.revision, text, remove, restore]);
@@ -135,6 +178,17 @@ export class ProjectService {
     const operations = coreCall(() => cloneJSON(request.operations));
     if (!Array.isArray(operations) || !operations.length || operations.length > 1000 || (request.leaseToken !== undefined && typeof request.leaseToken !== 'string')) throw errors.invalid();
     return this.mutate(actor, id, request, 'project.edit', {operations, ...(request.leaseToken === undefined ? {} : {leaseToken: request.leaseToken})}, document => new DocumentCore(document).edit(operations, {expectedRevision: request.expectedRevision}), {leaseToken: request.leaseToken, snapshot: operations.some(operation => operation?.type === 'replaceContent')});
+  }
+
+  async applyTheme(actor:Actor,id:string,request:Mutation&{themeId:string;version:string;hash:string;mode?:'preserve'|'reset'}) {
+    requireScope(actor,'themes:read');
+    if(typeof request.themeId!=='string'||request.themeId.length>128||typeof request.version!=='string'||request.version.length>64||typeof request.hash!=='string'||!/^sha256:[a-f0-9]{64}$/.test(request.hash)||!['preserve','reset'].includes(request.mode??'preserve'))throw errors.invalid();
+    const payload={themeId:request.themeId,version:request.version,hash:request.hash,mode:request.mode??'preserve'};
+    return this.mutate(actor,id,request,'project.theme',payload,async(document,client)=>{
+      const ref=await new ThemeService(this.db).resolveRef(client,actor,payload);
+      let plan;try{plan=await planThemeApplication(document,ref.snapshot,{mode:payload.mode as 'preserve'|'reset'});}catch(error){if(error instanceof CoreError)throw errors.invalid(error.message);throw error;}
+      return coreCall(()=>new DocumentCore(document).edit(plan.operations,{expectedRevision:request.expectedRevision}));
+    },{leaseToken:request.leaseToken});
   }
 
   async rename(actor: Actor, id: string, request: Mutation & {title: string}) {

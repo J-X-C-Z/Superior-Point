@@ -93,7 +93,7 @@ function elementSVG(doc,el,fragmentIndex) {
     case 'chart': {
       const values=Array.isArray(el.values)?el.values.slice(0,50).map(v=>Math.max(0,num(v))):[];
       const max=Math.max(1,...values);
-      values.forEach((v,i)=>{const bw=w/values.length;body+=`<rect x="${x+i*bw+4}" y="${y+h-v/max*(h-30)}" width="${Math.max(1,bw-8)}" height="${v/max*(h-30)}" fill="${fill}"/>`+textSVG(el.labels?.[i]??v,x+i*bw+8,y+h+22,16,'#24324b');});break;
+      values.forEach((v,i)=>{const bw=w/values.length;body+=`<rect x="${x+i*bw+4}" y="${y+h-v/max*(h-30)}" width="${Math.max(1,bw-8)}" height="${v/max*(h-30)}" fill="${color(el.chartColor,fill)}"/>`+textSVG(el.labels?.[i]??v,x+i*bw+8,y+h+22,16,'#24324b');});break;
     }
     default:body=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff3da" stroke="#ca8c23"/>`+textSVG(`Preview unsupported: ${el.type}`,x+8,y+24,16,'#795517');
   }

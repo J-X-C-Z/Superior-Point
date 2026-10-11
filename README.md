@@ -12,6 +12,8 @@ Alpha 候选已部署到 [sp.jxcz.top](https://sp.jxcz.top/)，管理入口为 [
 
 服务环境、首次管理员初始化、迁移和隔离测试参数见 [服务与运维指南](docs/admin/service-operations.md)；面向用户的账号、项目和 Bridge 使用说明见 [用户指南](docs/user/service-guide.md)。完整接口以 [OpenAPI](docs/api/openapi.yaml) 为准。
 
+本仓库当前工作区还包含独立主题库和项目历史接口；本次未执行线上部署，因此不能据此认定生产站点已更新。主题创建、编辑、版本、导入导出和应用说明见[主题库指南](docs/THEMES.md)，兼容性范围见[主题验收记录](docs/acceptance/theme-compatibility.md)。
+
 ## 最快查看
 
 打开 `dist/SuperiorPoint_v0.1.0-alpha.html` 可尝试单文件工作台。该文件运行**本地模式**并使用浏览器 IndexedDB；它不会连接生产云端，也不会自动迁移已有浏览器项目。云端模式请访问 [sp.jxcz.top](https://sp.jxcz.top/)。不同浏览器对 `file://` 下 IndexedDB 的支持有差异；推荐以下本地服务方式，使用固定端口维持同一存储来源。
@@ -33,7 +35,8 @@ npm start
 - Home 与本地项目库：IndexedDB、自动保存串行队列、错误重试、回收站、单写者租约/接管、保存 CAS 检查。
 - 可编辑 HTML：内嵌真实 Reveal.js 5.2.1 与 CSS、惰性 JSON 数据、安全导入，不加载 CDN。
 - 基础渲染器：文本、简单形状、连接线、内嵌图片、表格、条形图、appear fragments；高级富文本/复杂动画等仅保留数据，尚未实现最终表现。
-- stdio MCP：8 个真实 SDK 工具，范围受限的文件项目库，原子保存和修订冲突。
+- 独立主题库（本仓库当前代码）：6 个只读内置主题、个人本地/云端主题、固定版本、JSON 导入导出，以及保留手工覆盖或明确重置的主题应用。
+- 本地 stdio MCP：8 个真实 SDK 工具和范围受限的文件项目库。云端 stdio MCP Bridge：16 个工具，其中 5 个用于主题；主题访问需单独授予 `themes:read`、`themes:write` 或 `themes:publish`。
 - v0.39 候选适配：隔离 iframe、单一 Core 提交、统一撤销、关闭旧存储双写、失败快照恢复。
 - 独立 v0.32 只读参考检查与无损 JSON 保留实验，未在 UI 启用；图片字节检查和按元素的渲染兼容诊断。
 
@@ -57,7 +60,7 @@ node mcp/server.js --project-root /absolute/path/to/your/sp-projects
 
 第一次运行会创建该目录。请选专用目录，不要给整个个人文件夹。详见 `docs/MCP.md`。本包验证的是 SDK 客户端与服务器的真实 stdio 协议，不是用户 Codex/Claude 账号已连接。
 
-旧式本地 stdio MCP 使用独立文件项目库，与浏览器 IndexedDB 分开，通过可编辑 HTML 交换文档；它不会自动同步或接管浏览器数据。生产云端 stdio MCP Bridge 则通过 PAT 接入与云端工作台相同的 PostgreSQL，并遵循单写者租约与版本冲突检查。远程 HTTP MCP/OAuth 尚未实现。
+旧式本地 stdio MCP 使用独立文件项目库，与浏览器 IndexedDB 分开，通过可编辑 HTML 交换文档；它不会自动同步或接管浏览器数据。云端 stdio MCP Bridge 通过 PAT 接入与云端工作台相同的 PostgreSQL，并遵循项目白名单、单写者租约与版本冲突检查。主题工具另外需要显式主题范围；主题预览为静态 SVG，字体和图表可能降级。远程 HTTP MCP、OAuth/OIDC 尚未实现。
 
 ## 候选限制
 

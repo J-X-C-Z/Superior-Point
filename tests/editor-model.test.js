@@ -88,6 +88,27 @@ test('flat groups retain placement, child order, unknown fields and empty groups
  assert.throws(()=>canonicalToEditor(nested),{code:'EDITOR_UNSUPPORTED_GROUP'});
  assert.equal(nested.slides[0].elements.length,5);
 });
+test('Core group locks protect native children without persisting inherited child locks',()=>{
+ let doc=createDocument({slides:[{id:'s',elements:[
+  object('a','shape',{future:{keep:['a']}}),object('b','shape',{locked:false}),object('c','shape',{locked:true}),
+  object('g','group',{children:['a','b','c'],locked:true,future:{keep:['group']}})
+ ],animations:[]}]});
+ const original=cloneJSON(doc);
+ for(let i=0;i<3;i++){
+  const deck=canonicalToEditor(doc);
+  assert.ok(deck.slides[0].objects.every(o=>o.locked===true));
+  doc=editorToCanonical(deck,{baseDocument:doc});
+  const elements=doc.slides[0].elements;
+  assert.equal(Object.hasOwn(elements.find(o=>o.id==='a'),'locked'),false);
+  assert.equal(elements.find(o=>o.id==='b').locked,false);
+  assert.equal(elements.find(o=>o.id==='c').locked,true);
+  assert.deepEqual(elements.find(o=>o.id==='a').future,original.slides[0].elements[0].future);
+  assert.deepEqual(elements.find(o=>o.id==='g'),original.slides[0].elements.find(o=>o.id==='g'));
+ }
+ doc.slides[0].elements.find(o=>o.id==='g').locked=false;
+ assert.deepEqual(canonicalToEditor(doc).slides[0].objects.map(o=>o.locked),[false,false,true]);
+ assert.equal(original.slides[0].elements.find(o=>o.id==='g').locked,true);
+});
 test('snapshot replacement is revision-checked, detached, atomic and undoable; identity remains owned by Core',()=>{
  const original=fiveSlideDocument(),core=new DocumentCore(original),deck=canonicalToEditor(original);
  deck.name='编辑后的项目';deck.slides[0].objects[0].x=123;

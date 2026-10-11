@@ -102,6 +102,7 @@ function apply(doc,op){
       if(incoming.metadata.createdAt!==doc.metadata.createdAt)fail('INVALID_OPERATION','Snapshot cannot change creation identity');
       for(const key of Object.keys(doc))delete doc[key];Object.assign(doc,incoming);break;
     }
+    case 'updateSlide': Object.assign(slideOf(doc,op.slideId),properties(op.properties,['id','elements','animations','metadata','revision']));break;
     case 'updateProject': Object.assign(doc,properties(op.properties,['id','format','schemaVersion','revision','metadata','slides']));break;
     default: fail('INVALID_OPERATION',`Unsupported operation: ${op.type}`);
   }
@@ -110,6 +111,7 @@ export class DocumentCore {
   #doc; #past=[]; #future=[];
   constructor(document){this.#doc=importDocument(document);}
   getDocument(){return cloneJSON(this.#doc);}
+  synchronize(document){this.#doc=importDocument(document);this.#past=[];this.#future=[];return this.getDocument();}
   get canUndo(){return this.#past.length>0;} get canRedo(){return this.#future.length>0;}
   #check(expectedRevision){if(expectedRevision!==undefined&&expectedRevision!==this.#doc.revision)fail('REVISION_CONFLICT','Document revision changed',{expectedRevision,actualRevision:this.#doc.revision});if(this.#doc.revision===Number.MAX_SAFE_INTEGER)fail('REVISION_EXHAUSTED','Revision limit reached');}
   #stamp(doc){doc.revision=this.#doc.revision+1;doc.metadata.updatedAt=new Date().toISOString();return assertDocument(doc);}

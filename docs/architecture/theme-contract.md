@@ -1,0 +1,29 @@
+# Theme package and application contract — schema v1
+
+SP-047 depends on SP-041's canonical document boundary. It provides the package contract used by SP-048 storage/ACL, SP-050 built-ins and SP-051 application. A theme is a reusable design system. It is neither a presentation template nor a saved slide coordinate snapshot.
+
+## Package contract
+
+`core/theme-schema.js` works in Node and browsers without a renderer or a service dependency. A package has `format: "superior-point-theme"`, `schemaVersion: 1`, stable `id`, display `name`, semantic `version`, `author`, `license`, `tags`, `supportedRatios` (`16:9`, `4:3`), `tokens`, `layouts`, and `assets`. Built-in, local and cloud storage use the same package. Ownership, visibility, favorites, archival status, draft status and permissions belong to the storage service, not to self-asserted package fields.
+
+Token groups are `colors` (six/eight-digit hex), `typography` (named roles with family, nonempty fallback list, font license and bounded size), `spacing` (bounded numeric design units) and `components` (named JSON style bags). Optional motion declares a bounded duration and an allowlisted easing. Components contain styles directly, rather than names of an unspecified second component registry. Layouts have `id`, `kind` (`cover`, `section`, `content`, `data`, `image`) and declarative `rules`, such as columns, gap and page inset. Packages can declare a subset of layouts; the built-in collection should supply cover, section, content and data. Absolute element geometry, slide arrays and element arrays are rejected in layouts.
+
+`validateTheme` checks shape and bounds. `importTheme` accepts JSON text or objects and returns a detached copy. Schema 1 is the first supported version; unknown versions fail closed. There is no speculative v0 migration. Unknown safe JSON fields roundtrip without interpretation. JSON must be finite, acyclic and plain; prototype pollution keys and executable/external loading structural fields are rejected. An ordinary string containing the word “script” is permitted as inert metadata.
+
+Assets are inline `{id,mimeType,data,hash,license}` with canonical base64 data. Only PNG, JPEG and WebP signatures are accepted, each at most 2 MiB, all assets at most 8 MiB, at most 16 assets, and the entire JSON package at most 12 MiB. SVG, HTML, scripts, external resource pointers and font binaries are unsupported. `verifyThemeAssets` verifies every content hash; services must await it on import/save/publish. Signature checks do not constitute a full image decoder or malware scanner. A renderer must decode through its image subsystem and report decoding failures. Fonts declare an installed/system family, fallback and license; missing fonts fall back locally. No font is downloaded, embedded or uploaded automatically.
+
+## Version locking and application
+
+`createThemeRef` validates assets, clones the package and returns `{id,version,hash,snapshot}`. Hashes are `sha256:` followed by lowercase hex, computed over recursively key-sorted JSON (array order retained). `validateThemeRef` asynchronously verifies identity, version, asset hashes and package hash. A service must refuse changing a published `(id, version)` to different content. A deleted or updated library resource cannot change documents with an embedded fixed snapshot. Objects are detached copies; immutability is enforced by hash verification and the service publication rule, not by claiming that arbitrary JSON objects cannot be edited.
+
+Document storage uses `document.extensions.theme = {ref, ...applicationMetadata}`. Old documents without this field keep the existing default appearance. Package import/export and document application are different operations: importing a package never edits a document.
+
+`resolveThemeStyle({defaults,global,component,page,manual})` merges nested style bags in that order: manual object override > page override > layout/component style > global token > SP default. Arrays replace, explicit null overrides, and inputs are cloned. It resolves already selected style bags; it does not infer renderer-specific mappings from token names. Each renderer maps only supported, allowlisted style properties and treats unknown metadata as inert. It must not turn unknown strings into HTML, CSS, scripts, URLs or font downloads.
+
+Default application preserves manual overrides, content, geometry, images, notes, groups and animation data. A reset mode is an explicit caller choice after confirmation, not the default. Application prepares a complete candidate document from a verified snapshot, previews the actual supported style differences, and commits once through DocumentCore/ProjectService with an expected revision. Existing CAS, authorization, leases and undo rules remain authoritative; failed applications must leave no partial write. Routes and MCP tools may not mutate project JSON directly. Source/version/hash identify resources; titles never identify an overwrite target.
+
+The contract alone does not implement a theme gallery, six built-in designs, cloud ACL, project application or renderer/export support. Built-ins use this same package shape and license declaration; distinct names or colors are not proof of distinct layouts or browser/export acceptance. Preview and export consumers must report their actual supported token subset and fallback behavior.
+
+## Verification
+
+`node --test tests/theme-schema.test.js` covers safe unknown field preservation, rejected schema versions/unsafe JSON, structural executable/external references, layout snapshot rejection, bounds, licensing/fallback, asset signatures and hashes, detached immutable references, canonical hashing and cascade precedence. Browser rendering, visual acceptance, persistence/ACL and project apply/undo acceptance belong to their downstream tasks.

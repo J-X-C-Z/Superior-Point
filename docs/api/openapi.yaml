@@ -5,7 +5,10 @@ info:
   description: >-
     Contract for routes currently registered by server/app.ts and
     server/routes/admin-routes.ts. This is an Alpha candidate API, not a
-    production release. OAuth/OIDC is not implemented.
+    production release. OAuth/OIDC and remote HTTP MCP are not implemented.
+    Session-authenticated project and theme calls may send X-SP-Account-ID;
+    if present, it must match the signed-in account or the service returns
+    ACCOUNT_CHANGED. Theme package and rendering details are in docs/api/themes.md.
 servers:
   - url: https://sp.example.invalid
     description: Replace with the configured service origin.
@@ -13,6 +16,7 @@ tags:
   - name: Public
   - name: Auth
   - name: Projects
+  - name: Themes
   - name: Tokens
   - name: Admin
 paths:
@@ -129,8 +133,8 @@ paths:
                 scopes:
                   type: array
                   uniqueItems: true
-                  maxItems: 6
-                  items: {type: string, enum: [projects:read, projects:create, projects:write, projects:delete, projects:export, assets:write]}
+                  maxItems: 9
+                  items: {type: string, enum: [projects:read, projects:create, projects:write, projects:delete, projects:export, assets:write, themes:read, themes:write, themes:publish]}
                 projectAllowlist:
                   oneOf:
                     - {type: 'null'}
@@ -149,6 +153,7 @@ paths:
         '200': {description: Token revoked}
         '404': {$ref: '#/components/responses/Error'}
   /api/v1/projects:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     get:
       tags: [Projects]
       summary: List the current user's projects
@@ -174,6 +179,7 @@ paths:
         '201': {description: Created project}
         '400': {$ref: '#/components/responses/Error'}
   /api/v1/projects/import:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     post:
       tags: [Projects]
       summary: Import a document as a new project
@@ -186,8 +192,166 @@ paths:
       responses:
         '201': {description: Imported project}
         '409': {$ref: '#/components/responses/Error'}
+  /api/v1/themes:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
+    get:
+      tags: [Themes]
+      summary: List the current user's private themes
+      description: Requires themes:read for personal access tokens. Returns metadata only; archived and trash select the corresponding library records.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters:
+        - {name: archived, in: query, schema: {type: boolean}}
+        - {name: trash, in: query, schema: {type: boolean}}
+      responses:
+        '200': {description: Private theme metadata array; package and asset bytes are not included}
+        '403': {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Themes]
+      summary: Import a private theme package
+      description: Requires themes:write for personal access tokens. Creates a new server identity and preserves the supplied local package.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [theme, clientMutationId], properties: {theme: {type: object, description: Validated schema-v1 Superior Point theme package}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '201': {description: Saved private theme with fixed package reference}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/import:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
+    post:
+      tags: [Themes]
+      summary: Import a private theme package
+      description: Alias of POST /api/v1/themes.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [theme, clientMutationId], properties: {theme: {type: object, description: Validated schema-v1 Superior Point theme package}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '201': {description: Saved private theme with fixed package reference}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/builtins:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
+    get:
+      tags: [Themes]
+      summary: List read-only built-in themes
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Built-in theme catalog metadata}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/builtin/{id}:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {name: id, in: path, required: true, schema: {type: string}}]
+    get:
+      tags: [Themes]
+      summary: Read one built-in theme fixed reference
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Read-only built-in package reference with snapshot}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/preview:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
+    post:
+      tags: [Themes]
+      summary: Render four static theme preview samples
+      description: Requires themes:read for personal access tokens. Static SVG uses the generic renderer; font and chart output may differ from the editor.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [themeId, version, hash], properties: {themeId: {type: string, minLength: 1, maxLength: 128}, version: {type: string, minLength: 1, maxLength: 64}, hash: {type: string, pattern: '^sha256:[a-f0-9]{64}$'}, ratio: {type: string, enum: ['16:9', '4:3']}}}
+      responses:
+        '200': {description: Four static SVG slides, verified theme reference, compatibility report, and limitations}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/{id}:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    get:
+      tags: [Themes]
+      summary: Read a private theme and its current fixed reference
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Private theme metadata and fixed package reference}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+    patch:
+      tags: [Themes]
+      summary: Rename, archive, or restore a private theme library entry
+      description: Requires themes:write. A rename changes the library label; published snapshots remain fixed.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId], properties: {name: {type: string, minLength: 1, maxLength: 200}, archived: {type: boolean}, expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '200': {description: Updated private theme metadata}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Themes]
+      summary: Soft-delete a private theme
+      description: Requires themes:write. Retains immutable versions and document snapshots.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '200': {description: Deleted theme metadata}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/{id}/versions/{version}:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}, {name: version, in: path, required: true, schema: {type: string}}]
+    get:
+      tags: [Themes]
+      summary: Read an immutable private theme version
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Fixed theme reference including snapshot and hash}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/{id}/publish:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    post:
+      tags: [Themes]
+      summary: Publish a new immutable version of an owned theme
+      description: Requires themes:publish. Existing versions cannot be overwritten; expectedRevision uses library metadata CAS.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [theme, expectedRevision, clientMutationId], properties: {theme: {type: object, description: Validated schema-v1 Superior Point theme package}, expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '200': {description: Newly published immutable theme version}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/themes/{id}/favorite:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    post:
+      tags: [Themes]
+      summary: Favorite a private theme
+      description: Requires themes:write for personal access tokens. Idempotent.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Updated favorite relationship and theme metadata}
+        '403': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Themes]
+      summary: Remove a private theme favorite
+      description: Requires themes:write for personal access tokens. Idempotent.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Updated favorite relationship and theme metadata}
+        '403': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}:
-    parameters: [{$ref: '#/components/parameters/id'}]
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
     get:
       tags: [Projects]
       summary: Read a project summary/document
@@ -212,7 +376,7 @@ paths:
         '200': {description: Updated project}
         '409': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}/document:
-    parameters: [{$ref: '#/components/parameters/id'}]
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
     get:
       tags: [Projects]
       summary: Read a project document
@@ -232,7 +396,24 @@ paths:
       responses:
         '200': {description: Updated document}
         '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/theme:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    post:
+      tags: [Projects, Themes]
+      summary: Apply a fixed private or built-in theme to a project
+      description: Requires projects:write and themes:read for personal access tokens. Preserve is the default; reset is explicit. Uses one project revision commit and the existing lease rules.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [themeId, version, hash, expectedRevision, clientMutationId], properties: {themeId: {type: string, minLength: 1, maxLength: 128}, version: {type: string, minLength: 1, maxLength: 64}, hash: {type: string, pattern: '^sha256:[a-f0-9]{64}$'}, mode: {type: string, enum: [preserve, reset], default: preserve}, expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string, minLength: 1, maxLength: 128}}}
+      responses:
+        '200': {description: Committed project document and new revision}
+        '403': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}/snapshot:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     put:
       tags: [Projects]
       summary: Replace document with a full snapshot under an active lease
@@ -247,6 +428,7 @@ paths:
         '200': {description: Snapshot saved}
         '409': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}/slides:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     get:
       tags: [Projects]
       summary: List slides
@@ -255,6 +437,7 @@ paths:
       responses:
         '200': {description: Slides and project revision}
   /api/v1/projects/{id}/slides/{slideId}:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     get:
       tags: [Projects]
       summary: Read one slide
@@ -264,6 +447,7 @@ paths:
         '200': {description: Slide and project revision}
         '404': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}/slides/{slideId}/render:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     get:
       tags: [Projects]
       summary: Render a static SVG preview
@@ -272,6 +456,7 @@ paths:
       responses:
         '200': {description: SVG string, MIME type, revision, compatibility report, and limitations}
   /api/v1/projects/{id}/validate:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     get:
       tags: [Projects]
       summary: Validate a project document
@@ -280,6 +465,7 @@ paths:
       responses:
         '200': {description: Validation findings and render compatibility}
   /api/v1/projects/{id}/exports:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     post:
       tags: [Projects]
       summary: Export editable or audience HTML
@@ -295,6 +481,7 @@ paths:
         '409': {$ref: '#/components/responses/Error'}
         '422': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}/restore:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     post:
       tags: [Projects]
       summary: Restore a trashed project
@@ -303,7 +490,62 @@ paths:
       requestBody: {$ref: '#/components/requestBodies/Mutation'}
       responses:
         '200': {description: Restored project}
+  /api/v1/projects/{id}/revisions:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    get:
+      tags: [Projects]
+      summary: List project revision metadata
+      description: Requires projects:read. Returns descending metadata only; it does not include documents or assets. Deleted projects cannot be read.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Descending revision records with revision, title, source, createdAt, and slideCount}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/revisions/{revision}:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}, {name: revision, in: path, required: true, schema: {type: string, pattern: '^[0-9]+$'}}]
+    get:
+      tags: [Projects]
+      summary: Read one immutable project revision
+      description: Requires projects:read. Revision path values are decimal digits and must be safe nonnegative integers.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Historical SPDocument snapshot}
+        '400': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/revision-diff:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    get:
+      tags: [Projects]
+      summary: Compare two project revisions structurally
+      description: Requires projects:read. Slides and elements are reported by added, removed, or modified identity; this is not a field-by-field document diff.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, pattern: '^[0-9]+$'}}
+        - {name: to, in: query, required: true, schema: {type: string, pattern: '^[0-9]+$'}}
+      responses:
+        '200': {description: Structural slide, element, order, title, asset, and theme change report}
+        '400': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/restore-revision:
+    parameters: [{$ref: '#/components/parameters/accountPin'}, {$ref: '#/components/parameters/id'}]
+    post:
+      tags: [Projects]
+      summary: Restore historical content as a new project revision
+      description: Requires projects:write and a valid exclusive lease. The requested revision must be older than current. Restore never rewrites history; failure commits no snapshot.
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [revision, expectedRevision, clientMutationId, leaseToken], properties: {revision: {$ref: '#/components/schemas/Revision'}, expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string, minLength: 1, maxLength: 128}}}
+      responses:
+        '200': {description: Restored document as a new current revision}
+        '400': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
   /api/v1/projects/{id}/lease:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     post:
       tags: [Projects]
       summary: Acquire a short-lived write lease
@@ -330,6 +572,7 @@ paths:
       responses:
         '200': {description: Lease released}
   /api/v1/projects/{id}/lease/renew:
+    parameters: [{$ref: '#/components/parameters/accountPin'}]
     post:
       tags: [Projects]
       summary: Renew a write lease
@@ -560,6 +803,7 @@ components:
       description: Personal token; available scopes are enforced per route.
   parameters:
     id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    accountPin: {name: X-SP-Account-ID, in: header, required: false, schema: {type: string, format: uuid}, description: Optional account pin for session-authenticated requests; if supplied it must match the signed-in account. Ignored for bearer-token identity.}
     limit: {name: limit, in: query, schema: {type: string, pattern: '^[0-9]{1,3}$'}, description: Pagination limit string; default and maximum enforced by server}
     offset: {name: offset, in: query, schema: {type: string, pattern: '^[0-9]{1,16}$'}, description: Pagination offset string}
   schemas:

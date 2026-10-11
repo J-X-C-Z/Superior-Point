@@ -3,6 +3,7 @@
   const spBridgeChannel='__SP_BRIDGE_CHANNEL__';
   let spBridgeWorkspaceState=null;
   let spBridgeHistory={canUndo:false,canRedo:false};
+  let spBridgeThemeEntry=null;
   let spBridgeStarted=false,spBridgeReadOnly=true,spBridgeRevision=0,spBridgeEpoch=0;
   let spBridgeBaseline=null,spBridgeLatest='',spBridgeSending=null,spBridgeQueue=[],spBridgeSequence=0;
   let spBridgeFailure=null,spBridgeCapturing=false,spBridgeComposing=false;
@@ -31,6 +32,7 @@
     if(!spBridgeStarted||spBridgeReadOnly)return true;
     if(action==='sp-workspace-home'){spBridgeCommand('home');return true;}
     if(action==='sp-workspace-json'||action==='sp-workspace-audience'){spBridgeCommand('export',{format:action==='sp-workspace-json'?'json':'audience'});return true;}
+    if(action==='sp-theme-entry'){spBridgeCommand('themes');return true;}
     if(action==='v10-export-package'){toast('ZIP 项目包尚未接入候选工作台。请先使用上方 HTML 导出或 JSON 备份。',true);return true;}
     if(action==='export-pptx')toast('将沿用原编辑器的 PPTX 导出；本轮尚未完成其格式兼容验收。');
     if(['v10-file-hub','v10-recent','v10-create-open','new-deck','sp39-new'].includes(action)){spBridgeCommand('home');return true;}
@@ -47,13 +49,14 @@
     }
     return value;
   }
-  function spBridgeApply(project,{revision=spBridgeRevision,readOnly=spBridgeReadOnly,epoch=spBridgeEpoch,history=spBridgeHistory}={}){
+  function spBridgeApply(project,{revision=spBridgeRevision,readOnly=spBridgeReadOnly,epoch=spBridgeEpoch,history=spBridgeHistory,themeEntry=spBridgeThemeEntry}={}){
     const next=spBridgeValidate(project),slideId=deck?.slides?.[slideIndex]?.id,oldSelected=[...selectedIds];
     clearTimeout(notesCommitTimer);clearTimeout(autosaveTimer);
     if(editingId)stopTextEditing(false);
     if(presentation.active)exitPresentation();
     v24Stop();drag=null;deck=next;
     spBridgeRevision=revision;spBridgeEpoch=epoch;spBridgeReadOnly=!!readOnly;spBridgeHistory=history;
+    spBridgeThemeEntry=themeEntry&&typeof themeEntry.name==='string'&&typeof themeEntry.version==='string'?{name:themeEntry.name,version:themeEntry.version}:null;
     const match=deck.slides.findIndex(s=>s.id===slideId);slideIndex=match>=0?match:Math.min(slideIndex,deck.slides.length-1);
     const ids=new Set(curSlide().objects.map(o=>o.id));selectedIds=oldSelected.filter(id=>ids.has(id));selectedId=selectedIds.at(-1)||null;
     spBridgeBaseline=spBridgeClone(deck);spBridgeLatest=serialized();undoStates=[spBridgeLatest];undoPosition=0;

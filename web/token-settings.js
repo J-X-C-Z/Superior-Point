@@ -1,7 +1,7 @@
 import {CloudAPI} from '../storage/cloud-project-store.js';
 import {formDialog} from './admin/app.js';
 
-const permissions = [['projects:read', '读取项目', true], ['projects:create', '创建项目', true], ['projects:write', '编辑项目', true], ['projects:export', '导出项目', true], ['projects:delete', '删除和恢复项目', false]];
+const permissions = [['projects:read', '读取项目', true], ['projects:create', '创建项目', true], ['projects:write', '编辑项目', true], ['projects:export', '导出项目', true], ['projects:delete', '删除和恢复项目', false], ['themes:read', '读取主题', true], ['themes:write', '保存个人主题', false], ['themes:publish', '发布个人主题新版本', false]];
 const uuid = /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/;
 const date = value => value ? new Date(value).toLocaleString('zh-CN') : '—';
 

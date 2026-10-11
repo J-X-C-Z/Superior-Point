@@ -15,6 +15,8 @@ export function createLegacyEditorAdapter({toLegacyDocument=canonicalToEditor,co
   const iframe=dom.createElement('iframe');
   iframe.className='sp-legacy-editor-frame';iframe.title='SuperiorPoint v0.39 集成编辑器';
   iframe.setAttribute('sandbox','allow-scripts allow-downloads');
+  // Opaque srcdoc needs an explicit fullscreen origin wildcard; no other capability is delegated.
+  iframe.setAttribute('allow','fullscreen *');iframe.setAttribute('allowfullscreen','');
   iframe.setAttribute('referrerpolicy','no-referrer');
   Object.assign(iframe.style,{width:'100%',height:'100%',minHeight:'0',display:'block',border:'0',background:'#f7f8fb'});
   const send=(type,data={})=>{
@@ -27,7 +29,7 @@ export function createLegacyEditorAdapter({toLegacyDocument=canonicalToEditor,co
    const timer=host.setTimeout(()=>{requests.delete(requestId);reject(new Error('编辑器响应超时，请保留项目并重试'));},20000);
    requests.set(requestId,{resolve,reject,timer});send(type,{...data,requestId});
   });
-  const projectState=()=>({project:toLegacyDocument(latest),revision:latest.revision,readOnly,epoch,history:context.getHistoryState?.()||{canUndo:true,canRedo:true}});
+  const projectState=()=>{const snapshot=latest.extensions?.theme?.ref?.snapshot;return {project:toLegacyDocument(latest),themeEntry:snapshot?{name:snapshot.name,version:snapshot.version}:null,revision:latest.revision,readOnly,epoch,history:context.getHistoryState?.()||{canUndo:true,canRedo:true}};};
   const notice=(text,error=true)=>send('notice',{text,error});
   const applyResult=result=>{
    if(result&&typeof result==='object'&&Array.isArray(result.slides))latest=detached(result);
@@ -69,6 +71,13 @@ export function createLegacyEditorAdapter({toLegacyDocument=canonicalToEditor,co
       send('ack',{sequence:message.sequence,revision:latest.revision,epoch,history:context.getHistoryState?.()||{canUndo:true,canRedo:true}});
      }catch(error){rejectEdit(message,error);}finally{handling--;}
      return;
+    }
+    if(message.type==='themes'){
+     if(message.epoch!==epoch)throw new Error('主题库请求来自过期编辑会话');
+     if(readOnly)throw new Error('项目当前只读');
+     if(message.expectedRevision!==latest.revision)throw new Error('项目修订已更新，请重新打开主题库');
+     if(typeof context.onThemes!=='function'){notice('主题库入口尚未接入工作台。');return;}
+     await context.onThemes();return;
     }
     if(message.epoch!==epoch)return;
     if(message.type==='recovery'){rejectedSnapshot=detached(message.project);recoveryError=new Error(message.error||'最后的修改未提交，已保留恢复数据');readOnly=true;context.onCommitRejected?.(recoveryError);return;}

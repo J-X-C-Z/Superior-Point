@@ -10,10 +10,10 @@ export class CloudAPI {
  async request(path,{method='GET',body,csrfRetry=true}={}){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),this.timeoutMs);
   let response,result;
-  try{response=await this.fetch(this.base+path,{method,credentials:'same-origin',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(method==='GET'||!this.csrfToken?{}:{'X-CSRF-Token':this.csrfToken})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:controller.signal});result=await response.json();}
+  try{response=await this.fetch(this.base+path,{method,credentials:'same-origin',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(this.user?.id?{'X-SP-Account-ID':this.user.id}:{}),...(method==='GET'||!this.csrfToken?{}:{'X-CSRF-Token':this.csrfToken})},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:controller.signal});result=await response.json();}
   catch(error){if(response&&!controller.signal.aborted)throw new CloudError('INVALID_RESPONSE','云端响应无法读取，保存结果未确认。',response.status);throw new CloudError(controller.signal.aborted?'TIMEOUT':'OFFLINE',controller.signal.aborted?'云端请求超时；保存结果未确认，请重试同一份修改。':'无法连接云端；修改仍保留为本地恢复草稿。');}
   finally{clearTimeout(timer);}
-  if(!response.ok){const error=result.error||{};if(error.code==='CSRF_INVALID'&&csrfRetry&&path!=='/auth/csrf'){await this.rotateCsrf();return this.request(path,{method,body,csrfRetry:false});}throw new CloudError(error.code||'CLOUD_ERROR',error.message||'云端操作失败',response.status);}
+  if(!response.ok){const error=result.error||{};if(['ACCOUNT_CHANGED','UNAUTHENTICATED'].includes(error.code)){this.user=null;this.csrfToken=null;}if(error.code==='CSRF_INVALID'&&csrfRetry&&path!=='/auth/csrf'){await this.rotateCsrf();return this.request(path,{method,body,csrfRetry:false});}throw new CloudError(error.code||'CLOUD_ERROR',error.message||'云端操作失败',response.status);}
   return result;
  }
  async login(username,password){const result=await this.request('/auth/login',{method:'POST',body:{username,password},csrfRetry:false});this.user=result.user;this.csrfToken=result.csrfToken;return result.user;}

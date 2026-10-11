@@ -1,0 +1,63 @@
+const stable=value=>Array.isArray(value)?'['+value.map(stable).join(',')+']':value&&typeof value==='object'?'{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+stable(value[key])).join(',')+'}':JSON.stringify(value);
+const labels={added:'新增',removed:'删除',modified:'修改'};
+const themeName=document=>document?.extensions?.theme?.ref?.snapshot?.name||document?.extensions?.theme?.name||'未设置主题';
+
+/** Compare actual project records by their stable slide and element IDs. */
+export function diffProjectDocuments(current,historical){
+ const changes=(before=[],after=[])=>{const left=new Map(before.map(value=>[value.id,value])),right=new Map(after.map(value=>[value.id,value]));return [...new Set([...left.keys(),...right.keys()])].flatMap(id=>!left.has(id)?[{id,status:'added'}]:!right.has(id)?[{id,status:'removed'}]:stable(left.get(id))!==stable(right.get(id))?[{id,status:'modified'}]:[]);};
+ const slides=changes(current?.slides||[],historical?.slides||[]).map(change=>{const before=current?.slides?.find(slide=>slide.id===change.id),after=historical?.slides?.find(slide=>slide.id===change.id);return {...change,beforeTitle:before?.title||'',afterTitle:after?.title||'',notesChanged:(before?.notes??'')!==(after?.notes??''),elements:changes(before?.elements||[],after?.elements||[])};});
+ const beforeTheme=current?.extensions?.theme?.ref||current?.extensions?.theme||null,afterTheme=historical?.extensions?.theme?.ref||historical?.extensions?.theme||null;
+ const elements=slides.flatMap(slide=>slide.elements);
+ return {titleChanged:current?.title!==historical?.title,beforeTitle:current?.title||'',afterTitle:historical?.title||'',slides,elements,slideOrderChanged:stable((current?.slides||[]).map(slide=>slide.id))!==stable((historical?.slides||[]).map(slide=>slide.id)),themeChanged:stable(beforeTheme)!==stable(afterTheme),beforeTheme:themeName(current),afterTheme:themeName(historical),notesChanged:slides.some(slide=>slide.notesChanged),counts:{slides:Object.fromEntries(['added','removed','modified'].map(status=>[status,slides.filter(slide=>slide.status===status).length])),elements:Object.fromEntries(['added','removed','modified'].map(status=>[status,elements.filter(element=>element.status===status).length]))}};
+}
+
+export function mountProjectHistory({document=globalThis.document,api,projectRef,onRestore,notify=()=>{}}={}){
+ if(!document||!api||typeof api.request!=='function')throw new TypeError('历史版本需要 document 和云端 API');
+ if(typeof onRestore!=='function')throw new TypeError('历史版本恢复需要 onRestore callback');
+ const projectId=projectRef?.projectId||projectRef?.id,accountId=projectRef?.accountId;
+ const dialog=document.createElement('dialog');dialog.className='project-history-dialog';dialog.setAttribute('aria-labelledby','project-history-title');dialog.setAttribute('aria-modal','true');
+ const header=document.createElement('header'),title=document.createElement('h2'),closeButton=document.createElement('button');title.id='project-history-title';title.textContent='云端历史版本';closeButton.type='button';closeButton.className='secondary';closeButton.textContent='关闭';closeButton.setAttribute('aria-label','关闭历史版本');header.append(title,closeButton);
+ const description=document.createElement('p');description.textContent='仅显示当前云端项目的服务端修订。选择版本后会读取完整历史文档并与当前版本比较。';
+ const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+ const actions=document.createElement('div'),refreshButton=document.createElement('button'),versions=document.createElement('div'),preview=document.createElement('section'),confirmButton=document.createElement('button');actions.className='project-history-actions';refreshButton.type='button';refreshButton.className='secondary';refreshButton.textContent='刷新版本';versions.className='project-history-list';versions.setAttribute('role','list');preview.className='project-history-preview';preview.hidden=true;confirmButton.type='button';confirmButton.textContent='恢复此版本';confirmButton.disabled=true;actions.append(refreshButton,confirmButton);dialog.append(header,description,status,versions,preview,actions);(document.querySelector('main')||document.body).append(dialog);
+ let destroyed=false,loadEpoch=0,selectionEpoch=0,current=null,entries=[],selectedRevision=null,pendingRestore=null,focusBefore=null,needsRefresh=false;
+ const isOpen=()=>dialog.open||dialog.hasAttribute('open');
+ function clear(){versions.replaceChildren();preview.replaceChildren();preview.hidden=true;current=null;entries=[];selectedRevision=null;pendingRestore=null;needsRefresh=false;confirmButton.disabled=true;}
+ function close({restoreFocus=true}={}){if(!isOpen())return;++loadEpoch;++selectionEpoch;dialog.close?.();dialog.removeAttribute('open');clear();status.textContent='';if(restoreFocus&&focusBefore?.isConnected)focusBefore.focus();focusBefore=null;}
+ function accountValid(){return projectRef?.source==='cloud'&&!!projectId&&!!accountId&&api.user?.id===accountId;}
+ function abandonAccount(){const wasOpen=isOpen();close({restoreFocus:false});if(wasOpen)notify('账号已切换，已清除并关闭旧账号的历史版本。',true);}
+ function ensureAccount(){if(!accountValid()){abandonAccount();return false;}return true;}
+ const path=suffix=>`/projects/${encodeURIComponent(projectId)}/${suffix}`;
+ function button(text,handler,className='secondary'){const element=document.createElement('button');element.type='button';element.className=className;element.textContent=text;element.onclick=handler;return element;}
+ function metadataLabel(item){const date=Number.isFinite(Date.parse(item.createdAt))?new Date(item.createdAt).toLocaleString():String(item.createdAt||'时间未知');return `r${item.revision} · ${item.title||'未命名'} · ${item.slideCount} 页 · ${item.source||'未知来源'} · ${date}`;}
+ function renderList(){versions.replaceChildren();if(!entries.length){const empty=document.createElement('p');empty.textContent='暂无云端历史版本。';versions.append(empty);return;}for(const item of entries){const row=document.createElement('div');row.className='project-history-row';row.setAttribute('role','listitem');const select=button(metadataLabel(item),()=>selectRevision(item.revision),'secondary project-history-version');select.setAttribute('aria-pressed',String(selectedRevision===item.revision));row.append(select);versions.append(row);}}
+ function line(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);return p;}
+ function renderDiff(item,historical,diff){preview.replaceChildren();preview.hidden=false;const heading=document.createElement('h3');heading.textContent=`版本 r${item.revision} 与当前 r${current.revision} 的差异`;preview.append(heading);
+  line(preview,`项目标题：${diff.titleChanged?`${diff.beforeTitle} → ${diff.afterTitle}`:'未变化'}`);
+  line(preview,`主题：${diff.themeChanged?`${diff.beforeTheme} → ${diff.afterTheme}${diff.beforeTheme===diff.afterTheme?'（主题版本或配置有变化）':''}`:`未变化（${diff.beforeTheme}）`}`);
+  line(preview,`页面：新增 ${diff.counts.slides.added}、删除 ${diff.counts.slides.removed}、修改 ${diff.counts.slides.modified}${diff.slideOrderChanged?'；页面顺序有变化':''}。`);
+  line(preview,`元素：新增 ${diff.counts.elements.added}、删除 ${diff.counts.elements.removed}、修改 ${diff.counts.elements.modified}。备注${diff.notesChanged?'有变化':'未变化'}。`);
+  const list=document.createElement('ul');
+  for(const slide of diff.slides){const itemLine=document.createElement('li'),change=labels[slide.status];itemLine.textContent=`页面 ${slide.afterTitle||slide.beforeTitle||'未命名'}（${change}）${slide.beforeTitle!==slide.afterTitle?`：${slide.beforeTitle||'无标题'} → ${slide.afterTitle||'无标题'}`:''}${slide.notesChanged?'；备注已修改':''}`;if(slide.elements.length){const elements=document.createElement('ul');for(const element of slide.elements){const entry=document.createElement('li');const target=(historical.slides.find(value=>value.id===slide.id)||current.slides.find(value=>value.id===slide.id))?.elements.find(value=>value.id===element.id);const name=target?.text?String(target.text).slice(0,32):({image:'图片',shape:'形状',chart:'图表',table:'表格',text:'文字'}[target?.type]||'对象');entry.textContent=`${name}：${labels[element.status]}`;elements.append(entry);}itemLine.append(elements);}list.append(itemLine);}
+  if(!diff.slides.length){const unchanged=document.createElement('li');unchanged.textContent='页面和对象内容未变化。';list.append(unchanged);}preview.append(list);
+  const restoreable=item.revision<current.revision;line(preview,restoreable?'恢复会在当前云端版本之后创建一条新修订；不会改写历史记录。':'当前版本不可恢复为自身。');
+  confirmButton.textContent=pendingRestore?`重试恢复 r${item.revision}`:'恢复此版本';confirmButton.disabled=!restoreable;
+ }
+ async function refresh(){if(destroyed||!ensureAccount())return;const generation=++loadEpoch;++selectionEpoch;selectedRevision=null;pendingRestore=null;needsRefresh=false;current=null;entries=[];confirmButton.disabled=true;preview.replaceChildren();preview.hidden=true;versions.replaceChildren();status.textContent='正在读取云端版本…';const owner=api.user.id;
+  try{const [history,documentNow]=await Promise.all([api.request(path('revisions')),api.request(path('document'))]);if(destroyed||!isOpen()||generation!==loadEpoch)return;if(api.user?.id!==owner||owner!==accountId){abandonAccount();return;}if(!Array.isArray(history)||!documentNow||documentNow.id!==projectId)throw new Error('云端历史版本响应格式无效');entries=history.filter(item=>Number.isSafeInteger(item.revision)&&item.revision>=0).sort((a,b)=>b.revision-a.revision);current=documentNow;renderList();status.textContent=`当前版本 r${current.revision} · ${entries.length} 条历史记录`;
+  }catch(error){if(generation!==loadEpoch)return;if(api.user?.id!==owner){abandonAccount();return;}status.textContent=error.message||'读取历史版本失败；可重试刷新。';}
+ }
+ async function selectRevision(revision){if(destroyed||!ensureAccount()||!current)return;if(needsRefresh){status.textContent='版本冲突后请先刷新版本列表。';return;}const item=entries.find(entry=>entry.revision===revision);if(!item)return;selectedRevision=revision;pendingRestore=null;confirmButton.disabled=true;renderList();preview.replaceChildren();preview.hidden=true;const generation=++selectionEpoch,owner=api.user.id;status.textContent=`正在读取 r${revision}…`;
+  try{const historical=await api.request(path(`revisions/${revision}`));if(destroyed||!isOpen()||generation!==selectionEpoch)return;if(api.user?.id!==owner||owner!==accountId){abandonAccount();return;}if(!historical||historical.id!==projectId||historical.revision!==revision)throw new Error('历史版本响应与所选修订不匹配');const diff=diffProjectDocuments(current,historical);renderDiff(item,historical,diff);status.textContent=`已加载 r${revision}；已比较页面和对象内容。`;
+  }catch(error){if(generation!==selectionEpoch)return;if(api.user?.id!==owner){abandonAccount();return;}status.textContent=error.message||'读取此版本失败；请选择重试。';}
+ }
+ async function restore(){if(destroyed||!ensureAccount()||!current||selectedRevision===null||selectedRevision>=current.revision||typeof onRestore!=='function')return;if(!pendingRestore)pendingRestore={revision:selectedRevision,expectedRevision:current.revision,clientMutationId:document.defaultView?.crypto?.randomUUID?.()||globalThis.crypto?.randomUUID?.()};const request={...pendingRestore},owner=api.user.id;confirmButton.disabled=true;status.textContent=`正在恢复 r${request.revision}…`;
+  try{await onRestore(request);if(destroyed||!isOpen())return;if(api.user?.id!==owner||owner!==accountId){abandonAccount();return;}notify(`历史版本 r${request.revision} 已恢复为新的云端修订。`);close();
+  }catch(error){if(destroyed||!isOpen())return;if(api.user?.id!==owner||owner!==accountId){abandonAccount();return;}if(error.code==='REVISION_CONFLICT'){pendingRestore=null;needsRefresh=true;confirmButton.disabled=true;status.textContent=`${error.message||'云端版本已变化'}。请刷新版本并重新检查差异后再恢复。`;return;}confirmButton.disabled=false;status.textContent=`${error.message||'恢复未确认'}。可重试；将继续核对原请求，避免重复恢复。`;
+  }
+ }
+ refreshButton.onclick=()=>refresh();confirmButton.onclick=()=>restore();closeButton.onclick=()=>close();dialog.addEventListener('cancel',event=>{event.preventDefault();close();});dialog.addEventListener('click',event=>{if(event.target===dialog)close();});
+ function watchAccount(){if(isOpen()&&!accountValid())abandonAccount();}
+ document.defaultView?.addEventListener('focus',watchAccount);document.addEventListener('visibilitychange',watchAccount);
+ return {open(){if(destroyed)return false;if(!ensureAccount())return false;focusBefore=document.activeElement;if(dialog.showModal)dialog.showModal();else dialog.setAttribute('open','');closeButton.focus();void refresh();return true;},refresh,destroy(){if(destroyed)return;destroyed=true;close({restoreFocus:false});document.defaultView?.removeEventListener('focus',watchAccount);document.removeEventListener('visibilitychange',watchAccount);dialog.remove();}};
+}

@@ -132,7 +132,7 @@ test('user PAT form defaults omit delete, limits projects, displays plaintext on
   click(h.window.document, '创建授权'); submit(h.window, {name: 'bridge', projectMode: 'none'});
   await until(() => h.window.document.querySelector('textarea.token-secret'));
   const write = calls.find(call => call.method === 'POST');
-  assert.deepEqual(write.body.scopes, ['projects:read', 'projects:create', 'projects:write', 'projects:export']);
+  assert.deepEqual(write.body.scopes, ['projects:read', 'projects:create', 'projects:write', 'projects:export', 'themes:read']);assert.ok(!write.body.scopes.includes('themes:write')&&!write.body.scopes.includes('themes:publish'));
   assert.deepEqual(write.body.projectAllowlist, []);
   assert.equal(h.window.document.querySelector('.token-secret').value, token);
   click(h.window.document, '我已保存'); await until(() => h.window.document.querySelector('.token-row'));

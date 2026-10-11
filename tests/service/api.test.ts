@@ -84,3 +84,13 @@ test('HTTP user deletion requires administrator, CSRF, valid target and recent p
   assert.equal((await h.app.inject({method:'DELETE',url,headers:h.admin})).statusCode,404);
  }finally{await h.close();}
 });
+
+
+test('browser account pin rejects a replaced session before reading or mutating account resources',async()=>{
+ const h=await setup();try{
+  const me=await h.app.inject({url:'/api/v1/auth/me',headers:h.alice}),id=me.json().user.id;
+  for(const url of ['/api/v1/projects','/api/v1/themes','/api/v1/me/tokens']){const response=await h.app.inject({url,headers:{...h.bob,'x-sp-account-id':id}});assert.equal(response.statusCode,403);assert.equal(response.json().error.code,'ACCOUNT_CHANGED');}
+  const response=await h.app.inject({method:'POST',url:'/api/v1/projects',headers:{...h.bob,'x-sp-account-id':id},payload:{title:'must not be created'}});assert.equal(response.statusCode,403);assert.equal((await h.db.query('SELECT id FROM projects')).rowCount,0);
+  assert.equal((await h.app.inject({url:'/api/v1/projects',headers:{...h.alice,'x-sp-account-id':id}})).statusCode,200);
+ }finally{await h.close();}
+});
