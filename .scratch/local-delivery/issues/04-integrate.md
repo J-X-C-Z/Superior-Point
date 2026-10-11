@@ -4,10 +4,10 @@
 
 **Blocked by:** 01, 02, 03.
 
-**Status:** blocked
+**Status:** partial — code integrated; file:// acceptance blocked
 
-- [ ] Rebuild generated editor and standalone outputs.
-- [ ] Complete Node regression suite.
-- [ ] Real browser validates audience playback and backup roundtrip within tooling capabilities.
-- [ ] Standards and spec reviews complete; findings fixed.
-- [ ] Update README and validation with precise remaining limitations.
+- [x] Rebuild generated editor and standalone outputs.
+- [x] Complete Node regression suite.
+- [x] Real browser validates HTTP audience playback and backup roundtrip. file:// is blocked by browser URL policy and remains unverified.
+- [x] Standards and spec reviews complete; findings fixed.
+- [x] Update README and validation with precise remaining limitations.
