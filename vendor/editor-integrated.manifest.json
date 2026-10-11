@@ -1,7 +1,7 @@
 {
   "source": "editor-v039.source.html",
   "sourceSHA256": "74ae7d23c75e294d0821a2a89de1ee9068395f3dd050c27e1621c2ec62e76a6b",
-  "candidateSHA256": "4e0d5e5559926fe66e59f813b270a4904008f560a7cbc3247c975b46fc222d6a",
+  "candidateSHA256": "d725bf001b5b07c4f1c672241918a1dd99c518ce2177a98ab52b63c320a562ab",
   "patches": [
     "embedded CSP + early interaction gate",
     "isolated preference storage",

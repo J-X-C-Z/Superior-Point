@@ -55,3 +55,6 @@ body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)
  #app .sp-ribbon-shell{height:auto;display:flex;flex-direction:column}
  #sp-panel-notes-sash{z-index:3}
 }
+/* Slide commands remain in the ribbon; thumbnails start directly below it. */
+body[data-sp-design=mimo] .slide-sidebar>.pane-heading,
+body[data-sp-design=mimo] .slide-sidebar>.sp-slide-mini-tools{display:none!important}

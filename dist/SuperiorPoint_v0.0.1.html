@@ -106,6 +106,10 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
 @media(prefers-reduced-motion:reduce){
  body:not(.editor-open) :is(nav button,.brand,header button,.new-card,.framework-note button,.import-status button,dialog button,#search,#sort,.project-actions button),body:not(.editor-open) nav button::before{transition:none}
 }
+@media(hover:hover) and (pointer:fine){
+ .cover.card-tilting svg{will-change:transform;box-shadow:0 9px 18px #20221e19;backface-visibility:hidden}
+}
+@media(prefers-reduced-motion:reduce){.cover.card-tilting svg{transform:none!important;will-change:auto;box-shadow:none}}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
 <main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
@@ -2389,6 +2393,117 @@ function v24OfflineExportBootstrap(width,height){
       });
     }
   });
+
+  // web/project-card-motion.js
+  function initProjectCardMotion(doc = document) {
+    const win = doc.defaultView, projects = doc.querySelector("#projects");
+    if (!projects) return;
+    projects.dataset.hapticsApi = typeof win.navigator.vibrate === "function" ? "available" : "unavailable";
+    const fine = win.matchMedia("(hover: hover) and (pointer: fine)");
+    const reduced = win.matchMedia("(prefers-reduced-motion: reduce)");
+    let cover, svg, frame = 0, last = 0;
+    let value = [0, 0, 0], velocity = [0, 0, 0], target = [0, 0, 0];
+    function reset() {
+      win.cancelAnimationFrame(frame);
+      frame = 0;
+      last = 0;
+      if (svg) {
+        svg.style.transform = "";
+        svg.style.transition = "";
+      }
+      cover?.classList.remove("card-tilting");
+      cover = svg = null;
+      value = [0, 0, 0];
+      velocity = [0, 0, 0];
+      target = [0, 0, 0];
+    }
+    function tick(time) {
+      frame = 0;
+      if (!svg?.isConnected) {
+        reset();
+        return;
+      }
+      const dt = last ? Math.min((time - last) / 1e3, 1 / 60) : 1 / 60;
+      last = time;
+      let moving = false;
+      for (let i = 0; i < 3; i++) {
+        velocity[i] += ((target[i] - value[i]) * 100 - velocity[i] * 10) * dt;
+        value[i] += velocity[i] * dt;
+        if (Math.abs(target[i] - value[i]) > 1e-3 || Math.abs(velocity[i]) > 1e-3) moving = true;
+      }
+      if (!moving) value = [...target];
+      svg.style.transform = `perspective(700px) rotateX(${value[0]}deg) rotateY(${value[1]}deg) translateZ(${value[2] * 6}px) scale(${1 + value[2] * 0.025})`;
+      if (moving) frame = win.requestAnimationFrame(tick);
+      else {
+        last = 0;
+        if (!target[2]) reset();
+      }
+    }
+    function start() {
+      if (!frame) frame = win.requestAnimationFrame(tick);
+    }
+    function move(event) {
+      if (!fine.matches || reduced.matches || doc.hidden || doc.body.classList.contains("editor-open")) return;
+      const next = event.target.closest?.(".cover:not(:disabled)");
+      if (!next || !projects.contains(next)) {
+        leave();
+        return;
+      }
+      if (cover !== next) {
+        reset();
+        svg = next.querySelector("svg");
+        if (!svg) return;
+        cover = next;
+        cover.classList.add("card-tilting");
+        svg.style.transition = "none";
+      }
+      const rect = cover.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1));
+      const y = Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1));
+      target = [-y * 5, x * 5, 1];
+      start();
+    }
+    function leave(event) {
+      if (!cover || event && event.target !== cover && event.target !== projects) return;
+      target = [0, 0, 0];
+      start();
+    }
+    function visibility() {
+      if (doc.hidden || doc.body.classList.contains("editor-open") || doc.querySelector("#home-view")?.hidden) reset();
+    }
+    function preference() {
+      if (!fine.matches || reduced.matches) reset();
+    }
+    function click(event) {
+      if (!event.isTrusted || reduced.matches || !event.target.closest?.(".cover:not(:disabled)")) return;
+      try {
+        projects.dataset.hapticsRequest = typeof win.navigator.vibrate === "function" ? win.navigator.vibrate(8) ? "accepted" : "rejected" : "unavailable";
+      } catch {
+        projects.dataset.hapticsRequest = "error";
+      }
+    }
+    projects.addEventListener("pointermove", move);
+    projects.addEventListener("pointerleave", leave, true);
+    projects.addEventListener("click", click);
+    doc.addEventListener("visibilitychange", visibility);
+    fine.addEventListener("change", preference);
+    reduced.addEventListener("change", preference);
+    const observer = new win.MutationObserver(visibility);
+    observer.observe(doc.body, { attributes: true, attributeFilter: ["class"] });
+    const home2 = doc.querySelector("#home-view");
+    if (home2) observer.observe(home2, { attributes: true, attributeFilter: ["hidden"] });
+    return () => {
+      reset();
+      observer.disconnect();
+      projects.removeEventListener("pointermove", move);
+      projects.removeEventListener("pointerleave", leave, true);
+      projects.removeEventListener("click", click);
+      doc.removeEventListener("visibilitychange", visibility);
+      fine.removeEventListener("change", preference);
+      reduced.removeEventListener("change", preference);
+    };
+  }
 
   // web/home-motion.js
   function initHomeMotion(doc = document) {
@@ -11649,6 +11764,9 @@ body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)
  #app .sp-ribbon-shell{height:auto;display:flex;flex-direction:column}
  #sp-panel-notes-sash{z-index:3}
 }
+/* Slide commands remain in the ribbon; thumbnails start directly below it. */
+body[data-sp-design=mimo] .slide-sidebar>.pane-heading,
+body[data-sp-design=mimo] .slide-sidebar>.sp-slide-mini-tools{display:none!important}
 </style>
 </body>
 </html>
@@ -11885,6 +12003,7 @@ body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)
   // web/entry.js
   if (!globalThis.SP_DISABLE_EDITOR_CANDIDATE) registerEditorAdapter(createLegacyEditorAdapter());
   initHomeMotion();
+  initProjectCardMotion();
   Promise.resolve().then(() => init_app());
 })();
 </script></body></html>

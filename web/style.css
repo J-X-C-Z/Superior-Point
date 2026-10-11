@@ -85,3 +85,7 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
 @media(prefers-reduced-motion:reduce){
  body:not(.editor-open) :is(nav button,.brand,header button,.new-card,.framework-note button,.import-status button,dialog button,#search,#sort,.project-actions button),body:not(.editor-open) nav button::before{transition:none}
 }
+@media(hover:hover) and (pointer:fine){
+ .cover.card-tilting svg{will-change:transform;box-shadow:0 9px 18px #20221e19;backface-visibility:hidden}
+}
+@media(prefers-reduced-motion:reduce){.cover.card-tilting svg{transform:none!important;will-change:auto;box-shadow:none}}
