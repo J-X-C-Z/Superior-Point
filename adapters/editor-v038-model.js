@@ -1,5 +1,6 @@
 /** Candidate-only mapping. Source editor stays unchanged; Core owns identity/revision/history. */
 import {cloneJSON,createDocument,importDocument} from '../core/document-core.js';
+import {hiddenElementIds} from '../io/visibility.js';
 const SLIDE={bg:'#f2f1ec',hidden:false,transition:'fade',duration:600,autoSec:0,advanceOnClick:true,transitionEnter:'',transitionExit:'',backgroundTransition:'fade',morphEase:'cubic-bezier(.22,1,.36,1)',morphGroup:'',notes:'',comments:[]};
 const OBJECT={name:'对象',rotation:0,opacity:1,fill:'transparent',stroke:'transparent',strokeWidth:0,text:'',fontFamily:'Arial',fontSize:28,color:'#161715',bold:false,italic:false,align:'left',valign:'middle',padding:0,anim:'none',visible:true,locked:false};
 const ROOT={version:1,themeId:'noema',themeAccent:'#d75c3c',guides:[],reviewAuthor:'本地用户',reviewHistory:[],motion:{defaultAutoSec:5,backgroundTransition:'fade'},master:{enabled:false,footer:'',pageNumber:false,accentLine:false,skipFirst:false},metadata:{author:'',description:'',keywords:''}};
@@ -39,12 +40,15 @@ export function canonicalToEditor(input){
    output.bg=slide.background;output.background={type:'solid',color:slide.background};
    slideMapping.background={canonical:slide.background,native:cloneJSON(output.background),bg:output.bg};
   }
-  const groups=elements.filter(e=>e.type==='group');checkGroups(groups,slide.animations||[]);
+  const groups=elements.filter(e=>e.type==='group'),hidden=hiddenElementIds(slide);checkGroups(groups,slide.animations||[]);
   output.spCanonicalGroups=groups;
   slideMapping.groupOrder=elements.map(e=>e.id);
   output.spEditorMapping=slideMapping;
   output.objects=elements.filter(e=>e.type!=='group').map(element=>{
    const o={...OBJECT,...element},source=mapping(element);
+   if(hidden.has(o.id)&&o.visible!==false){
+    source.visibility={...(Object.hasOwn(element,'visible')?{visible:element.visible}:{}),native:false};o.visible=false;
+   }else delete source.visibility;
    if(o.type==='image'&&o.assetId){
     const asset=doc.assets.find(a=>a.id===o.assetId),src=asset?.dataUrl??asset?.src??asset?.data;
     // A changed src belongs to this image only. Never overwrite a shared asset.
@@ -83,6 +87,11 @@ export function editorToCanonical(input,{baseDocument}={}){
   checkGroups(spCanonicalGroups,fields.animations||[]);
   const elements=objects.map(raw=>{
    const o=cloneJSON(raw),source=mapping(o);
+   // Native visibility also projects Core hidden/group state; restore unedited child flags.
+   if(source.visibility&&o.visible===source.visibility.native){
+    if(Object.hasOwn(source.visibility,'visible'))o.visible=source.visibility.visible;else delete o.visible;
+   }else if(o.visible!==false&&o.hidden)o.hidden=false;
+   delete source.visibility;
    if(o.type==='image'&&source.image&&o.assetId===source.image.assetId&&o.src!==source.image.src){delete o.assetId;delete source.image;}
    if(o.type==='connector'){if(o.fromId)o.sourceId=o.fromId;else delete o.sourceId;if(o.toId)o.targetId=o.toId;else delete o.targetId;}
    if(o.type==='table'&&o.spCanonicalRows){
