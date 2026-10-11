@@ -28,12 +28,15 @@ body.editor-integrated.editor-attention .document-toolbar{display:flex;padding:5
 body.editor-integrated.editor-attention .document-toolbar>:not(#back-home){display:none}
 body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11px}
 
-/* A quiet halftone field; only its decorative dots respond to the pointer. */
-.intro{position:relative}
-.intro > :first-child,.intro > .new-card{position:relative;z-index:1}
-.home-dots{position:absolute;right:298px;top:50%;transform:translateY(-50%);width:clamp(100px,calc(100% - 650px),300px);height:210px;pointer-events:none;color:#75804b}
-.home-dots i{position:absolute;display:block;border-radius:50%;background:currentColor}
-@media(max-width:1200px){.home-dots{opacity:.45}}
-@media(max-width:900px){.home-dots{right:246px;top:43%;width:160px;height:150px;opacity:.65}}
-@media(max-width:660px){.home-dots{right:150px;top:50%;width:85px;height:150px;opacity:.24}}
-@media(prefers-reduced-motion:reduce),(hover:none),(pointer:coarse){.home-dots i{transform:none!important}}
+/* Creation feedback lives inside the create control. */
+.new-card{position:relative}
+.home-dots{position:absolute;right:24px;top:25px;width:82px;height:48px;pointer-events:none;color:#75804b}
+.home-dots i{position:absolute;width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.32}
+.new-card b{display:flex;align-items:center;gap:10px}
+@media(hover:hover) and (pointer:fine){
+ .home-dots i{transition:transform 180ms cubic-bezier(.23,1,.32,1),opacity 180ms ease}
+ .new-card:hover .home-dots i{transform:translate(var(--slide-x),var(--slide-y));opacity:.9}
+}
+.new-card:focus-visible .home-dots i{transform:translate(var(--slide-x),var(--slide-y));opacity:.9;transition:none}
+@media(prefers-reduced-motion:reduce){.home-dots i{transition:none!important;transform:translate(var(--slide-x),var(--slide-y))}}
+@media(max-width:660px){.home-dots{right:13px;top:21px;transform:scale(.65);transform-origin:top right}}
