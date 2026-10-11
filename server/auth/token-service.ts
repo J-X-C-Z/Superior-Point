@@ -3,7 +3,7 @@ import {checkAdminActor} from '../services/admin-service.js';
 import {errors, requireAdmin, ServiceError, transaction, type Actor, type Database, type Transaction} from '../contracts.js';
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-const scopes = ['projects:read', 'projects:create', 'projects:write', 'projects:delete', 'projects:export', 'assets:write'];
+const scopes = ['projects:read', 'projects:create', 'projects:write', 'projects:delete', 'projects:export', 'assets:write', 'themes:read', 'themes:write', 'themes:publish'];
 const defaultScopes = ['projects:read', 'projects:create', 'projects:write', 'projects:export'];
 const day = 24 * 60 * 60 * 1000;
 const digest = (raw: string) => createHash('sha256').update(raw).digest('hex');

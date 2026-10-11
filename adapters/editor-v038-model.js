@@ -65,6 +65,9 @@ export function canonicalToEditor(input){
    }
    if(o.type==='connector'){o.fromId=o.sourceId??o.fromId??'';o.toId=o.targetId??o.toId??'';o.arrowEnd??=true;o.stroke=element.stroke??'#161715';o.strokeWidth=element.strokeWidth??2;}
    const parent=groups.find(g=>g.children.includes(o.id));
+   if(parent?.locked&&!o.locked){
+    source.groupLock={...(Object.hasOwn(element,'locked')?{locked:element.locked}:{}),native:true};o.locked=true;
+   }else delete source.groupLock;
    if(parent){o.groupId=parent.id;source.groupId=parent.id;}
    else if(source.groupId){if(o.groupId===source.groupId)delete o.groupId;delete source.groupId;}
    source.animation=projectAnimations(o,(slide.animations||[]).filter(a=>a.targetId===o.id),source.animation);
@@ -92,6 +95,11 @@ export function editorToCanonical(input,{baseDocument}={}){
     if(Object.hasOwn(source.visibility,'visible'))o.visible=source.visibility.visible;else delete o.visible;
    }else if(o.visible!==false&&o.hidden)o.hidden=false;
    delete source.visibility;
+   // Inherited group locks protect native editing without becoming child overrides.
+   if(source.groupLock&&o.locked===source.groupLock.native){
+    if(Object.hasOwn(source.groupLock,'locked'))o.locked=source.groupLock.locked;else delete o.locked;
+   }
+   delete source.groupLock;
    if(o.type==='image'&&source.image&&o.assetId===source.image.assetId&&o.src!==source.image.src){delete o.assetId;delete source.image;}
    if(o.type==='connector'){if(o.fromId)o.sourceId=o.fromId;else delete o.sourceId;if(o.toId)o.targetId=o.toId;else delete o.targetId;}
    if(o.type==='table'&&o.spCanonicalRows){

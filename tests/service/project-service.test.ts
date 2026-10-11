@@ -109,6 +109,32 @@ test('disabled users are rechecked on reads, writes, receipts, and leases; MCP s
   for (const run of [() => service.get(owner, doc.id), () => service.list(owner), () => service.create(owner), () => service.edit(owner, doc.id, request), () => service.acquireLease(owner, doc.id, 'disabled'), () => service.renewLease(owner, doc.id, randomUUID()), () => service.releaseLease(owner, doc.id, randomUUID())]) await assert.rejects(run(), {code: 'UNAUTHENTICATED'});
 }));
 
+test('same-account MCP atomic edits coexist with browser leases while CAS, receipts and snapshot fencing remain enforced', async () => fixture(async (db, service, owner, other) => {
+  const doc = await service.create(owner, {title: 'Browser base'});
+  const lease = await service.acquireLease(owner, doc.id, 'browser');
+  const mcp: Actor = {...owner, source: 'mcp', scopes: ['projects:read', 'projects:write'], projectAllowlist: [doc.id]};
+  const request = {expectedRevision: 0, clientMutationId: 'mcp-coedit', operations: title('AI saved')};
+  const saved = await service.edit(mcp, doc.id, request);assert.equal(saved.revision, 1);assert.equal(saved.title, 'AI saved');
+  assert.deepEqual(await service.edit(mcp, doc.id, request), saved);
+  await assert.rejects(service.edit(mcp, doc.id, {...request, operations: title('different')}), {code: 'MUTATION_ID_REUSED'});
+  await assert.rejects(service.edit(mcp, doc.id, {...request, clientMutationId: 'mcp-stale'}), {code: 'REVISION_CONFLICT'});
+  await assert.rejects(service.saveSnapshot(owner, doc.id, {expectedRevision: 0, clientMutationId: 'browser-stale', leaseToken: lease.leaseToken, document: {...doc, revision: 1, title: 'Unsaved browser text'}}), {code: 'REVISION_CONFLICT'});
+  await assert.rejects(service.edit(mcp, doc.id, {expectedRevision: 1, clientMutationId: 'mcp-snapshot', operations: [...title('must roll back'), {type: 'replaceContent', document: saved}]}), {code: 'LOCK_LOST'});
+  await assert.rejects(service.saveSnapshot(mcp, doc.id, {expectedRevision: 1, clientMutationId: 'mcp-full-snapshot', document: {...saved, revision: 2}}), {code: 'LOCK_LOST'});
+  await assert.rejects(service.edit(mcp, doc.id, {expectedRevision: 1, clientMutationId: 'invalid-token', leaseToken: randomUUID(), operations: title('must not bypass token')}), {code: 'LOCK_LOST'});
+  await assert.rejects(service.rename(mcp, doc.id, {expectedRevision: 1, clientMutationId: 'mcp-rename', title: 'requires lease'}), {code: 'PROJECT_BUSY'});
+  await assert.rejects(service.edit({...mcp, id: other.id}, doc.id, {expectedRevision: 1, clientMutationId: 'other-account', operations: title('stolen')}), {code: 'NOT_FOUND'});
+  await assert.rejects(service.edit({...mcp, scopes: ['projects:read']}, doc.id, {expectedRevision: 1, clientMutationId: 'read-only-token', operations: title('stolen')}), {code: 'FORBIDDEN'});
+  assert.deepEqual(await service.get(owner, doc.id), saved);assert.equal((await service.renewLease(owner, doc.id, lease.leaseToken)).leaseToken, lease.leaseToken);
+  assert.equal((await db.query('SELECT count(*) FROM mutation_receipts WHERE project_id=$1', [doc.id])).rows[0].count, '1');
+  const contenders=await Promise.allSettled([
+    service.edit(mcp, doc.id, {expectedRevision: 1, clientMutationId: 'mcp-race', operations: title('AI race')}),
+    service.saveSnapshot(owner, doc.id, {expectedRevision: 1, clientMutationId: 'browser-race', leaseToken: lease.leaseToken, document: {...saved, revision: 2, title: 'Browser race'}}),
+  ]);
+  assert.equal(contenders.filter(r=>r.status==='fulfilled').length,1);assert.equal((contenders.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.code,'REVISION_CONFLICT');
+  assert.equal((await service.get(owner,doc.id)).revision,2);assert.equal((await service.renewLease(owner,doc.id,lease.leaseToken)).leaseToken,lease.leaseToken);
+}));
+
 test('invalid batches and database audit failure roll back document, revision, and mutation receipt together', async () => fixture(async (db, service, owner) => {
   const doc = await service.create(owner);
   await assert.rejects(service.edit(owner, doc.id, {expectedRevision: 0, clientMutationId: 'invalid', operations: [...title('partial'), {type: 'deleteSlide', slideId: 'missing'}]}), {code: 'INVALID_REQUEST'});

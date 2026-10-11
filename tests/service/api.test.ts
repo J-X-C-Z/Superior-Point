@@ -63,3 +63,34 @@ test('HTTP login throttles uniformly and production cookies are Secure without t
   assert.equal((await app.inject('/api/v1/bootstrap')).statusCode,404);
  }finally{await app.close();await cleanupTestDatabase(db);}
 });
+
+
+test('HTTP user deletion requires administrator, CSRF, valid target and recent password confirmation', async () => {
+ const h=await setup();
+ try {
+  const url=`/api/v1/admin/users/${h.user.id}`;
+  assert.equal((await h.app.inject({method:'DELETE',url,headers:h.alice})).statusCode,403);
+  assert.equal((await h.app.inject({method:'DELETE',url,headers:{cookie:h.admin.cookie,origin}})).statusCode,403);
+  assert.equal((await h.app.inject({method:'DELETE',url,headers:{...h.admin,'x-csrf-token':'invalid'}})).statusCode,403);
+  assert.equal((await h.app.inject({method:'DELETE',url,headers:{...h.admin,origin:'https://evil.invalid'}})).statusCode,403);
+  assert.equal((await h.app.inject({method:'DELETE',url:'/api/v1/admin/users/not-a-uuid',headers:h.admin})).statusCode,400);
+  await h.db.query("UPDATE sessions SET reauth_until=clock_timestamp()-interval '1 second' WHERE user_id=(SELECT id FROM users WHERE username='admin')");
+  const stale=await h.app.inject({method:'DELETE',url,headers:h.admin});
+  assert.equal(stale.statusCode,403);assert.equal(stale.json().error.code,'REAUTHENTICATION_REQUIRED');
+  assert.equal((await h.app.inject({method:'POST',url:'/api/v1/auth/reauth',headers:h.admin,payload:{password}})).statusCode,200);
+  const deleted=await h.app.inject({method:'DELETE',url,headers:h.admin});
+  assert.equal(deleted.statusCode,200,deleted.body);assert.deepEqual(deleted.json(),{success:true});
+  assert.equal((await h.app.inject({url:'/api/v1/auth/me',headers:h.alice})).statusCode,401);
+  assert.equal((await h.app.inject({method:'DELETE',url,headers:h.admin})).statusCode,404);
+ }finally{await h.close();}
+});
+
+
+test('browser account pin rejects a replaced session before reading or mutating account resources',async()=>{
+ const h=await setup();try{
+  const me=await h.app.inject({url:'/api/v1/auth/me',headers:h.alice}),id=me.json().user.id;
+  for(const url of ['/api/v1/projects','/api/v1/themes','/api/v1/me/tokens']){const response=await h.app.inject({url,headers:{...h.bob,'x-sp-account-id':id}});assert.equal(response.statusCode,403);assert.equal(response.json().error.code,'ACCOUNT_CHANGED');}
+  const response=await h.app.inject({method:'POST',url:'/api/v1/projects',headers:{...h.bob,'x-sp-account-id':id},payload:{title:'must not be created'}});assert.equal(response.statusCode,403);assert.equal((await h.db.query('SELECT id FROM projects')).rowCount,0);
+  assert.equal((await h.app.inject({url:'/api/v1/projects',headers:{...h.alice,'x-sp-account-id':id}})).statusCode,200);
+ }finally{await h.close();}
+});

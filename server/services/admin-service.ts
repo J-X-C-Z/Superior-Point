@@ -33,7 +33,7 @@ export class AdminService {
     return transaction(this.db, async client => {
       await checkAdminActor(client, actor);
       const result = await client.query(`SELECT
-        (SELECT count(*)::int FROM users) AS users,
+        (SELECT count(*)::int FROM users WHERE deleted_at IS NULL) AS users,
         (SELECT count(*)::int FROM users WHERE status='active') AS active_users,
         (SELECT count(*)::int FROM users WHERE status='active' AND role='admin') AS admins,
         (SELECT count(*)::int FROM projects WHERE deleted_at IS NULL) AS projects,
@@ -50,7 +50,7 @@ export class AdminService {
     const {limit, offset} = pagination(options);
     return transaction(this.db, async client => {
       await checkAdminActor(client, actor);
-      return (await client.query('SELECT id,username,role,status,created_at AS "createdAt" FROM users ORDER BY created_at,id LIMIT $1 OFFSET $2', [limit, offset])).rows;
+      return (await client.query('SELECT id,username,role,status,created_at AS "createdAt" FROM users WHERE deleted_at IS NULL ORDER BY created_at,id LIMIT $1 OFFSET $2', [limit, offset])).rows;
     });
   }
   async listProjects(actor: Actor, options: {limit?: number; offset?: number; trash?: boolean} = {}) {

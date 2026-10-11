@@ -82,7 +82,7 @@ export class AuthService {
   async listUsers(actor: Actor) {
     return transaction(this.db, async client => {
       await this.checkAdmin(client, actor);
-      const result = await client.query(`SELECT ${userColumns} FROM users ORDER BY created_at,id`);
+      const result = await client.query(`SELECT ${userColumns} FROM users WHERE deleted_at IS NULL ORDER BY created_at,id`);
       return result.rows.map(metadata);
     });
   }
@@ -92,11 +92,11 @@ export class AuthService {
     return transaction(this.db, async client => {
       await client.query('SELECT pg_advisory_xact_lock($1)', [adminLock]);
       await this.checkAdmin(client, actor, true);
-      const result = await client.query(`SELECT ${userColumns} FROM users WHERE id=$1 FOR UPDATE`, [id]);
+      const result = await client.query(`SELECT ${userColumns} FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, [id]);
       const user: UserRow | undefined = result.rows[0];
       if (!user) throw new ServiceError('NOT_FOUND', 404, '用户不存在');
       if (user.role === 'admin' && user.status === 'active' && ((field === 'role' && value === 'user') || (field === 'status' && value === 'disabled'))) {
-        const count = await client.query("SELECT count(*)::int AS count FROM users WHERE role='admin' AND status='active'");
+        const count = await client.query("SELECT count(*)::int AS count FROM users WHERE role='admin' AND status='active' AND deleted_at IS NULL");
         if (count.rows[0].count <= 1) throw new ServiceError('LAST_ADMIN', 409, '不能停用最后一位有效管理员');
       }
       const updated = await client.query(`UPDATE users SET ${field}=$2 WHERE id=$1 RETURNING ${userColumns}`, [id, value]);
@@ -116,12 +116,32 @@ export class AuthService {
     if (!['admin', 'user'].includes(role)) throw errors.invalid();
     return this.changeUser(actor, id, 'role', role);
   }
+  async deleteUser(actor: Actor, id: string) {
+    userId(id);
+    return transaction(this.db, async client => {
+      await client.query('SELECT pg_advisory_xact_lock($1)', [adminLock]);
+      if (!actor.sessionId) throw errors.forbidden();
+      await this.checkAdmin(client, actor, true);
+      const result = await client.query(`SELECT ${userColumns} FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, [id]);
+      const user: UserRow | undefined = result.rows[0];
+      if (!user) throw new ServiceError('NOT_FOUND', 404, '用户不存在');
+      if (user.role === 'admin' && user.status === 'active') {
+        const count = await client.query("SELECT count(*)::int AS count FROM users WHERE role='admin' AND status='active' AND deleted_at IS NULL");
+        if (count.rows[0].count <= 1) throw new ServiceError('LAST_ADMIN', 409, '不能删除最后一位有效管理员');
+      }
+      await client.query("UPDATE users SET status='disabled',deleted_at=clock_timestamp() WHERE id=$1", [id]);
+      await client.query('UPDATE sessions SET revoked_at=clock_timestamp() WHERE user_id=$1 AND revoked_at IS NULL', [id]);
+      await client.query('UPDATE api_tokens SET revoked_at=clock_timestamp() WHERE user_id=$1 AND revoked_at IS NULL', [id]);
+      await audit(client, actor.id, 'user.delete', id);
+      return {success: true};
+    });
+  }
   async revokeUserSessions(actor: Actor, id: string) {
     userId(id);
     return transaction(this.db, async client => {
       await client.query('SELECT pg_advisory_xact_lock($1)', [adminLock]);
       await this.checkAdmin(client, actor, true);
-      const user = await client.query('SELECT id FROM users WHERE id=$1', [id]);
+      const user = await client.query('SELECT id FROM users WHERE id=$1 AND deleted_at IS NULL', [id]);
       if (!user.rowCount) throw new ServiceError('NOT_FOUND', 404, '用户不存在');
       await client.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [id]);
       await audit(client, actor.id, 'user.revoke_sessions', id);
@@ -234,7 +254,7 @@ export class AuthService {
     await transaction(this.db, async client => {
       await client.query('SELECT pg_advisory_xact_lock($1)', [adminLock]);
       await this.checkAdmin(client, actor, true);
-      const target = await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [id]);
+      const target = await client.query('SELECT id FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE', [id]);
       if (!target.rowCount) throw new ServiceError('NOT_FOUND', 404, '用户不存在');
       await client.query('UPDATE users SET password_hash=$2 WHERE id=$1', [id, passwordHash]);
       await client.query('UPDATE sessions SET revoked_at=clock_timestamp() WHERE user_id=$1 AND revoked_at IS NULL', [id]);

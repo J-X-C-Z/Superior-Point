@@ -64,17 +64,17 @@ export async function createsBridgeServer({apiUrl,token,root,allowHttp=false}) {
   const d=await request('GET',project(args.projectId)+'/document');return args.full?d:{id:d.id,title:d.title,revision:d.revision,canvas:d.canvas,slides:d.slides.map(s=>({id:s.id,elementCount:s.elements.length})),assetCount:d.assets.length};
  });
  register('sp_get_slide','Read canonical slide elements from the cloud service.',{projectId:id,slideId:id},args=>request('GET',project(args.projectId)+'/slides/'+encodeURIComponent(args.slideId)));
- register('sp_edit','Acquire a lease and atomically apply revision-CAS operations. Retry uncertain writes with the same mutation ID.',{projectId:id,expectedRevision:rev,operations:z.array(z.record(z.unknown())).min(1).max(1000),clientMutationId:id.optional()},async args=>{
+ register('sp_edit','Atomically apply revision-CAS operations alongside browser editing; full content replacement requires an exclusive lease. Retry uncertain writes with the same mutation ID.',{projectId:id,expectedRevision:rev,operations:z.array(z.record(z.unknown())).min(1).max(1000),clientMutationId:id.optional()},async args=>{
   const fingerprint=stable({expectedRevision:args.expectedRevision,operations:args.operations});
   const key=args.projectId+':'+(args.clientMutationId??fingerprint);
   let entry=pending.get(key);
   if(entry&&entry.fingerprint!==fingerprint)throw fail('MUTATION_ID_REUSED','Mutation ID already used with a different payload');
-  if(!entry){const lease=await request('POST',project(args.projectId)+'/lease',{holder:'mcp-bridge'});entry={fingerprint,payload:{expectedRevision:args.expectedRevision,operations:args.operations,clientMutationId:args.clientMutationId??randomUUID(),leaseToken:lease.leaseToken}};pending.set(key,entry);}
+  if(!entry){const lease=args.operations.some(op=>op.type==='replaceContent')?await request('POST',project(args.projectId)+'/lease',{holder:'mcp-bridge'}):null;entry={fingerprint,payload:{expectedRevision:args.expectedRevision,operations:args.operations,clientMutationId:args.clientMutationId??randomUUID(),...(lease?{leaseToken:lease.leaseToken}:{})}};pending.set(key,entry);}
   try {
    const result=await request('PATCH',project(args.projectId)+'/document',entry.payload,{retry:true});
    if(!args.clientMutationId)pending.delete(key);return result;
   }catch(error){error.details={...error.details,clientMutationId:entry.payload.clientMutationId};throw error;}
-  finally {try {await request('DELETE',project(args.projectId)+'/lease',{leaseToken:entry.payload.leaseToken});}catch { /* The server lease expires; never replace an uncertain write's identity. */ }}
+  finally {if(entry.payload.leaseToken)try {await request('DELETE',project(args.projectId)+'/lease',{leaseToken:entry.payload.leaseToken});}catch { /* The server lease expires; never replace an uncertain write's identity. */ }}
  });
  register('sp_render_slide','Request the server sanitized static SVG preview.',{projectId:id,slideId:id},args=>request('GET',project(args.projectId)+'/slides/'+encodeURIComponent(args.slideId)+'/render'));
  register('sp_validate','Validate the saved server document.',{projectId:id},args=>request('GET',project(args.projectId)+'/validate'));
@@ -84,6 +84,22 @@ export async function createsBridgeServer({apiUrl,token,root,allowHttp=false}) {
   const result=await request('POST',project(args.projectId)+'/exports',{expectedRevision:args.expectedRevision,format:args.format});
   if(typeof result.html!=='string'||result.revision!==args.expectedRevision)throw fail('INVALID_API_RESPONSE','Server export revision or HTML is invalid');
   await store.atomic(args.filename,result.html);return {projectId:args.projectId,revision:result.revision,filename:args.filename,format:args.format,bytes:Buffer.byteLength(result.html)};
+ });
+ const themeRoute=args=>args.themeId.startsWith('sp-')?'/themes/builtin/'+encodeURIComponent(args.themeId):'/themes/'+encodeURIComponent(args.themeId)+(args.version?'/versions/'+encodeURIComponent(args.version):'');
+ register('sp_list_themes','List read-only built-ins and the current user private cloud themes.',{archived:z.boolean().optional()},async args=>{const [builtins,privateThemes]=await Promise.all([request('GET','/themes/builtins'),request('GET','/themes'+(args.archived?'?archived=true':''))]);return [...builtins,...privateThemes];});
+ register('sp_get_theme','Read an authorized fixed theme package and its verified hash.',{themeId:id,version:id.optional()},async args=>{const value=await request('GET',themeRoute(args));const ref=value.ref??value;if(args.version&&ref.version!==args.version)throw fail('NOT_FOUND','Theme version does not exist');return ref;});
+ const themeReference={themeId:id,version:id,hash:z.string().regex(/^sha256:[a-f0-9]{64}$/)};
+ register('sp_preview_theme','Render four fixed safe samples as static SVG with compatibility limits, without reading user project content.',{...themeReference,ratio:z.enum(['16:9','4:3']).optional()},args=>request('POST','/themes/preview',args));
+ const themeMutation=async(route,args)=>{
+  const fingerprint=stable(args),key='theme:'+route+':'+(args.clientMutationId??fingerprint);let entry=pending.get(key);
+  if(entry&&entry.fingerprint!==fingerprint)throw fail('MUTATION_ID_REUSED','Mutation ID already used with a different payload');
+  if(!entry){entry={fingerprint,payload:{...args,clientMutationId:args.clientMutationId??randomUUID()}};pending.set(key,entry);}
+  try{const result=await request('POST',route,entry.payload,{retry:true});if(!args.clientMutationId)pending.delete(key);return result;}catch(error){error.details={...error.details,clientMutationId:entry.payload.clientMutationId};throw error;}
+ };
+ register('sp_apply_theme','Apply a fixed theme atomically with project CAS. Preserve manual styles by default; reset requires explicit caller confirmation.',{projectId:id,expectedRevision:rev,...themeReference,mode:z.enum(['preserve','reset']).default('preserve'),clientMutationId:id.optional()},({projectId,...args})=>themeMutation(project(projectId)+'/theme',args));
+ register('sp_save_theme','Safely import a new private theme, or publish a new immutable version of an owned theme.',{theme:z.record(z.unknown()),themeId:id.optional(),expectedRevision:rev.optional(),clientMutationId:id.optional()},args=>{
+  if(args.themeId){if(args.expectedRevision===undefined)throw fail('INVALID_REQUEST','Publishing requires expectedRevision');return themeMutation('/themes/'+encodeURIComponent(args.themeId)+'/publish',{theme:args.theme,expectedRevision:args.expectedRevision,clientMutationId:args.clientMutationId});}
+  if(args.expectedRevision!==undefined)throw fail('INVALID_REQUEST','expectedRevision requires themeId');return themeMutation('/themes/import',{theme:args.theme,clientMutationId:args.clientMutationId});
  });
  register('sp_list_projects','List authorized cloud projects.',{trash:z.boolean().optional()},args=>request('GET','/projects'+(args.trash?'?trash=true':'')));
  register('sp_project_info','Read authoritative project metadata and slide counts.',{projectId:id},async args=>{const d=await request('GET',project(args.projectId));return {id:d.id,title:d.title,revision:d.revision,canvas:d.canvas,metadata:d.metadata,slideCount:d.slides.length,assetCount:d.assets.length};});

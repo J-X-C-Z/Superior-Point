@@ -6,12 +6,23 @@ import {exportHTML,renderSlideSVG,inspectRenderCompatibility} from '../io/html.j
 import {readImportFile,createImportDocument,importErrorMessage} from '../io/project-import.js';
 import {exportEditorHTML} from '../io/editor-export.js';
 import {mountEditor,registerEditorAdapter,getEditorAdapter} from './editor-adapter.js';
+import {mergeCloudDocument} from '../storage/cloud-collaboration.js';
 import {initCloudWorkspace} from './cloud-workspace.js';
+import {WorkspaceLibrary} from '../storage/workspace-library.js';
+import {ThemeStore} from '../storage/theme-store.js';
+import {CloudThemeStore} from '../storage/cloud-theme-store.js';
+import {mountThemeLibrary} from './theme-library.js';
+import {createThemePreviewDocument} from '../core/theme-preview.js';
+import {planThemeApplication} from '../core/theme-application.js';
+import {formDialog} from './admin/app.js';
+import {mountProjectHistory} from './project-history.js';
 const $=id=>document.getElementById(id),localStore=new ProjectStore(),owner=crypto.randomUUID();
 let store=localStore,cloudWorkspace=null;
+const localThemes=new ThemeStore();let cloudThemes=null,themeLibrary=null,projectHistory=null;
+const library=new WorkspaceLibrary({localStore,getCloudStore:()=>cloudWorkspace?.getCloudStore()||null});
 let navigation=Promise.resolve(),listRender=0,session=0,closing=false,drainingEditor=false,recovering=false,recoveryFlight=null,recoveryError=null;
 let importFlight=null,importSource=null;
-let leaseWait=null;
+let leaseWait=null,collaborationTimer=null;
 const navigate=fn=>{const next=navigation.catch(()=>{}).then(fn);navigation=next;return next;};
 let view='home',core=null,lock=null,autosave=null,editor=null,persistedRevision=null,heartbeat=null,notifyTimer=null;
 const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('sp-framework-changes'):null;
@@ -36,6 +47,7 @@ function refreshRecoveryControls(failed=false){
 function setState(state,revision,error){
  const latest=core?.getDocument().revision;
  if(state==='saved'&&revision===latest)recoveryError=null;
+ if(recoveryError&&autosave?.paused){state='failed';error=recoveryError;}
  $('save-state').textContent=state==='saved'&&revision===latest?`已保存到${store.storage==='cloud'?'云端':'本地'} · 修订 ${revision}`:state==='failed'?`${store.storage==='cloud'?'云端未确认保存':'保存失败'} · ${error?.message||'请重试或恢复为独立项目'}`:state==='saving'?'正在保存…':store.storage==='cloud'?'云端尚未保存 · 正在保留本地恢复草稿…':'等待保存…';
  if(store.storage==='cloud')cloudWorkspace?.refreshDrafts().catch(()=>{});
  $('retry-save').hidden=state!=='failed';
@@ -119,6 +131,7 @@ function repaint(){const doc=core.getDocument();$('project-title').value=doc.tit
 function rememberCloudDraft(doc){if(store.storage==='cloud')store.captureDraft(doc,persistedRevision).then(()=>cloudWorkspace?.refreshDrafts()).catch(error=>notify('本地恢复草稿未保存，请保留当前页面并导出备份：'+error.message,true));}
 function edit(operations,expectedRevision=core?.getDocument().revision){if(closing&&!drainingEditor)throw new Error('项目正在切换，当前编辑已停止');if(!core||!lock)throw new Error('当前项目只读，请先获取写入权');const result=core.edit(operations,{expectedRevision});rememberCloudDraft(result);autosave.schedule(core.getDocument());repaint();return result;}
 function clearCurrent(){
+ clearInterval(collaborationTimer);collaborationTimer=null;
  stopLeaseWait();
  document.body.classList.remove('editor-integrated','editor-attention');
  clearInterval(heartbeat);
@@ -131,6 +144,7 @@ async function flushEditor(){drainingEditor=true;try{await editor?.flush?.();}fi
 async function releaseCurrent(){
  if(!core)return;
  await flushEditor();
+ if(autosave?.paused&&recoveryError)throw recoveryError;
  closing=true;setEditorReadOnly(true);$('project-title').disabled=true;
  try{await autosave?.flush();clearInterval(heartbeat);await store.release(lock);clearCurrent();}
  finally{closing=false;if(core){$('project-title').disabled=!lock;setEditorReadOnly(!lock);startHeartbeat();}}
@@ -140,20 +154,20 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
  core=new DocumentCore(rec.document);lock=lease;persistedRevision=rec.document.revision;recoveryError=null;
  const ownerSession=++session,ownerCore=core;
  const active=()=>ownerSession===session&&ownerCore===core;
- let savedRevision=rec.document.revision;
+ let savedRevision=rec.document.revision,savedDocument=rec.document,syncing=false;
  autosave=new AutosaveQueue({
   write:async doc=>{
    if(!active())throw new Error('保存会话已失效');
    const lease=lock;
    try{
     const saved=await store.save(doc,{expectedRevision:savedRevision,lock:lease});
-    savedRevision=saved.document.revision;
+    savedRevision=saved.document.revision;savedDocument=saved.document;
     if(active()){persistedRevision=savedRevision;announce(doc.id);}
    }catch(error){if(active()&&error.code==='LOCK_LOST'&&lock?.token===lease?.token)loseLock();throw error;}
   },
   onState:(...args)=>{if(active())setState(...args);}
  });
- document.body.classList.add('editor-open');$('home-view').hidden=true;$('workspace-view').hidden=false;$('project-title').disabled=!lock||closing;$('takeover').hidden=store.storage==='cloud'||!!lock;$('retry-save').hidden=true;
+ document.body.classList.add('editor-open');$('home-view').hidden=true;$('theme-view').hidden=true;$('workspace-view').hidden=false;$('project-title').disabled=!lock||closing;$('takeover').hidden=store.storage==='cloud'||!!lock;$('retry-save').hidden=true;
  $('save-state').textContent=lock?`已保存到${store.storage==='cloud'?'云端':'本地'} · 修订 ${persistedRevision}`:store.storage==='cloud'?(waitForLease?'只读 · 云端写入权被占用，等待释放；不会抢占。':'只读 · 请先恢复本地草稿，或取回云端编辑。'):waitForLease?'只读 · 写入权暂被占用，等待释放；可主动接管。':'只读 · 暂未取得写入权，可主动接管或恢复为独立项目。';
  const origin=rec.document.metadata.spRecovery;
  const isRecovery=origin?.type==='independent-project'&&typeof origin.source?.title==='string';
@@ -165,9 +179,32 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
  refreshRecoveryControls();
  let editorValid=true;
  const scoped=fn=>(...args)=>{if(!editorValid||!active()||(closing&&!drainingEditor))throw new Error('编辑器会话已失效');return fn(...args);};
- try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:format=>format==='json'?exportJSONBackup():exportProject(undefined,{audience:format==='audience'}),onHome:()=>home(),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
+ try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:format=>format==='json'?exportJSONBackup():exportProject(undefined,{audience:format==='audience'}),onHome:()=>home(),onThemes:()=>home('themes'),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
  catch(error){editorValid=false;$('editor-mount').textContent='编辑器加载失败，项目仍保留，可导出备份。'+error.message;editor=null;notify('编辑器加载失败：'+error.message,true);}
- repaint();startHeartbeat();if(waitForLease&&!lock)startLeaseWait();return core.getDocument();
+ repaint();startHeartbeat();if(waitForLease&&!lock)startLeaseWait();
+ if(store.storage==='cloud'&&lock)collaborationTimer=setInterval(async()=>{
+  if(!active()||!lock||syncing||closing||recovering||autosave.running||recoveryError)return;
+  syncing=true;
+  try{
+   const remote=await store.get(rec.id);
+   if(!active()||closing||!remote||remote.deletedAt||remote.document.revision<=savedRevision)return;
+   // Drain native typing before replacing the visible snapshot, including IME edits.
+   await flushEditor();
+   if(!active()||!lock||closing||remote.document.revision<=savedRevision||autosave.running||recoveryError||editor?.getRejectedSnapshot?.())return;
+   const merged=mergeCloudDocument(savedDocument,core.getDocument(),remote.document);
+   autosave.cancel();autosave.lastError=null;
+   savedRevision=remote.document.revision;savedDocument=remote.document;persistedRevision=savedRevision;
+   core.synchronize(merged);repaint();
+   if(merged.revision>savedRevision){rememberCloudDraft(merged);autosave.schedule(merged);}
+   else setState('saved',savedRevision);
+  }catch(error){
+   if(active()&&!['OFFLINE','TIMEOUT'].includes(error.code)){
+    autosave.pause();recoveryError=error;setState('failed',core.getDocument().revision,error);
+   }
+   // Transient read failures leave the visible document and recovery draft intact.
+  }finally{syncing=false;}
+ },1000);
+ return core.getDocument();
 }
 async function openProjectNow(id,{takeover=false}={}){
  await releaseCurrent();
@@ -240,7 +277,7 @@ function redo(){if(closing)throw new Error('项目正在切换');if(!lock)throw 
 function exportJSONBackup(){if(!core)throw new Error('请先打开项目');let rejected;try{rejected=editor?.getRecoveryDocument?.();}catch(error){const raw=editor?.getRejectedSnapshot?.();if(raw){notify('候选数据未通过Core校验，已导出原始编辑器JSON，请保留该文件。',true);return downloadJSONBackup(raw);}throw error;}if(rejected)return downloadJSONBackup(rejected);if(editor?.flush)return flushEditor().then(()=>downloadJSONBackup(core.getDocument()));return downloadJSONBackup(core.getDocument());}
 function downloadJSONBackup(doc){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}));a.download='SP-backup-'+(doc.id||'editor-recovery')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);return doc;}
 function download(html,title){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));a.download=(title.replace(/[\\/:*?"<>|]/g,'_').slice(0,100)||'SP')+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-async function exportProject(id,{audience=false}={}){if(!id)await flushEditor();const doc=id?(await store.get(id)).document:core.getDocument();if(!id&&editor?.renderLegacyHTML){download(await exportEditorHTML(doc,await editor.renderLegacyHTML(),{audience}),doc.title+(audience?'-分享':''));notify(audience?'已导出观众分享 HTML，仅含可见页面与放映内容，不含编辑项目数据。':'已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。浏览器与复杂动效仍需验收。');return;}const report=inspectRenderCompatibility(doc);if(audience&&report.hasKnownGaps)throw new Error('基础渲染无法完整分享此项目的样式或动效，请打开项目后使用原渲染器分享。');download(await exportHTML(doc,{audience}),doc.title+(audience?'-分享':''));notify(audience?`已导出观众分享 HTML（基础渲染），不含编辑项目数据。`:!report.hasKnownGaps?'已生成可重新编辑版HTML，包含备注与批注，请勿直接作为公开分享版。':`已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。基础渲染另有 ${report.warnings.length} 项样式仅保留数据。`);}
+async function exportProject(id,{audience=false,projectStore=store}={}){if(!id)await flushEditor();const doc=id?(await projectStore.get(id)).document:core.getDocument();if(!id&&editor?.renderLegacyHTML){download(await exportEditorHTML(doc,await editor.renderLegacyHTML(),{audience}),doc.title+(audience?'-分享':''));notify(audience?'已导出观众分享 HTML，仅含可见页面与放映内容，不含编辑项目数据。':'已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。浏览器与复杂动效仍需验收。');return;}const report=inspectRenderCompatibility(doc);if(audience&&report.hasKnownGaps)throw new Error('基础渲染无法完整分享此项目的样式或动效，请打开项目后使用原渲染器分享。');download(await exportHTML(doc,{audience}),doc.title+(audience?'-分享':''));notify(audience?`已导出观众分享 HTML（基础渲染），不含编辑项目数据。`:!report.hasKnownGaps?'已生成可重新编辑版HTML，包含备注与批注，请勿直接作为公开分享版。':`已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。基础渲染另有 ${report.warnings.length} 项样式仅保留数据。`);}
 async function newProject(title,ratio='16:9'){const doc=createDocument({title,slides:[{id:crypto.randomUUID(),elements:[],animations:[]}],canvas:ratio==='4:3'?{width:960,height:720}:{width:1280,height:720}});const record=await store.create(doc);const opened=await openProject(record.id);announce();return opened;}
 function showImportStatus(message,error=false,projectId=null){
  $('import-status').hidden=false;$('import-status').classList.toggle('error',error);
@@ -290,27 +327,94 @@ async function importFileNow(file){
   if(core){$('project-title').disabled=!lock;setEditorReadOnly(!lock);startHeartbeat();}
  }
 }
-async function mutateCard(id,action){const rec=await store.get(id);if(!rec)throw new Error('项目已不存在');if(action==='open')return openProject(id);if(action==='export')return exportProject(id);if(action==='share')return exportProject(id,{audience:true});
- if(action==='copy'){const doc=structuredClone(rec.document);doc.id=crypto.randomUUID();doc.title+=' · 副本';doc.revision=0;doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;await store.create(doc);}
- if(action==='rename'){const title=prompt('项目名称',rec.document.title);if(title===null||!title.trim())return;const lease=await store.acquire(id,owner);if(!lease)throw new Error('项目正在另一个标签页编辑');try{const c=new DocumentCore(rec.document);c.edit([{type:'updateProject',properties:{title:title.trim()}}],{expectedRevision:rec.document.revision});await store.save(c.getDocument(),{expectedRevision:rec.document.revision,lock:lease});}finally{await store.release(lease);}}
- if(action==='delete'||action==='restore'){await store.setDeleted(id,action==='delete',{owner});notify(action==='delete'?'已移入回收站，可随时恢复。':'项目已恢复。');}
+function openEntry(entry){return navigate(async()=>{
+ library.storeFor(entry);await releaseCurrent();
+ try{const selected=library.storeFor(entry);await selected.open();store=selected;const doc=await openProjectNow(entry.id);await cloudWorkspace.refresh();return doc;}
+ catch(error){await homeNow(view);await cloudWorkspace.refresh();throw error;}
+});}
+async function mutateCard(entry,action,newTitle){
+ if(action==='open')return openEntry(entry);
+ if(action==='history'){const selected=library.storeFor(entry);if(entry.source!=='cloud')throw new Error('历史版本目前支持云端项目');projectHistory?.destroy();projectHistory=mountProjectHistory({document,api:selected.api,projectRef:{source:'cloud',projectId:entry.id,accountId:entry.accountId},notify,onRestore:async request=>{const target=library.storeFor(entry),lease=await target.acquire(entry.id,owner);if(!lease)throw new Error('项目正在另一个写入方编辑，请等待释放后恢复');try{const restored=await target.api.request('/projects/'+encodeURIComponent(entry.id)+'/restore-revision',{method:'POST',body:{...request,leaseToken:lease.token}});library.storeFor(entry);announce(entry.id);await renderProjects();return restored;}finally{await target.release(lease).catch(()=>notify('写入权清理失败，将自动到期。',true));}}});projectHistory.open();return;}
+ if(action==='upload'){
+  if(!cloudWorkspace.api.user||!cloudWorkspace.getCloudStore()){cloudWorkspace.openAccount();return;}
+  await library.migrate(entry);notify('已上传并核对云端副本；本地原项目保留。');announce();await renderProjects();return;
+ }
+ const projectStore=library.storeFor(entry),id=entry.id,rec=action==='rename'?entry.record:await projectStore.get(id);if(!rec)throw new Error('项目已不存在');
+ if(action==='export')return exportProject(id,{projectStore});if(action==='share')return exportProject(id,{audience:true,projectStore});
+ if(action==='copy'){const doc=structuredClone(rec.document);doc.id=crypto.randomUUID();doc.title+=' · 副本';doc.revision=0;doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;library.storeFor(entry);await projectStore.create(doc);}
+ if(action==='rename'){library.storeFor(entry);const lease=await projectStore.acquire(id,owner);if(!lease)throw new Error('项目正在另一个标签页编辑');try{library.storeFor(entry);const c=new DocumentCore(rec.document);c.edit([{type:'updateProject',properties:{title:newTitle}}],{expectedRevision:rec.document.revision});await projectStore.save(c.getDocument(),{expectedRevision:rec.document.revision,lock:lease});}finally{await projectStore.release(lease).catch(()=>notify('写入权清理失败，将自动到期。',true));}}
+ if(action==='delete'||action==='restore'){library.storeFor(entry);await projectStore.setDeleted(id,action==='delete',{owner});notify(action==='delete'?'已移入回收站，可随时恢复。':'项目已恢复。');}
  announce();await renderProjects();
 }
-async function renderProjects(){const ticket=++listRender,trash=view==='trash';let records=await store.list({trash});if(ticket!==listRender)return;const search=$('search').value.trim().toLowerCase();records=records.filter(r=>r.document.title.toLowerCase().includes(search));records.sort($('sort').value==='title'?(a,b)=>a.document.title.localeCompare(b.document.title):(a,b)=>(view==='recent'?b.openedAt-a.openedAt:b.modifiedAt-a.modifiedAt));$('list-title').firstChild.textContent=trash?'回收站 ':view==='recent'?'最近使用 ':'我的项目 ';$('count').textContent=String(records.length).padStart(2,'0');$('empty').hidden=!!records.length;$('projects').replaceChildren();for(const rec of records){const doc=rec.document,card=document.createElement('article');card.className='project';card.dataset.projectId=doc.id;const cover=document.createElement('button');cover.className='cover';cover.style.setProperty('--cover-ratio',String(doc.canvas.width/doc.canvas.height));cover.setAttribute('aria-label','打开 '+doc.title);if(doc.slides.length){try{cover.innerHTML=renderSlideSVG(doc,doc.slides[0].id);}catch{cover.textContent='预览暂不可用';}}else{const mark=document.createElement('span');mark.className='empty-cover';mark.textContent='SUPERIOR POINT';cover.append(mark);}if(!trash){const hint=document.createElement('span');hint.className='cover-open-hint';hint.setAttribute('aria-hidden','true');hint.textContent='打开编辑 ↗';cover.append(hint);}cover.disabled=trash;cover.onclick=guard(()=>openProject(doc.id));card.append(cover);const info=document.createElement('div');info.className='project-info';const title=document.createElement('h3');title.className='project-title';title.textContent=doc.title;info.append(title);const meta=document.createElement('div');meta.className='project-meta';meta.textContent=`${doc.slides.length} 页 · ${rec.storage==='cloud'?'云端':'本地'} · ${new Date(rec.modifiedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;info.append(meta);const actions=document.createElement('div');actions.className='project-actions';for(const [label,action] of trash?[['恢复','restore']]:[['重命名','rename'],['复制','copy'],['备份 HTML','export'],['分享 HTML','share'],['删除','delete']]){const b=document.createElement('button');b.textContent=label;if(action==='export')b.title='可重新编辑版：包含备注与批注，请勿直接作为公开分享版';b.dataset.action=action;b.onclick=guard(()=>mutateCard(doc.id,action));actions.append(b);}info.append(actions);card.append(info);$('projects').append(card);}}
+function renameCard(entry,title,card){
+ if(title.querySelector('input')||card.getAttribute('aria-busy')==='true')return;
+ const oldTitle=entry.record.document.title,input=document.createElement('input'),status=document.createElement('span');
+ input.className='project-title-input';input.value=oldTitle;input.setAttribute('aria-label','项目名称');
+ status.className='project-rename-status';status.setAttribute('role','status');title.after(status);title.replaceChildren(input);
+ let finished=false;
+ const restore=()=>{title.textContent=oldTitle;status.remove();card.querySelector('[data-action=rename]')?.focus();};
+ const commit=async()=>{
+  if(finished)return;finished=true;
+  const value=input.value.trim();
+  if(!value||value.length>500){restore();notify(!value?'项目名称不能为空':'项目名称不能超过 500 个字符',true);return;}
+  if(value===oldTitle){restore();return;}
+  card.setAttribute('aria-busy','true');status.textContent='正在保存…';input.disabled=true;
+  const controls=[...card.querySelectorAll('button')];controls.forEach(button=>button.disabled=true);
+  try{await mutateCard(entry,'rename',value);const updated=[...$('projects').children].find(item=>item.dataset.source===entry.source&&item.dataset.projectId===entry.id&&(!entry.accountId||item.dataset.accountId===entry.accountId));updated?.querySelector('[data-action=rename]')?.focus();}
+  catch(error){restore();notify(error.message,true);}
+  finally{card.removeAttribute('aria-busy');controls.forEach(button=>button.disabled=false);if(card.isConnected)card.querySelector('[data-action=rename]')?.focus();}
+ };
+ input.onkeydown=event=>{if(event.isComposing)return;if(event.key==='Enter'||event.key==='Escape'){event.preventDefault();event.stopPropagation();if(event.key==='Escape'){finished=true;restore();}else void commit();}};
+ input.onblur=()=>void commit();input.ondblclick=event=>event.stopPropagation();input.focus();input.select();
+}
+async function renderProjects(){
+ const ticket=++listRender,trash=view==='trash',pending=library.list({trash});
+ if(cloudWorkspace?.getCloudStore()){
+  const local=await localStore.list({trash});if(ticket!==listRender)return;
+  renderEntries({entries:local.map(record=>({source:'local',id:record.id,accountId:null,record})),cloudError:null},trash);
+  $('library-status').hidden=false;$('library-status').textContent='正在读取云端项目；本地项目可继续使用。';
+ }
+ const result=await pending;if(ticket!==listRender)return;renderEntries(result,trash);if(['ACCOUNT_CHANGED','UNAUTHENTICATED'].includes(result.cloudError?.code)&&!cloudWorkspace.api.user){if(!core)store=localStore;await cloudWorkspace.refresh();}
+}
+function renderEntries(result,trash){
+ const search=$('search').value.trim().toLowerCase(),source=$('project-source').value,entries=result.entries.filter(entry=>entry.record.document.title.toLowerCase().includes(search)&&(source==='all'||entry.source===source||source==='uploaded'&&entry.syncState==='uploaded'||source==='draft'&&entry.hasDraft));
+ entries.sort($('sort').value==='title'?(a,b)=>a.record.document.title.localeCompare(b.record.document.title):(a,b)=>view==='recent'?b.record.openedAt-a.record.openedAt:b.record.modifiedAt-a.record.modifiedAt);
+ $('library-status').hidden=!result.cloudError;$('library-status').textContent=result.cloudError?'云端项目暂不可用，本地项目仍可打开。'+result.cloudError.message:'';
+ $('list-title').firstChild.textContent=trash?'回收站 ':view==='recent'?'最近使用 ':'我的项目 ';$('count').textContent=String(entries.length).padStart(2,'0');$('empty').hidden=!!entries.length;$('projects').replaceChildren();
+ for(const entry of entries){const rec=entry.record,doc=rec.document,card=document.createElement('article');card.className='project';card.dataset.projectId=entry.id;card.dataset.source=entry.source;if(entry.accountId)card.dataset.accountId=entry.accountId;
+  const cover=document.createElement('button');cover.className='cover';cover.style.setProperty('--cover-ratio',String(doc.canvas.width/doc.canvas.height));cover.setAttribute('aria-label','打开 '+doc.title);
+  if(doc.slides.length){try{cover.innerHTML=renderSlideSVG(doc,doc.slides[0].id);}catch{cover.textContent='预览暂不可用';}}else{const mark=document.createElement('span');mark.className='empty-cover';mark.textContent='SUPERIOR POINT';cover.append(mark);}
+  if(!trash){const hint=document.createElement('span');hint.className='cover-open-hint';hint.setAttribute('aria-hidden','true');hint.textContent='打开编辑 ↗';cover.append(hint);}cover.disabled=trash;cover.onclick=guard(()=>openEntry(entry));card.append(cover);
+  const info=document.createElement('div');info.className='project-info';const title=document.createElement('h3');title.className='project-title';title.textContent=doc.title;if(!trash){title.title='双击重命名';title.ondblclick=event=>{event.preventDefault();event.stopPropagation();renameCard(entry,title,card);};}info.append(title);
+  const meta=document.createElement('div');meta.className='project-meta';meta.textContent=`${doc.slides.length} 页 · ${entry.source==='cloud'?'云端'+(entry.hasDraft?' · 待恢复草稿':''):entry.syncState==='uploaded'?'已上传云端 · 本地原件':entry.syncState==='local-changed'?'仅本地 · 上传后已修改':'仅本地'} · ${new Date(rec.modifiedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;info.append(meta);
+  const actions=document.createElement('div');actions.className='project-actions';const choices=trash?[['恢复','restore']]:[['重命名','rename'],['复制','copy'],...(entry.source==='cloud'?[['历史版本','history']]:[]),...(entry.source==='local'?[['上传云端','upload']]:[]),['备份 HTML','export'],['分享 HTML','share'],['删除','delete']];
+  for(const [label,action] of choices){const b=document.createElement('button');b.textContent=label;if(action==='export')b.title='可重新编辑版：包含备注与批注，请勿直接作为公开分享版';b.dataset.action=action;b.onclick=guard(async event=>{if(action==='upload')event.stopPropagation();if(action==='rename'){renameCard(entry,title,card);return;}b.disabled=true;try{await mutateCard(entry,action);}finally{b.disabled=false;}});actions.append(b);}info.append(actions);card.append(info);$('projects').append(card);
+ }
+}
 function home(next=view){return navigate(()=>homeNow(next));}
-async function homeNow(next){await releaseCurrent();document.body.classList.remove('editor-open');cloudWorkspace?.workspace(!lock);view=next;$('workspace-view').hidden=true;$('home-view').hidden=false;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));await renderProjects();}
+async function homeNow(next){await releaseCurrent();document.body.classList.remove('editor-open');cloudWorkspace?.workspace(!lock);view=next;$('workspace-view').hidden=true;$('home-view').hidden=view==='themes';$('theme-view').hidden=view!=='themes';document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));if(view==='themes')await themeLibrary?.refresh();else await renderProjects();}
+function getCloudThemes(){const api=cloudWorkspace?.api;if(!api?.user){cloudThemes=null;return null;}if(cloudThemes?.accountId!==api.user.id)cloudThemes=new CloudThemeStore({api});return cloudThemes;}
+async function createFromTheme(theme,{ratio='16:9'}={}){return navigate(async()=>{await releaseCurrent();const document=await createThemePreviewDocument(theme,{ratio});document.id=crypto.randomUUID();document.title=theme.name+' · 演示文稿';const record=await store.create(document);await openProjectNow(record.id);announce();});}
+async function applyProjectTheme(theme,{mode='preserve',projectRef}={}){
+ const selected=library.storeFor(projectRef),record=await selected.get(projectRef.id);if(!record||record.deletedAt)throw new Error('目标项目不存在');
+ const plan=await planThemeApplication(record.document,theme,{mode});
+ const labels={background:'背景',fill:'填充色',stroke:'边框色',color:'文字颜色',fontFamily:'字体',fontSize:'字号',fontWeight:'字重',bold:'粗体',lineHeight:'行距',radius:'圆角',strokeWidth:'边框宽度',chartColor:'图表颜色'};const summary=plan.changes.slice(0,8).map(change=>`第 ${record.document.slides.findIndex(slide=>slide.id===change.slideId)+1} 页${change.elementId?'对象':''}：${labels[change.property]||'样式'}`).join('\n');
+ const answer=await formDialog(document,'确认主题变更',[],{message:`「${record.document.title}」将修改 ${plan.changes.length} 项样式，记录主题固定版本。${mode==='reset'?'重置模式将覆盖受支持的手工样式。':'保留模式不覆盖已有手工样式。'}\n${summary}\n${plan.limitations.join('\n')}`,confirm:'应用并保存'});if(!answer)return false;
+ library.storeFor(projectRef);await openEntry(projectRef);if(!lock)throw new Error('项目正在其他写入方编辑，未应用主题');if(core.getDocument().revision!==record.document.revision)throw new Error('项目已有更新，请重新预览主题变更');
+ edit(plan.operations,record.document.revision);await autosave.flush();notify('主题已应用并保存，可在编辑器中撤销。');return true;
+}
+
 $('open-example').onclick=guard(async()=>{const doc=fiveSlideDocument();doc.id=crypto.randomUUID();doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;const record=await store.create(doc);await openProject(record.id);});
 $('new-project').onclick=()=>{$('new-dialog').showModal();$('new-title').select();};$('cancel-new').onclick=()=>$('new-dialog').close();$('new-form').onsubmit=guard(async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;try{await newProject($('new-title').value.trim()||'未命名演示文稿',$('new-ratio').value);$('new-dialog').close();}finally{button.disabled=false;}});
 const chooseImport=()=>{if(!importFlight)$('file-input').click();};
-$('import-top').onclick=chooseImport;$('file-input').onchange=guard(async e=>{try{await importFile(e.target.files[0]);}finally{e.target.value='';}});$('import-go-home').onclick=guard(()=>{$('search').value='';return home('home');});$('back-home').onclick=guard(()=>home());$('project-title').onchange=guard(e=>edit([{type:'updateProject',properties:{title:e.target.value.trim()||'未命名演示文稿'}}]));$('export-project').onclick=guard(()=>exportProject());$('share-project').onclick=guard(()=>exportProject(undefined,{audience:true}));$('retry-save').onclick=guard(()=>autosave?.flush());$('backup-json').onclick=guard(exportJSONBackup);$('recover-project').onclick=guard(recoverProject);$('takeover').onclick=guard(async()=>{const id=core.getDocument().id;if(autosave?.pending)throw new Error('请先恢复为独立项目以保存当前改动，再接管原项目。');await openProject(id,{takeover:true});announce();});$('search').oninput=guard(renderProjects);$('sort').onchange=guard(renderProjects);document.querySelectorAll('[data-view]').forEach(b=>b.onclick=guard(()=>home(b.dataset.view)));
+$('import-top').onclick=chooseImport;$('file-input').onchange=guard(async e=>{try{await importFile(e.target.files[0]);}finally{e.target.value='';}});$('import-go-home').onclick=guard(()=>{$('search').value='';return home('home');});$('back-home').onclick=guard(()=>home());$('project-title').onchange=guard(e=>edit([{type:'updateProject',properties:{title:e.target.value.trim()||'未命名演示文稿'}}]));$('export-project').onclick=guard(()=>exportProject());$('share-project').onclick=guard(()=>exportProject(undefined,{audience:true}));$('retry-save').onclick=guard(()=>autosave?.flush());$('backup-json').onclick=guard(exportJSONBackup);$('recover-project').onclick=guard(recoverProject);$('takeover').onclick=guard(async()=>{const id=core.getDocument().id;if(autosave?.pending)throw new Error('请先恢复为独立项目以保存当前改动，再接管原项目。');await openProject(id,{takeover:true});announce();});$('search').oninput=guard(renderProjects);$('sort').onchange=guard(renderProjects);$('project-source').onchange=guard(renderProjects);document.querySelectorAll('[data-view]').forEach(b=>b.onclick=guard(()=>home(b.dataset.view)));
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='o'){e.preventDefault();chooseImport();}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();guard(()=>autosave?.flush())();}});
 window.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();document.body.classList.add('dragging');}});window.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('dragging');});window.addEventListener('drop',guard(async e=>{e.preventDefault();document.body.classList.remove('dragging');await importFile(e.dataTransfer.files[0]);}));
 window.addEventListener('beforeunload',e=>{if(importFlight||recovering||autosave?.pending||autosave?.running){e.preventDefault();e.returnValue='';}});window.addEventListener('pagehide',()=>{store.release(lock).catch(()=>{});});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')autosave?.flush().catch(()=>{});});
 channel?.addEventListener('message',async e=>{if(e.data.owner===owner)return;if(!core)await renderProjects();else if(lock&&e.data.projectId===core.getDocument().id)await renewCurrentLock();});
 async function switchStore(next){return navigate(async()=>{if(store===next){await next.open();return;}try{await releaseCurrent();}catch(error){if(store.storage!=='cloud'||!core)throw error;if(editor?.getRejectedSnapshot?.())throw new Error('编辑器还有未确认的内容，请先导出 JSON 备份或恢复为独立项目。');const previous=store;closing=true;setEditorReadOnly(true);$('project-title').disabled=true;try{await previous.captureDraft(core.getDocument(),persistedRevision);autosave.pause();await autosave.waitForIdle();autosave.cancel();await previous.release(lock).catch(()=>{});clearCurrent();notify('云端未确认的修改已保留为本地恢复草稿。');}finally{closing=false;if(core){$('project-title').disabled=!lock;setEditorReadOnly(!lock);}}}store=next;await store.open();await localStore.open();await homeNow('home');syncWorkspaceChrome();});}
-function handoff(){return navigate(async()=>{if(store.storage!=='cloud'||!core||!lock)throw new Error('请先打开可编辑的云端项目');await flushEditor();closing=true;setEditorReadOnly(true);try{await autosave.flush();await store.release(lock);lock=null;clearInterval(heartbeat);$('project-title').disabled=true;$('save-state').textContent='已保存到云端 · 已释放写入权，可交给 AI；当前只读。';syncWorkspaceChrome();notify('云端保存已确认，写入权已释放。');}finally{closing=false;setEditorReadOnly(!lock);}});}
-async function resume(){if(!core||store.storage!=='cloud')throw new Error('请先打开云端项目');if((await store.drafts.list(store.accountId,core.getDocument().id)).length)throw new Error('请先将本地草稿恢复为独立项目，再取回原项目编辑。');return openProject(core.getDocument().id);}
 async function recoverCloudDraft(draft){if(store.storage!=='cloud'||draft.accountId!==store.accountId)throw new Error('请登录草稿所属云端账号');if(core?.getDocument().id===draft.projectId&&(autosave?.pending||autosave?.running||autosave?.lastError||recoveryError)){const selected=store,document=await recoverProject();await selected.drafts.remove(selected.accountId,draft.key);return {id:document.id,alreadyOpened:true};}return store.recoverDraft(draft);}
-window.SPFramework={ready:false,get store(){return store;},newProject,openProject,edit,undo,redo,flush:()=>autosave?.flush(),getDocument:()=>core?.getDocument(),getState:()=>({storage:store.storage||'local',readOnly:!lock,persistedRevision,saveError:autosave?.lastError?.message,recoveryError:recoveryError?.message,recovering,importing:!!importFlight,pending:!!autosave?.pending,saving:!!autosave?.running}),recoverProject,exportJSONBackup,importFile,home,exportProject,registerEditorAdapter,switchStore,handoff,resume};
-cloudWorkspace=initCloudWorkspace({getStore:()=>store,getLocalStore:()=>localStore,switchStore,openProject,recoverDraft:recoverCloudDraft,handoff,resume,notify});
+window.SPFramework={ready:false,get store(){return store;},newProject,openProject,edit,undo,redo,flush:()=>autosave?.flush(),getDocument:()=>core?.getDocument(),applyProjectTheme,createFromTheme,getState:()=>({storage:store.storage||'local',readOnly:!lock,persistedRevision,saveError:autosave?.lastError?.message,recoveryError:recoveryError?.message,recovering,importing:!!importFlight,pending:!!autosave?.pending,saving:!!autosave?.running}),recoverProject,exportJSONBackup,importFile,home,exportProject,registerEditorAdapter,switchStore};
+cloudWorkspace=initCloudWorkspace({getStore:()=>store,getLocalStore:()=>localStore,switchStore,openProject,recoverDraft:recoverCloudDraft,refreshProjects:async()=>{await renderProjects();await themeLibrary?.refresh();},notify});
+themeLibrary=mountThemeLibrary({container:$('theme-view'),localStore:localThemes,getCloudStore:getCloudThemes,getProjects:()=>library.list(),onCreate:createFromTheme,onApply:applyProjectTheme,notify});
 cloudWorkspace.initialize().then(async selected=>{store=selected;await localStore.open();await store.open();await home();await cloudWorkspace.refresh();window.SPFramework.ready=true;}).catch(e=>{notify('无法打开项目存储：'+e.message,true);$('save-state').textContent='存储不可用';});

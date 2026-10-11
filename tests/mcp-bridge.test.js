@@ -14,7 +14,7 @@ test('bridge rejects unsafe transport origins and symlink roots',async()=>{
  try {await symlink(root,path.join(root,'link'));await assert.rejects(createsBridgeServer({apiUrl:'https://example.com',token:'test',root:path.join(root,'link')}),{code:'OUT_OF_SCOPE'});}finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('real SDK stdio retries identical uncertain mutation, releases lease, denies busy and redacts errors',async()=>{
+test('real SDK stdio retries identical atomic mutation without a lease, keeps snapshot exclusivity and redacts errors',async()=>{
  const requests=[];let edits=0,released=0,busy=false;
  const secret='sp_pat_'+'a'.repeat(43);
  const api=http.createServer(async(req,res)=>{
@@ -30,13 +30,15 @@ test('real SDK stdio retries identical uncertain mutation, releases lease, denie
  const client=new Client({name:'bridge-unit',version:'1'});
  try {
   await client.connect(new StdioClientTransport({command:process.execPath,args:[path.resolve('mcp/bridge/server.js')],env:{SP_API_URL:'http://127.0.0.1:'+api.address().port,SP_API_TOKEN:secret,SP_BRIDGE_ALLOW_HTTP:'1'},stderr:'pipe'}));
-  assert.equal((await client.listTools()).tools.length,11);
+  assert.equal((await client.listTools()).tools.length,16);
   const call=async(name,args)=>{const result=await client.callTool({name,arguments:args});return {error:result.isError,value:JSON.parse(result.content[0].text)};};
   const args={projectId:'project',expectedRevision:0,operations:[{type:'updateProject',properties:{title:'saved'}}]};
   const uncertain=await call('sp_edit',args);assert.equal(uncertain.value.error.code,'API_UNAVAILABLE');assert.ok(uncertain.value.error.details.clientMutationId);
   assert.equal((await call('sp_edit',args)).value.revision,1);
-  const writes=requests.filter(r=>r.method==='PATCH');assert.equal(writes.length,3);for(const write of writes)assert.deepEqual(write.body,writes[0].body);assert.equal(writes[0].body.clientMutationId,uncertain.value.error.details.clientMutationId);assert.equal(released,2);assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/lease')).length,1);
-  busy=true;assert.equal((await call('sp_edit',{...args,expectedRevision:1})).value.error.code,'PROJECT_BUSY');assert.equal(edits,3);
+  const writes=requests.filter(r=>r.method==='PATCH');assert.equal(writes.length,3);for(const write of writes)assert.deepEqual(write.body,writes[0].body);assert.equal(writes[0].body.clientMutationId,uncertain.value.error.details.clientMutationId);assert.equal(Object.hasOwn(writes[0].body,'leaseToken'),false);assert.equal(released,0);assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/lease')).length,0);
+  busy=true;assert.equal((await call('sp_edit',{...args,expectedRevision:1})).value.revision,1);assert.equal(edits,4);
+  assert.equal((await call('sp_edit',{...args,expectedRevision:1,operations:[...args.operations,{type:'replaceContent',document:{}}]})).value.error.code,'PROJECT_BUSY');assert.equal(edits,4);
+  busy=false;assert.equal((await call('sp_edit',{...args,expectedRevision:1,operations:[{type:'replaceContent',document:{}}]})).value.revision,1);assert.equal(released,1);assert.equal(requests.at(-2).body.leaseToken,'lease-one');
   const denied=await call('sp_get_document',{projectId:'project'});assert.equal(denied.error,true);assert.ok(!JSON.stringify(denied).includes(secret));
   assert.equal((await call('sp_open_project',{filename:'../bad.html'})).value.error.code,'ROOT_REQUIRED');
  }finally{await client.close();await new Promise(resolve=>api.close(resolve));}

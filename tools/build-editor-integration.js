@@ -6,6 +6,9 @@ import {revealJS,revealCSS} from '../vendor/reveal-bundle.js';
 import {patchAnimationLibrary} from './editor-animation-library.js';
 import {patchTransitionLibrary} from './editor-transition-library.js';
 import {patchEffectGallery} from './editor-effect-gallery.js';
+import {patchEditorPermissions} from './editor-permissions.js';
+import {patchObjectStability} from './editor-object-stability.js';
+import {patchEditorThemeEntry} from './editor-theme-entry.js';
 const root=new URL('../',import.meta.url);
 const read=p=>readFile(new URL(p,root),'utf8');
 let html=await read('vendor/editor-v039.source.html');
@@ -102,6 +105,7 @@ replace('timeline keyboard isolation',"e.preventDefault();const h=v15Panel.getBo
 replace('compact workspace styles','\n</body>',`<style id="sp-workspace-css">${await read('tools/editor-workspace.css')}</style>\n</body>`);
 html=html.replaceAll('保存状态以上方工作台为准','保存状态见文稿标题下方').replaceAll('观众分享版请在上方工作台另行导出','观众分享版请在分享菜单导出').replaceAll('观众分享版在上方工作台另行导出','观众分享版在分享菜单导出').replaceAll('上方工作台另行导出','分享菜单导出').replaceAll('上方工作台','工作台').replaceAll('上方按钮','文件选项卡').replaceAll('请以上方状态为准','请以文稿标题下方状态为准');
 html=patchEffectGallery(html);patches.push('visual effects gallery and isolated hover previews');
+html=patchEditorThemeEntry(patchEditorPermissions(patchObjectStability(html)));patches.push('fullscreen and explicit clipboard fallback','deduplicated object selection and locked-object operations','canonical theme library design entry');
 const panels=await read('tools/editor-panel-layout.inc.js');
 new Script(panels,{filename:'editor-panel-layout.js'});
 // Let the bridge end the timeline gesture when its writer session ends.

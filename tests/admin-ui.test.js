@@ -61,6 +61,30 @@ test('create user form gates duplicate writes and retries exactly once after pas
  } finally {mounted.destroy(); h.window.close();}
 });
 
+test('deleting a user confirms account and data effects, reauthenticates, and returns a deleted admin to login', async () => {
+ const h = dom(); let attempts = 0; const redirects = [];
+ const {api, calls} = fakeAPI((path, options) => {
+  if (path === `/admin/users/${target.id}` && options.method === 'DELETE' && ++attempts === 1) throw new CloudError('REAUTHENTICATION_REQUIRED', '重新验证', 403);
+  if (path === '/auth/reauth') return {expiresAt: '2026-10-11T01:00:00Z'};
+ });
+ api.user.id = target.id;
+ const mounted = await mountAdmin({document: h.window.document, api, navigate: url => redirects.push(url)});
+ try {
+  click(h.window.document, '用户'); await until(() => h.window.document.querySelector('tbody'));
+  click(h.window.document, '删除账号');
+  assert.match(h.window.document.querySelector('dialog').textContent, /无法登录/);
+  assert.match(h.window.document.querySelector('dialog').textContent, /Agent 授权立即失效/);
+  assert.match(h.window.document.querySelector('dialog').textContent, /文稿和审计记录会保留/);
+  submit(h.window);
+  await until(() => h.window.document.querySelector('dialog h2')?.textContent === '重新验证密码');
+  submit(h.window, {password: 'admin-password-123!'});
+  await until(() => redirects.includes('/login'));
+  assert.equal(attempts, 2);
+  assert.equal(calls.filter(call => call.path === `/admin/users/${target.id}` && call.method === 'DELETE').length, 2);
+  assert.equal(calls.filter(call => call.path === '/auth/reauth').length, 1);
+ } finally {mounted.destroy(); h.window.close();}
+});
+
 test('project admin mutations use metadata revision and unique mutation IDs without reading private content or retrying conflicts', async () => {
  const h = dom(), project = {id: target.id, title: 'Private project', ownerId: target.id, ownerUsername: 'owner', revision: 9, updatedAt: '2026-10-11T00:00:00Z'};
  const {api, calls} = fakeAPI((path, options) => {if (path.startsWith('/admin/projects?')) return [project]; if (options.method === 'POST') throw new CloudError('REVISION_CONFLICT', '已有更新，请刷新核对', 409);});
@@ -108,7 +132,7 @@ test('user PAT form defaults omit delete, limits projects, displays plaintext on
   click(h.window.document, '创建授权'); submit(h.window, {name: 'bridge', projectMode: 'none'});
   await until(() => h.window.document.querySelector('textarea.token-secret'));
   const write = calls.find(call => call.method === 'POST');
-  assert.deepEqual(write.body.scopes, ['projects:read', 'projects:create', 'projects:write', 'projects:export']);
+  assert.deepEqual(write.body.scopes, ['projects:read', 'projects:create', 'projects:write', 'projects:export', 'themes:read']);assert.ok(!write.body.scopes.includes('themes:write')&&!write.body.scopes.includes('themes:publish'));
   assert.deepEqual(write.body.projectAllowlist, []);
   assert.equal(h.window.document.querySelector('.token-secret').value, token);
   click(h.window.document, '我已保存'); await until(() => h.window.document.querySelector('.token-row'));
