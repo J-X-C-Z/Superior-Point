@@ -81,6 +81,31 @@ body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11p
 @media(prefers-reduced-motion:reduce){
  .project,.cover svg,.cover-open-hint{transition:none!important;transform:none!important}
 }
+
+/* Home controls share quiet feedback; emphasis follows navigation or action intent. */
+body:not(.editor-open){--control-hover:#e8e5db;--danger:#a02f34;--feedback-time:160ms}
+body:not(.editor-open) nav button{position:relative}
+body:not(.editor-open) nav button::before{content:"";position:absolute;left:-9px;top:16px;bottom:16px;width:2px;background:var(--accent);opacity:0;pointer-events:none}
+body:not(.editor-open) nav button:focus-visible{background:var(--control-hover)}
+body:not(.editor-open) nav button:focus-visible::before{opacity:1}
+body:not(.editor-open) .project-actions button{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px}
+body:not(.editor-open) .project-actions button:focus-visible{text-decoration-color:currentColor}
+body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible{color:var(--danger)}
+@media(hover:hover) and (pointer:fine){
+ body:not(.editor-open) :is(nav button,.brand,header button,.new-card,.framework-note button,.import-status button,dialog button,#search,#sort,.project-actions button){transition:background-color var(--feedback-time) ease,border-color var(--feedback-time) ease,color var(--feedback-time) ease,text-decoration-color var(--feedback-time) ease}
+ body:not(.editor-open) nav button::before{transition:opacity var(--feedback-time) ease}
+ body:not(.editor-open) nav button:not(:disabled):hover{background:var(--control-hover);color:var(--ink);border-bottom-color:var(--accent)}
+ body:not(.editor-open) nav button:not(:disabled):hover::before{opacity:1}
+ body:not(.editor-open) .brand:hover{color:var(--accent)}
+ body:not(.editor-open) :is(header button,.framework-note button,.import-status button,dialog .secondary):not(:disabled):hover{background:var(--control-hover);color:var(--ink);border-color:var(--accent)}
+ body:not(.editor-open) dialog button[type=submit]:not(:disabled):hover{background:#34443a;border-color:#34443a}
+ body:not(.editor-open) :is(#search,#sort):hover{border-color:var(--accent);background:var(--white)}
+ body:not(.editor-open) .project-actions button:not(:disabled):hover{background:transparent;color:var(--accent);text-decoration-color:currentColor}
+ body:not(.editor-open) .project-actions button[data-action=delete]:not(:disabled):hover{color:var(--danger)}
+}
+@media(prefers-reduced-motion:reduce){
+ body:not(.editor-open) :is(nav button,.brand,header button,.new-card,.framework-note button,.import-status button,dialog button,#search,#sort,.project-actions button),body:not(.editor-open) nav button::before{transition:none}
+}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
 <main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
