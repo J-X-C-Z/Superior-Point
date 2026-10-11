@@ -37,6 +37,7 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: Context) {
   app.get('/api/v1/admin/health', async request => {await guard(await ctx.actor(request)); return {status: 'ready'};});
   app.get('/api/v1/admin/users', {schema: {querystring: query}}, async request => admin.listUsers(await ctx.actor(request), page(request)));
   app.post('/api/v1/admin/users', {schema: {body: schema({username: {type: 'string', minLength: 3, maxLength: 64}, password, role: {type: 'string', enum: ['admin', 'user']}}, ['username', 'password'])}}, async (request, reply) => reply.code(201).send(await ctx.auth.createUser(await ctx.writable(request), body(request))));
+  app.delete('/api/v1/admin/users/:id', {schema: {params}}, async request => ctx.auth.deleteUser(await ctx.writable(request), id(request)));
   app.patch('/api/v1/admin/users/:id/status', {schema: {params, body: schema({status: {type: 'string', enum: ['active', 'disabled']}}, ['status'])}}, async request => ctx.auth.setUserStatus(await ctx.writable(request), id(request), body<{status: 'active' | 'disabled'}>(request).status));
   app.patch('/api/v1/admin/users/:id/role', {schema: {params, body: schema({role: {type: 'string', enum: ['admin', 'user']}}, ['role'])}}, async request => ctx.auth.setUserRole(await ctx.writable(request), id(request), body<{role: 'admin' | 'user'}>(request).role));
   app.delete('/api/v1/admin/users/:id/sessions', {schema: {params}}, async request => {await ctx.auth.revokeUserSessions(await ctx.writable(request), id(request)); return {success: true};});

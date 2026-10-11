@@ -61,6 +61,7 @@ test('sensitive admin methods require recent bound session reauthentication; CSR
     await h.db.query("UPDATE sessions SET reauth_until=clock_timestamp()-interval '1 second' WHERE id=$1", [h.actor.sessionId]);
     await h.admin.dashboard(h.actor);
     await assert.rejects(h.auth.createUser(h.actor, {username: 'needs-stepup', password}), code('REAUTHENTICATION_REQUIRED'));
+    await assert.rejects(h.auth.deleteUser(h.actor, h.user.id), code('REAUTHENTICATION_REQUIRED'));
     await assert.rejects(h.auth.setUserRole(h.actor, h.user.id, 'admin'), code('REAUTHENTICATION_REQUIRED'));
     await assert.rejects(h.auth.setUserStatus(h.actor, h.user.id, 'disabled'), code('REAUTHENTICATION_REQUIRED'));
     await assert.rejects(h.auth.revokeUserSessions(h.actor, h.user.id), code('REAUTHENTICATION_REQUIRED'));
@@ -152,4 +153,62 @@ test('admin routes validate schemas, paginate reads and delegate content mutatio
     assert.equal(calls.length, 2);
     assert.equal((await app.inject('/api/v1/admin/dashboard')).statusCode, 200);
   } finally {await app.close(); await h.close();}
+});
+
+
+test('user deletion revokes all credentials, hides the user and preserves documents and audit', async () => {
+  const h = await setup();
+  try {
+    const project = await h.projects.create(h.user, {title: 'Retained work'});
+    const before = (await h.db.query('SELECT * FROM projects WHERE id=$1', [project.id])).rows[0];
+    const token = await h.tokens.create(h.user, {name: 'deleted token'});
+    const extraLogin = await h.auth.login('ordinary', password);
+    await assert.rejects(h.auth.deleteUser(h.user, h.actor.id), code('FORBIDDEN'));
+    const pat = await h.tokens.authenticate((await h.tokens.create(h.actor, {name: 'delete forbidden PAT'})).token);
+    await assert.rejects(h.auth.deleteUser(pat, h.user.id), code('FORBIDDEN'));
+    await assert.rejects(h.auth.deleteUser({...h.actor, sessionId: undefined}, h.user.id), code('FORBIDDEN'));
+    assert.deepEqual(await h.auth.deleteUser(h.actor, h.user.id), {success: true});
+    const deleted = (await h.db.query('SELECT status,deleted_at FROM users WHERE id=$1', [h.user.id])).rows[0];
+    assert.equal(deleted.status, 'disabled');
+    assert.ok(deleted.deleted_at instanceof Date);
+    for (const login of [h.userLogin, extraLogin]) await assert.rejects(h.auth.authenticate(login.sessionToken), code('UNAUTHENTICATED'));
+    await assert.rejects(h.tokens.authenticate(token.token), code('UNAUTHENTICATED'));
+    await assert.rejects(h.auth.login('ordinary', password), code('INVALID_CREDENTIALS'));
+    assert.equal((await h.db.query('SELECT 1 FROM sessions WHERE user_id=$1 AND revoked_at IS NULL', [h.user.id])).rowCount, 0);
+    assert.equal((await h.db.query('SELECT 1 FROM api_tokens WHERE user_id=$1 AND revoked_at IS NULL', [h.user.id])).rowCount, 0);
+    assert.ok(!(await h.admin.listUsers(h.actor)).some(user => user.id === h.user.id));
+    assert.ok(!(await h.auth.listUsers(h.actor)).some(user => user.id === h.user.id));
+    assert.equal((await h.admin.dashboard(h.actor)).users.total, 1);
+    await assert.rejects(h.auth.setUserStatus(h.actor, h.user.id, 'active'), code('NOT_FOUND'));
+    await assert.rejects(h.auth.setUserRole(h.actor, h.user.id, 'admin'), code('NOT_FOUND'));
+    await assert.rejects(h.auth.resetUserPassword(h.actor, h.user.id, newPassword), code('NOT_FOUND'));
+    await assert.rejects(h.auth.deleteUser(h.actor, h.user.id), code('NOT_FOUND'));
+    await assert.rejects(h.auth.createUser(h.actor, {username: 'ordinary', password}), code('USERNAME_EXISTS'));
+    assert.deepEqual((await h.db.query('SELECT * FROM projects WHERE id=$1', [project.id])).rows[0], before);
+    assert.ok((await h.admin.listProjects(h.actor)).some(row => row.id === project.id && row.ownerId === h.user.id));
+    const audit = await h.db.query("SELECT actor_id,resource_id FROM audit_logs WHERE action='user.delete'");
+    assert.deepEqual(audit.rows, [{actor_id: h.actor.id, resource_id: h.user.id}]);
+    assert.ok((await h.db.query('SELECT 1 FROM audit_logs WHERE actor_id=$1', [h.user.id])).rowCount! > 0);
+  } finally {await h.close();}
+});
+
+test('deletion audit failure rolls back account and credential changes; concurrent admin deletion keeps one admin', async () => {
+  const h = await setup();
+  try {
+    await assert.rejects(h.auth.deleteUser(h.actor, h.actor.id), code('LAST_ADMIN'));
+    const token = await h.tokens.create(h.user, {name: 'rollback token'});
+    await h.db.query("ALTER TABLE audit_logs ADD CONSTRAINT block_delete_audit CHECK(action <> 'user.delete') NOT VALID");
+    await assert.rejects(h.auth.deleteUser(h.actor, h.user.id));
+    assert.equal((await h.db.query('SELECT deleted_at FROM users WHERE id=$1', [h.user.id])).rows[0].deleted_at, null);
+    await h.auth.authenticate(h.userLogin.sessionToken);
+    await h.tokens.authenticate(token.token);
+    await h.db.query('ALTER TABLE audit_logs DROP CONSTRAINT block_delete_audit');
+    await h.auth.setUserRole(h.actor, h.user.id, 'admin');
+    const promoted = await h.auth.authenticate(h.userLogin.sessionToken);
+    const results = await Promise.allSettled([h.auth.deleteUser(h.actor, h.actor.id), h.auth.deleteUser(promoted, promoted.id)]);
+    assert.equal(results.filter(result => result.status === 'fulfilled').length, 1);
+    const failure = results.find(result => result.status === 'rejected') as PromiseRejectedResult;
+    assert.ok(code('LAST_ADMIN')(failure.reason));
+    assert.equal((await h.db.query("SELECT count(*)::int AS count FROM users WHERE status='active' AND role='admin' AND deleted_at IS NULL")).rows[0].count, 1);
+  } finally {await h.close();}
 });

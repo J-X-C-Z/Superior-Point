@@ -2337,7 +2337,8 @@ function v24OfflineExportBootstrap(width,height){
         button("\u91CD\u7F6E\u5BC6\u7801", () => resetPassword(user), { write: true }),
         button(user.status === "active" ? "\u7981\u7528" : "\u542F\u7528", () => statusUser(user), { write: true, danger: user.status === "active" }),
         button(user.role === "admin" ? "\u8BBE\u4E3A\u666E\u901A\u7528\u6237" : "\u8BBE\u4E3A\u7BA1\u7406\u5458", () => roleUser(user), { write: true }),
-        button("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", () => revokeSessions(user), { write: true })
+        button("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", () => revokeSessions(user), { write: true }),
+        button("\u5220\u9664\u8D26\u53F7", () => deleteUser(user), { write: true, danger: true })
       ])]);
       if (section === "projects") table(["\u9879\u76EE", "\u6240\u6709\u8005", "\u4FEE\u8BA2", "\u66F4\u65B0\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (project) => [details(project.title, project.id), details(project.ownerUsername, project.ownerId), project.revision, date(project.updatedAt), actions([
         button("\u8F6C\u79FB\u5F52\u5C5E", () => transferProject(project), { write: true }),
@@ -2379,6 +2380,9 @@ function v24OfflineExportBootstrap(width,height){
       if (await confirm("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", `${user.username} \u7684\u6240\u6709\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5C06\u9000\u51FA\u3002`)) {
         if (await mutation(`/admin/users/${user.id}/sessions`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
       }
+    }
+    async function deleteUser(user) {
+      if (await confirm("\u5220\u9664\u8D26\u53F7", `\u5220\u9664 ${user.username} \u540E\uFF0C\u8BE5\u8D26\u53F7\u5C06\u65E0\u6CD5\u767B\u5F55\uFF0C\u6240\u6709 Agent \u6388\u6743\u7ACB\u5373\u5931\u6548\u3002\u6587\u7A3F\u548C\u5BA1\u8BA1\u8BB0\u5F55\u4F1A\u4FDD\u7559\u3002\u6B64\u64CD\u4F5C\u65E0\u6CD5\u64A4\u9500\u3002`) && await mutation(`/admin/users/${user.id}`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
     }
     async function transferProject(project) {
       const answer = await formDialog(document2, "\u8F6C\u79FB\u9879\u76EE\u5F52\u5C5E", [{ name: "newOwnerId", label: "\u65B0\u6240\u6709\u8005\u7684\u8D26\u53F7 ID", required: true, value: project.ownerId, pattern: "[a-fA-F0-9-]{36}" }], { message: `\u8F6C\u79FB\u201C${project.title}\u201D\u540E\uFF0C\u539F\u6240\u6709\u8005\u5C06\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002\u6B63\u5728\u7F16\u8F91\u7684\u9879\u76EE\u65E0\u6CD5\u8F6C\u79FB\u3002`, confirm: "\u8F6C\u79FB\u5F52\u5C5E" });

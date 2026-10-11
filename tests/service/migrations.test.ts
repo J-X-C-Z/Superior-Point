@@ -7,7 +7,7 @@ test('real PostgreSQL migration replay, checksum drift refusal, rollback and reb
  const db=await createTestDatabase();
  try{
   await Promise.all([migrate(db),migrate(db)]);
-  assert.equal((await db.query('SELECT count(*)::int AS count FROM schema_migrations')).rows[0].count,4);
+  assert.equal((await db.query('SELECT count(*)::int AS count FROM schema_migrations')).rows[0].count,5);
   await db.query("UPDATE schema_migrations SET checksum='tampered'");
   await assert.rejects(migrate(db),/checksum mismatch/);
   assert.equal((await db.query("SELECT count(*)::int AS count FROM information_schema.tables WHERE table_schema=current_schema() AND table_name='projects'")).rows[0].count,1);

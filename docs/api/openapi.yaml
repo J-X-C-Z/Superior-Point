@@ -379,6 +379,18 @@ paths:
       responses:
         '201': {description: Created user}
         '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/users/{id}:
+    delete:
+      tags: [Admin]
+      summary: Delete a user account while retaining documents and audit history
+      description: Requires recent administrator password verification and CSRF. Revokes sessions and tokens, removes the account from user listings, and prevents re-enabling it. The last active administrator cannot be deleted. The username remains reserved.
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Account deleted}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
   /api/v1/admin/users/{id}/status:
     patch:
       tags: [Admin]

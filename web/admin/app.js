@@ -107,6 +107,7 @@ export async function mountAdmin({document = globalThis.document, api = new Clou
    button(user.status === 'active' ? '禁用' : '启用', () => statusUser(user), {write: true, danger: user.status === 'active'}),
    button(user.role === 'admin' ? '设为普通用户' : '设为管理员', () => roleUser(user), {write: true}),
    button('退出所有会话', () => revokeSessions(user), {write: true}),
+   button('删除账号', () => deleteUser(user), {write: true, danger: true}),
   ])]);
   if (section === 'projects') table(['项目', '所有者', '修订', '更新时间', '操作'], filtered(), project => [details(project.title, project.id), details(project.ownerUsername, project.ownerId), project.revision, date(project.updatedAt), actions([
    button('转移归属', () => transferProject(project), {write: true}), button(trash ? '恢复' : '移到回收站', () => trashProject(project), {write: true, danger: !trash}),
@@ -123,6 +124,7 @@ export async function mountAdmin({document = globalThis.document, api = new Clou
  async function statusUser(user) {const disable = user.status === 'active'; if (await confirm(disable ? '禁用账号' : '启用账号', `${user.username}：${disable ? '所有登录会话及 Agent 授权会失效。' : '账号可重新登录；已撤销授权不会恢复。'}`)) if (await mutation(`/admin/users/${user.id}/status`, {status: disable ? 'disabled' : 'active'}, 'PATCH') && disable && user.id === api.user.id) navigate('/login');}
  async function roleUser(user) {const role = user.role === 'admin' ? 'user' : 'admin'; if (await confirm('变更角色', `将 ${user.username} 设为${role === 'admin' ? '管理员。管理员可以管理其他账号和平台设置。' : '普通用户。'}`)) if (await mutation(`/admin/users/${user.id}/role`, {role}, 'PATCH') && user.id === api.user.id && role === 'user') navigate('/app');}
  async function revokeSessions(user) {if (await confirm('退出所有会话', `${user.username} 的所有浏览器会话将退出。`)) if (await mutation(`/admin/users/${user.id}/sessions`, undefined, 'DELETE') && user.id === api.user.id) navigate('/login');}
+ async function deleteUser(user) {if (await confirm('删除账号', `删除 ${user.username} 后，该账号将无法登录，所有 Agent 授权立即失效。文稿和审计记录会保留。此操作无法撤销。`) && await mutation(`/admin/users/${user.id}`, undefined, 'DELETE') && user.id === api.user.id) navigate('/login');}
  async function transferProject(project) {const answer = await formDialog(document, '转移项目归属', [{name: 'newOwnerId', label: '新所有者的账号 ID', required: true, value: project.ownerId, pattern: '[a-fA-F0-9-]{36}'}], {message: `转移“${project.title}”后，原所有者将失去访问权限。正在编辑的项目无法转移。`, confirm: '转移归属'}); if (answer) await mutation(`/admin/projects/${project.id}/transfer`, {...answer, expectedRevision: project.revision, clientMutationId: crypto.randomUUID()});}
  async function trashProject(project) {if (await confirm(trash ? '恢复项目' : '移到回收站', `确认${trash ? '恢复' : '将'}“${project.title}”${trash ? '？' : '移到回收站？项目可恢复。'}`)) await mutation(`/admin/projects/${project.id}/${trash ? 'restore' : 'trash'}`, {expectedRevision: project.revision, clientMutationId: crypto.randomUUID()});}
  async function revokeToken(token) {if (await confirm('撤销授权', `撤销“${token.name}”后，使用该授权的 Agent 将立即失去访问权限。`)) await mutation(`/admin/mcp/tokens/${token.id}/revoke`, undefined);}
