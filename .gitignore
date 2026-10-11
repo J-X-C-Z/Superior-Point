@@ -4,3 +4,14 @@ __pycache__/
 .DS_Store
 
 release-assets/
+
+.env
+deploy/hakari/.env
+deploy/hakari/data/
+deploy/hakari/backups/
+.sp-backups/
+.sp-assets/
+work/
+.playwright-cli/
+.sp-secrets/
+data/

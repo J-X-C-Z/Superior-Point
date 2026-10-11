@@ -57,6 +57,7 @@ test('HTTP login throttles uniformly and production cookies are Secure without t
   await new AuthService(db).bootstrapAdmin('admin',password);
   const login=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:'https://sp.jxcz.top'},payload:{username:'admin',password}});
   assert.equal(login.statusCode,200);assert.match(String(login.headers['set-cookie']),/__Host-sp-session=.*HttpOnly.*SameSite=Strict.*Secure/);assert.equal(login.json().sessionToken,undefined);
+  assert.equal(login.headers['strict-transport-security'],'max-age=31536000');assert.equal(login.headers['x-frame-options'],'SAMEORIGIN');assert.match(String(login.headers['content-security-policy']),/frame-ancestors 'self'/);
   const failed=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:'https://sp.jxcz.top'},payload:{username:'unknown',password}});assert.equal(failed.statusCode,401);
   const limited=await app.inject({method:'POST',url:'/api/v1/auth/login',headers:{origin:'https://sp.jxcz.top'},payload:{username:'admin',password}});assert.equal(limited.statusCode,429);assert.ok(limited.headers['retry-after']);
   assert.equal((await app.inject('/api/v1/bootstrap')).statusCode,404);

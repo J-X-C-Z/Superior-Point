@@ -136,9 +136,9 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
   };
 
   // io/image-assets.js
-  function crc32(bytes, start, end) {
+  function crc32(bytes2, start, end) {
     let crc = 4294967295;
-    for (let i = start; i < end; i++) crc = crcTable[(crc ^ bytes[i]) & 255] ^ crc >>> 8;
+    for (let i = start; i < end; i++) crc = crcTable[(crc ^ bytes2[i]) & 255] ^ crc >>> 8;
     return (crc ^ 4294967295) >>> 0;
   }
   function dimensions(width, height) {
@@ -232,8 +232,8 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
       invalid("invalid base64");
     }
     if (binary.length > IMAGE_LIMITS.maxBytes || btoa(binary) !== encoded) invalid("noncanonical base64 or byte limit");
-    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0)), kind = match[1] === "jpg" ? "jpeg" : match[1], size = { png, jpeg, gif, webp }[kind](bytes);
-    return { mimeType: "image/" + kind, byteLength: bytes.length, ...size };
+    const bytes2 = Uint8Array.from(binary, (c) => c.charCodeAt(0)), kind = match[1] === "jpg" ? "jpeg" : match[1], size = { png, jpeg, gif, webp }[kind](bytes2);
+    return { mimeType: "image/" + kind, byteLength: bytes2.length, ...size };
   }
   var IMAGE_LIMITS, invalid, uint32, little32, ascii, crcTable;
   var init_image_assets = __esm({
@@ -585,30 +585,51 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
     }
   });
 
+  // io/visibility.js
+  function hiddenElementIds(slide) {
+    const elements = new Map(slide.elements.map((el) => [el.id, el])), hidden = /* @__PURE__ */ new Set();
+    const hide = (id) => {
+      if (hidden.has(id)) return;
+      hidden.add(id);
+      const el = elements.get(id);
+      if (el?.type === "group") for (const child of el.children || []) hide(child);
+    };
+    for (const el of slide.elements) if (el.hidden || el.visible === false) hide(el.id);
+    return hidden;
+  }
+  var init_visibility = __esm({
+    "io/visibility.js"() {
+    }
+  });
+
   // io/html.js
   function inspectRenderCompatibility(document2) {
     const doc = importDocument(document2), warnings = [];
     const add = (slide, el, properties2, message) => warnings.push({ code: "RENDER_UNSUPPORTED", slideId: slide.id, elementId: el.id, properties: properties2, message });
-    for (const slide of doc.slides) for (const el of slide.elements) {
-      if (!["text", "shape", "image", "connector", "line", "table", "chart"].includes(el.type)) add(slide, el, ["type"], "Generic preview shows a placeholder for " + el.type);
-      if (el.type === "image") {
-        const props = [];
-        if (Array.isArray(el.crop) && el.crop.some((v) => v !== 0)) props.push("crop");
-        for (const [key, fallback] of Object.entries({ brightness: 100, contrast: 100, saturation: 100, grayscale: 0, flipH: false, flipV: false, cornerRadius: 0 })) if (el[key] !== void 0 && el[key] !== fallback) props.push(key);
-        if (el.fit && el.fit !== "contain") props.push("fit");
-        if (props.length) add(slide, el, props, "Image appearance settings are preserved as data but not painted by the generic renderer");
+    for (const slide of doc.slides) {
+      const hidden = hiddenElementIds(slide);
+      for (const el of slide.elements) {
+        if (hidden.has(el.id)) continue;
+        if (!["text", "shape", "image", "connector", "line", "table", "chart"].includes(el.type)) add(slide, el, ["type"], "Generic preview shows a placeholder for " + el.type);
+        if (el.type === "image") {
+          const props = [];
+          if (Array.isArray(el.crop) && el.crop.some((v) => v !== 0)) props.push("crop");
+          for (const [key, fallback] of Object.entries({ brightness: 100, contrast: 100, saturation: 100, grayscale: 0, flipH: false, flipV: false, cornerRadius: 0 })) if (el[key] !== void 0 && el[key] !== fallback) props.push(key);
+          if (el.fit && el.fit !== "contain") props.push("fit");
+          if (props.length) add(slide, el, props, "Image appearance settings are preserved as data but not painted by the generic renderer");
+        }
+        if (el.type === "shape" && el.shape && !["rect", "rectangle", "ellipse", "circle", "line", "arrow"].includes(el.shape)) add(slide, el, ["shape"], "This shape is shown as a basic rectangle");
+        if (el.type === "chart" && el.chartType && el.chartType !== "bar") add(slide, el, ["chartType"], "Only basic bar charts are painted");
+        if (el.motionEffects?.length) add(slide, el, ["motionEffects"], "Legacy motion effects require the authoritative animation runtime");
+        const textProps = [];
+        if (el.runs?.length) textProps.push("runs");
+        if (el.fontFamily && !["Arial", "sans-serif"].includes(el.fontFamily)) textProps.push("fontFamily");
+        if (el.align && el.align !== "left") textProps.push("align");
+        if (el.bold && el.fontWeight === void 0) textProps.push("bold");
+        if (textProps.length) add(slide, el, textProps, "Text formatting needs the authoritative editor renderer");
       }
-      if (el.type === "shape" && el.shape && !["rect", "rectangle", "ellipse", "circle", "line", "arrow"].includes(el.shape)) add(slide, el, ["shape"], "This shape is shown as a basic rectangle");
-      if (el.type === "chart" && el.chartType && el.chartType !== "bar") add(slide, el, ["chartType"], "Only basic bar charts are painted");
-      if (el.motionEffects?.length) add(slide, el, ["motionEffects"], "Legacy motion effects require the authoritative animation runtime");
-      const textProps = [];
-      if (el.runs?.length) textProps.push("runs");
-      if (el.fontFamily && !["Arial", "sans-serif"].includes(el.fontFamily)) textProps.push("fontFamily");
-      if (el.align && el.align !== "left") textProps.push("align");
-      if (el.bold && el.fontWeight === void 0) textProps.push("bold");
-      if (textProps.length) add(slide, el, textProps, "Text formatting needs the authoritative editor renderer");
+      for (const animation of slide.animations || []) if (!hidden.has(animation.targetId) && (!["appear", "fragment", "fade-in"].includes(animation.type) || animation.trigger !== "click" || animation.delay > 0)) add(slide, { id: animation.targetId }, ["animations"], "Only ordered click/appear fragments are supported");
     }
-    for (const slide of doc.slides) for (const animation of slide.animations || []) if (!["appear", "fragment", "fade-in"].includes(animation.type) || animation.trigger !== "click" || animation.delay > 0) add(slide, { id: animation.targetId }, ["animations"], "Only ordered click/appear fragments are supported");
     return { hasKnownGaps: warnings.length > 0, warnings, scope: "Known generic-renderer gaps only; not a complete visual-fidelity check", limitations: [...RENDERER_LIMITATIONS] };
   }
   function assertSafeResources(doc) {
@@ -694,8 +715,9 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
     return `<g opacity="${Math.max(0, Math.min(1, num(el.opacity, 1)))}" data-element-id="${esc(el.id)}"${fragmentIndex == null ? "" : ` class="fragment" data-fragment-index="${fragmentIndex}"`}${el.rotation ? ` transform="rotate(${num(el.rotation)} ${x + w / 2} ${y + h / 2})"` : ""}>${body}</g>`;
   }
   function slideSVG(doc, slide, fragments = false) {
+    const hidden = hiddenElementIds(slide);
     const animations = (slide.animations || []).filter((a) => ["appear", "fragment", "fade-in"].includes(a.type));
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${doc.canvas.width}" height="${doc.canvas.height}" viewBox="0 0 ${doc.canvas.width} ${doc.canvas.height}" role="img" aria-label="${esc(slide.title || doc.title)}"><title>${esc(slide.title || doc.title)}</title><desc>${esc(RENDERER_LIMITATIONS.join(" "))}</desc><defs><marker id="sp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5272a1"/></marker></defs><rect width="100%" height="100%" fill="${color(typeof slide.background === "string" ? slide.background : slide.background?.color ?? slide.bg, "#ffffff")}"/>${slide.elements.map((el) => {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${doc.canvas.width}" height="${doc.canvas.height}" viewBox="0 0 ${doc.canvas.width} ${doc.canvas.height}" role="img" aria-label="${esc(slide.title || doc.title)}"><title>${esc(slide.title || doc.title)}</title><desc>${esc(RENDERER_LIMITATIONS.join(" "))}</desc><defs><marker id="sp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5272a1"/></marker></defs><rect width="100%" height="100%" fill="${color(typeof slide.background === "string" ? slide.background : slide.background?.color ?? slide.bg, "#ffffff")}"/>${slide.elements.filter((el) => !hidden.has(el.id)).map((el) => {
       const a = animations.find((a2) => (a2.targetId ?? a2.targetElementId ?? a2.elementId ?? a2.target) === el.id);
       return elementSVG(doc, el, fragments ? el.fragment === true ? num(el.fragmentIndex, 0) : a ? num(a.order, animations.indexOf(a)) : null : null);
     }).join("")}</svg>`;
@@ -711,9 +733,9 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
     const doc = importDocument(document2);
     assertSafeResources(doc);
     const json = JSON.stringify(doc).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-    const sections = doc.slides.filter((s) => !s.hidden).map((s) => `<section data-slide-id="${esc(s.id)}" data-transition="${transition(s.transition)}">${slideSVG(doc, s, true)}</section>`).join("\n");
+    const sections2 = doc.slides.filter((s) => !s.hidden).map((s) => `<section data-slide-id="${esc(s.id)}" data-transition="${transition(s.transition)}">${slideSVG(doc, s, true)}</section>`).join("\n");
     return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">${audience ? "" : '<meta name="sp-format" content="superior-point/1">'}<title>${esc(doc.title)}</title><style>${revealCSS}</style><style>html,body{margin:0;background:#182033}.reveal .slides section{padding:0}.reveal svg{display:block;width:100%;height:auto}.sp-notice{position:fixed;bottom:4px;left:8px;z-index:99;color:#93a4bf;font:11px Arial;max-width:65%}</style></head><body><div class="reveal"><div class="slides">${sections}</div></div><div class="sp-notice" title="${esc(RENDERER_LIMITATIONS.join(" "))}">SP framework preview \xB7 Generic renderer \xB7 ${audience ? "Audience presentation \xB7 Playback only" : "Re-import this HTML to recover full document"}</div>${audience ? "" : `<script id="sp-document" type="application/json">${json}<\/script>`}<script>${revealJS.replace(/<\/script/gi, "<\\/script")}<\/script><script>window.spDeck = new Reveal(document.querySelector('.reveal'),{width:${doc.canvas.width},height:${doc.canvas.height},margin:0.04,hash:false,controls:true,progress:true,center:false,transition:'fade',embedded:false});window.spDeck.initialize().then(function(){document.documentElement.dataset.spReady='true';});<\/script></body></html>`;
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">${audience ? "" : '<meta name="sp-format" content="superior-point/1">'}<title>${esc(doc.title)}</title><style>${revealCSS}</style><style>html,body{margin:0;background:#182033}.reveal .slides section{padding:0}.reveal svg{display:block;width:100%;height:auto}.sp-notice{position:fixed;bottom:4px;left:8px;z-index:99;color:#93a4bf;font:11px Arial;max-width:65%}</style></head><body><div class="reveal"><div class="slides">${sections2}</div></div><div class="sp-notice" title="${esc(RENDERER_LIMITATIONS.join(" "))}">SP framework preview \xB7 Generic renderer \xB7 ${audience ? "Audience presentation \xB7 Playback only" : "Re-import this HTML to recover full document"}</div>${audience ? "" : `<script id="sp-document" type="application/json">${json}<\/script>`}<script>${revealJS.replace(/<\/script/gi, "<\\/script")}<\/script><script>window.spDeck = new Reveal(document.querySelector('.reveal'),{width:${doc.canvas.width},height:${doc.canvas.height},margin:0.04,hash:false,controls:true,progress:true,center:false,transition:'fade',embedded:false});window.spDeck.initialize().then(function(){document.documentElement.dataset.spReady='true';});<\/script></body></html>`;
   }
   function importHTML(html) {
     if (typeof html !== "string" || html.length > 64 * 1024 * 1024) throw new Error("Invalid or oversized HTML");
@@ -735,6 +757,7 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
       init_image_assets();
       init_document_core();
       init_reveal_bundle();
+      init_visibility();
       RENDERER_LIMITATIONS = Object.freeze([
         "Generic framework preview only; the authoritative editor adapter is not integrated.",
         "Plain multiline text and system fonts; rich text, custom fonts, crop, groups, arbitrary SVG and complex charts are unsupported.",
@@ -1299,13 +1322,13 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
     if (file.size > MAX_IMPORT_BYTES) throw tooLarge();
     if (typeof file.stream === "function") {
       const reader = file.stream().getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
-      let bytes = 0, text2 = "";
+      let bytes2 = 0, text2 = "";
       try {
         for (; ; ) {
           const { done, value } = await reader.read();
           if (done) break;
-          bytes += value.byteLength;
-          if (bytes > MAX_IMPORT_BYTES) throw tooLarge();
+          bytes2 += value.byteLength;
+          if (bytes2 > MAX_IMPORT_BYTES) throw tooLarge();
           text2 += decoder.decode(value, { stream: true });
         }
         return text2 + decoder.decode();
@@ -1591,8 +1614,8 @@ function v24OfflineExportBootstrap(width,height){
 
   // io/editor-export.js
   async function scriptHash(source) {
-    const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
-    return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes))) + "'";
+    const bytes2 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+    return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes2))) + "'";
   }
   async function exportEditorHTML(input, renderedHTML, { domDocument = globalThis.document, audience = false } = {}) {
     const doc = importDocument(input);
@@ -1610,6 +1633,10 @@ function v24OfflineExportBootstrap(width,height){
       for (const node of [...slides.childNodes]) if (node.nodeType !== 1 || node.localName !== "section") node.remove();
       const visible = new Set(doc.slides.filter((slide) => !slide.hidden).map((slide) => slide.id));
       for (const section of slides.children) if (!visible.has(section.dataset.slideId)) section.remove();
+      for (const section of slides.children) {
+        const hidden = hiddenElementIds(doc.slides.find((slide) => slide.id === section.dataset.slideId));
+        for (const node of section.querySelectorAll("[data-id],[data-element-id],[data-v15-object-id]")) if (["data-id", "data-element-id", "data-v15-object-id"].some((key) => hidden.has(node.getAttribute(key)))) node.remove();
+      }
       reveal2.querySelectorAll("aside.notes,[data-v18-marker],style,script").forEach((node) => node.remove());
       template.content.replaceChildren(reveal2);
     }
@@ -1640,11 +1667,1218 @@ function v24OfflineExportBootstrap(width,height){
     "io/editor-export.js"() {
       init_document_core();
       init_html();
+      init_visibility();
       init_reveal_bundle();
       init_editor_integrated_playback();
       escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
       inert = (value) => JSON.stringify(value).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
       script = (value) => value.replace(/<\/script/gi, "<\\/script");
+    }
+  });
+
+  // storage/cloud-drafts.js
+  var CloudDraftStore;
+  var init_cloud_drafts = __esm({
+    "storage/cloud-drafts.js"() {
+      init_document_core();
+      CloudDraftStore = class {
+        constructor({ name = "superior-point-cloud-drafts-v1" } = {}) {
+          this.name = name;
+          this.branch = crypto.randomUUID();
+          this.db = null;
+          this.opening = null;
+        }
+        async open() {
+          if (this.db) return this;
+          if (!this.opening) this.opening = new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.name, 2);
+            request.onupgradeneeded = () => {
+              for (const name of ["drafts", "migrations"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "key" });
+            };
+            request.onsuccess = () => {
+              this.db = request.result;
+              this.db.onversionchange = () => this.close();
+              resolve(this);
+            };
+            request.onerror = () => reject(request.error);
+            request.onblocked = () => reject(new Error("\u8BF7\u5173\u95ED\u65E7\u7248\u8349\u7A3F\u6807\u7B7E\u9875\u540E\u91CD\u8BD5"));
+          }).finally(() => this.opening = null);
+          return this.opening;
+        }
+        close() {
+          this.db?.close();
+          this.db = null;
+        }
+        async tx(mode, operation, name = "drafts") {
+          await this.open();
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(name, mode);
+            let result;
+            tx.oncomplete = () => resolve(structuredClone(result));
+            tx.onabort = tx.onerror = () => reject(tx.error || new Error("\u672C\u5730\u6062\u590D\u8349\u7A3F\u5199\u5165\u5931\u8D25"));
+            operation(tx.objectStore(name), (value) => result = value);
+          });
+        }
+        async save(accountId, document2, { sourceRevision, mutation } = {}) {
+          const snapshot = importDocument(document2);
+          if (!accountId || !Number.isSafeInteger(sourceRevision) || sourceRevision < 0) throw new Error("\u8349\u7A3F\u7F3A\u5C11\u8D26\u53F7\u6216\u6765\u6E90\u4FEE\u8BA2");
+          const record = { key: [accountId, snapshot.id, sourceRevision, this.branch], accountId, projectId: snapshot.id, sourceRevision, document: snapshot, updatedAt: Date.now(), ...mutation ? { mutation: structuredClone(mutation) } : {} };
+          return this.tx("readwrite", (store2, done) => {
+            const request = store2.get(record.key);
+            request.onsuccess = () => {
+              const old = request.result;
+              if (old && old.document.revision > snapshot.revision) {
+                done(old);
+                return;
+              }
+              store2.put(record);
+              done(record);
+            };
+          });
+        }
+        async list(accountId, projectId) {
+          return this.tx("readonly", (store2, done) => {
+            const request = store2.getAll();
+            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId && (!projectId || record.projectId === projectId)).sort((a, b) => b.updatedAt - a.updatedAt));
+          });
+        }
+        async clearSaved(accountId, projectId, revision, branch = this.branch) {
+          return this.tx("readwrite", (store2, done) => {
+            const request = store2.getAll();
+            request.onsuccess = () => {
+              for (const record of request.result) if (record.accountId === accountId && record.projectId === projectId && record.key[3] === branch && record.document.revision <= revision) store2.delete(record.key);
+              done(true);
+            };
+          });
+        }
+        async remove(accountId, key) {
+          if (key?.[0] !== accountId) throw new Error("\u4E0D\u80FD\u5220\u9664\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F");
+          return this.tx("readwrite", (store2, done) => {
+            store2.delete(key);
+            done(true);
+          });
+        }
+        async markMigration(accountId, source, cloudId) {
+          const record = { key: [accountId, source.id], accountId, sourceProjectId: source.id, sourceRevision: source.revision, cloudProjectId: cloudId, verifiedAt: Date.now() };
+          return this.tx("readwrite", (store2, done) => {
+            store2.put(record);
+            done(record);
+          }, "migrations");
+        }
+        async migrations(accountId) {
+          return this.tx("readonly", (store2, done) => {
+            const request = store2.getAll();
+            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId));
+          }, "migrations");
+        }
+      };
+    }
+  });
+
+  // storage/cloud-project-store.js
+  function stableJSON(value) {
+    if (Array.isArray(value)) return "[" + value.map(stableJSON).join(",") + "]";
+    if (value && typeof value === "object") return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + stableJSON(value[key])).join(",") + "}";
+    return JSON.stringify(value);
+  }
+  function migrationContent(document2) {
+    const doc = importDocument(document2);
+    delete doc.id;
+    delete doc.revision;
+    delete doc.metadata.createdAt;
+    delete doc.metadata.updatedAt;
+    delete doc.metadata.spCloudImport;
+    return stableJSON(doc);
+  }
+  var CloudError, CloudAPI, CloudProjectStore;
+  var init_cloud_project_store = __esm({
+    "storage/cloud-project-store.js"() {
+      init_document_core();
+      init_cloud_drafts();
+      CloudError = class extends Error {
+        constructor(code, message, status = 0) {
+          super(message);
+          this.code = code;
+          this.status = status;
+        }
+      };
+      CloudAPI = class {
+        constructor({ base = "/api/v1", fetch = globalThis.fetch?.bind(globalThis), timeoutMs = 15e3 } = {}) {
+          this.base = base;
+          this.fetch = fetch;
+          this.timeoutMs = timeoutMs;
+          this.csrfToken = null;
+          this.user = null;
+        }
+        async request(path, { method = "GET", body, csrfRetry = true } = {}) {
+          const controller = new AbortController(), timer = setTimeout(() => controller.abort(), this.timeoutMs);
+          let response, result;
+          try {
+            response = await this.fetch(this.base + path, { method, credentials: "same-origin", headers: { ...body === void 0 ? {} : { "Content-Type": "application/json" }, ...method === "GET" || !this.csrfToken ? {} : { "X-CSRF-Token": this.csrfToken } }, ...body === void 0 ? {} : { body: JSON.stringify(body) }, signal: controller.signal });
+            result = await response.json();
+          } catch (error) {
+            if (response && !controller.signal.aborted) throw new CloudError("INVALID_RESPONSE", "\u4E91\u7AEF\u54CD\u5E94\u65E0\u6CD5\u8BFB\u53D6\uFF0C\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\u3002", response.status);
+            throw new CloudError(controller.signal.aborted ? "TIMEOUT" : "OFFLINE", controller.signal.aborted ? "\u4E91\u7AEF\u8BF7\u6C42\u8D85\u65F6\uFF1B\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\uFF0C\u8BF7\u91CD\u8BD5\u540C\u4E00\u4EFD\u4FEE\u6539\u3002" : "\u65E0\u6CD5\u8FDE\u63A5\u4E91\u7AEF\uFF1B\u4FEE\u6539\u4ECD\u4FDD\u7559\u4E3A\u672C\u5730\u6062\u590D\u8349\u7A3F\u3002");
+          } finally {
+            clearTimeout(timer);
+          }
+          if (!response.ok) {
+            const error = result.error || {};
+            if (error.code === "CSRF_INVALID" && csrfRetry && path !== "/auth/csrf") {
+              await this.rotateCsrf();
+              return this.request(path, { method, body, csrfRetry: false });
+            }
+            throw new CloudError(error.code || "CLOUD_ERROR", error.message || "\u4E91\u7AEF\u64CD\u4F5C\u5931\u8D25", response.status);
+          }
+          return result;
+        }
+        async login(username, password) {
+          const result = await this.request("/auth/login", { method: "POST", body: { username, password }, csrfRetry: false });
+          this.user = result.user;
+          this.csrfToken = result.csrfToken;
+          return result.user;
+        }
+        async rotateCsrf() {
+          if (this.user) {
+            const current = await this.request("/auth/me", { csrfRetry: false });
+            if (current.user.id !== this.user.id) {
+              this.user = null;
+              this.csrfToken = null;
+              throw new CloudError("ACCOUNT_CHANGED", "\u4E91\u7AEF\u8D26\u53F7\u5DF2\u5728\u5176\u4ED6\u6807\u7B7E\u9875\u53D8\u66F4\uFF0C\u8BF7\u5207\u6362\u5230\u672C\u5730\u540E\u91CD\u65B0\u767B\u5F55\uFF1B\u5F53\u524D\u8349\u7A3F\u4FDD\u7559\u3002", 403);
+            }
+          }
+          const result = await this.request("/auth/csrf", { method: "POST", body: {}, csrfRetry: false });
+          this.csrfToken = result.csrfToken;
+          return result.csrfToken;
+        }
+        async restoreSession() {
+          const result = await this.request("/auth/me");
+          this.user = result.user;
+          this.csrfToken = result.csrfToken;
+          if (!this.csrfToken) await this.rotateCsrf();
+          return this.user;
+        }
+        async logout() {
+          await this.request("/auth/logout", { method: "POST", body: {} });
+          this.user = null;
+          this.csrfToken = null;
+        }
+      };
+      CloudProjectStore = class {
+        constructor({ api, accountId = api?.user?.id, drafts = new CloudDraftStore() } = {}) {
+          if (!api || !accountId) throw new Error("\u4E91\u7AEF\u5B58\u50A8\u9700\u8981\u5DF2\u767B\u5F55\u8D26\u53F7");
+          this.api = api;
+          this.accountId = accountId;
+          this.drafts = drafts;
+          this.storage = "cloud";
+          this.name = "cloud:" + accountId;
+          this.leaseMs = 6e4;
+          this.opened = /* @__PURE__ */ new Map();
+          this.locks = /* @__PURE__ */ new Map();
+          this.mutations = /* @__PURE__ */ new Map();
+          this.imports = /* @__PURE__ */ new Map();
+        }
+        async open() {
+          await this.drafts.open();
+          return this;
+        }
+        close() {
+          this.drafts.close();
+        }
+        record(document2, metadata = {}) {
+          const doc = importDocument(document2);
+          return { id: doc.id, document: doc, modifiedAt: Date.parse(metadata.updatedAt || doc.metadata.updatedAt), openedAt: this.opened.get(doc.id) || Date.parse(metadata.updatedAt || doc.metadata.updatedAt), deletedAt: metadata.deletedAt ? Date.parse(metadata.deletedAt) : null, storage: "cloud" };
+        }
+        async list({ trash = false } = {}) {
+          const rows = await this.api.request("/projects" + (trash ? "?trash=true" : "")), records = new Array(rows.length);
+          let cursor = 0;
+          await Promise.all(Array.from({ length: Math.min(4, rows.length) }, async () => {
+            while (cursor < rows.length) {
+              const index2 = cursor++, meta = rows[index2];
+              try {
+                records[index2] = this.record(await this.api.request("/projects/" + encodeURIComponent(meta.id) + "/document" + (trash ? "?trash=true" : "")), meta);
+              } catch (error) {
+                if (error.code !== "NOT_FOUND") throw error;
+              }
+            }
+          }));
+          return records.filter(Boolean);
+        }
+        async get(id) {
+          try {
+            return this.record(await this.api.request("/projects/" + encodeURIComponent(id) + "/document"));
+          } catch (error) {
+            if (error.code !== "NOT_FOUND") throw error;
+            const rows = await this.api.request("/projects?trash=true"), meta = rows.find((row) => row.id === id);
+            if (!meta) return null;
+            return this.record(await this.api.request("/projects/" + encodeURIComponent(id) + "/document?trash=true"), meta);
+          }
+        }
+        async create(document2) {
+          const doc = importDocument(document2), key = stableJSON(doc);
+          let request = this.imports.get(key);
+          if (!request) {
+            request = { document: doc, clientMutationId: crypto.randomUUID() };
+            this.imports.set(key, request);
+          }
+          const saved = importDocument(await this.api.request("/projects/import", { method: "POST", body: request }));
+          if (saved.id === doc.id || migrationContent(saved) !== migrationContent(doc)) throw new CloudError("IMPORT_READBACK_MISMATCH", "\u4E91\u7AEF\u5BFC\u5165\u6570\u636E\u4E0E\u6765\u6E90\u4E0D\u4E00\u81F4\uFF1B\u539F\u672C\u5730\u9879\u76EE\u4ECD\u4FDD\u7559\u3002");
+          const readback = await this.get(saved.id);
+          if (!readback || stableJSON(readback.document) !== stableJSON(saved)) throw new CloudError("IMPORT_READBACK_MISMATCH", "\u65E0\u6CD5\u786E\u8BA4\u4E91\u7AEF\u5BFC\u5165\u56DE\u8BFB\uFF0C\u8BF7\u4FDD\u7559\u6765\u6E90\u9879\u76EE\u540E\u91CD\u8BD5\u3002");
+          this.imports.delete(key);
+          return readback;
+        }
+        async markOpened(id) {
+          this.opened.set(id, Date.now());
+          return true;
+        }
+        async acquire(id, owner2, { takeover = false } = {}) {
+          if (takeover) throw new CloudError("PROJECT_BUSY", "\u4E91\u7AEF\u4E0D\u5141\u8BB8\u62A2\u5360\u6D3B\u52A8\u79DF\u7EA6\uFF0C\u8BF7\u7B49\u5F85\u5199\u5165\u65B9\u91CA\u653E\u3002", 409);
+          try {
+            const lease = await this.api.request("/projects/" + encodeURIComponent(id) + "/lease", { method: "POST", body: { holder: owner2 } });
+            const lock2 = { id, owner: owner2, token: lease.leaseToken, expiresAt: Date.parse(lease.expiresAt) };
+            this.locks.set(id, lock2);
+            return lock2;
+          } catch (error) {
+            if (error.code === "PROJECT_BUSY") return null;
+            throw error;
+          }
+        }
+        async renew(lock2) {
+          const lease = await this.api.request("/projects/" + encodeURIComponent(lock2.id) + "/lease/renew", { method: "POST", body: { leaseToken: lock2.token } });
+          const renewed = { ...lock2, expiresAt: Date.parse(lease.expiresAt) };
+          this.locks.set(lock2.id, renewed);
+          return renewed;
+        }
+        async release(lock2) {
+          if (!lock2) return;
+          try {
+            await this.api.request("/projects/" + encodeURIComponent(lock2.id) + "/lease", { method: "DELETE", body: { leaseToken: lock2.token } });
+            return true;
+          } finally {
+            if (this.locks.get(lock2.id)?.token === lock2.token) this.locks.delete(lock2.id);
+          }
+        }
+        async captureDraft(document2, sourceRevision) {
+          return this.drafts.save(this.accountId, document2, { sourceRevision });
+        }
+        async save(document2, { expectedRevision, lock: lock2 } = {}) {
+          const doc = importDocument(document2);
+          if (!lock2 || lock2.id !== doc.id) throw new CloudError("LOCK_LOST", "\u5F53\u524D\u4E91\u7AEF\u9879\u76EE\u6CA1\u6709\u5199\u5165\u6743", 409);
+          if (doc.revision === expectedRevision) {
+            const saved2 = await this.get(doc.id);
+            if (saved2 && stableJSON(saved2.document) === stableJSON(doc)) return saved2;
+            throw new CloudError("REVISION_CONFLICT", "\u4E91\u7AEF\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u5F53\u524D\u8349\u7A3F\u4ECD\u4FDD\u7559\u3002", 409);
+          }
+          if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || doc.revision <= expectedRevision) throw new CloudError("INVALID_REVISION", "\u5FEB\u7167\u4FEE\u8BA2\u5FC5\u987B\u5927\u4E8E\u5DF2\u786E\u8BA4\u4E91\u7AEF\u4FEE\u8BA2");
+          const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(stableJSON({ document: doc, expectedRevision, leaseToken: lock2.token }))), fingerprint = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
+          let pending = this.mutations.get(fingerprint);
+          if (!pending) {
+            const existing = (await this.drafts.list(this.accountId, doc.id)).find((record) => record.mutation?.fingerprint === fingerprint), failure = existing?.mutation?.failure;
+            pending = { request: { document: doc, expectedRevision, leaseToken: lock2.token, clientMutationId: existing?.mutation?.clientMutationId || crypto.randomUUID() }, error: failure ? new CloudError(failure.code, failure.message, failure.status) : null, previousBranch: existing?.key[3] };
+            this.mutations.set(fingerprint, pending);
+          }
+          if (pending.error) throw pending.error;
+          await this.drafts.save(this.accountId, doc, { sourceRevision: expectedRevision, mutation: { fingerprint, clientMutationId: pending.request.clientMutationId } });
+          let saved;
+          try {
+            saved = importDocument(await this.api.request("/projects/" + encodeURIComponent(doc.id) + "/snapshot", { method: "PUT", body: pending.request }));
+          } catch (error) {
+            if (error.status >= 400 && error.status < 500) {
+              pending.error = error;
+              await this.drafts.save(this.accountId, doc, { sourceRevision: expectedRevision, mutation: { fingerprint, clientMutationId: pending.request.clientMutationId, failure: { code: error.code, message: error.message, status: error.status } } }).catch(() => {
+              });
+            }
+            throw error;
+          }
+          if (saved.id !== doc.id || saved.revision !== doc.revision) throw new CloudError("INVALID_RESPONSE", "\u4E91\u7AEF\u5FEB\u7167\u4FEE\u8BA2\u4E0D\u5339\u914D\uFF0C\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\u3002");
+          this.mutations.delete(fingerprint);
+          try {
+            await this.drafts.clearSaved(this.accountId, doc.id, saved.revision);
+            if (pending.previousBranch) await this.drafts.clearSaved(this.accountId, doc.id, saved.revision, pending.previousBranch);
+          } catch (error) {
+            this.draftCleanupError = error;
+          }
+          return this.record(saved);
+        }
+        async setDeleted(id, deleted, { owner: owner2 } = {}) {
+          const record = await this.get(id);
+          if (!record) throw new CloudError("NOT_FOUND", "\u9879\u76EE\u4E0D\u5B58\u5728", 404);
+          const lease = this.locks.get(id);
+          const body = { expectedRevision: record.document.revision, clientMutationId: crypto.randomUUID(), ...lease && lease.owner === owner2 ? { leaseToken: lease.token } : {} };
+          await this.api.request("/projects/" + encodeURIComponent(id) + (deleted ? "" : "/restore"), { method: deleted ? "DELETE" : "POST", body });
+          return true;
+        }
+        async migrate(localStore2, id) {
+          const local = await localStore2.get(id);
+          if (!local || local.deletedAt) throw new CloudError("NOT_FOUND", "\u672C\u5730\u9879\u76EE\u4E0D\u5B58\u5728");
+          const saved = await this.create(local.document);
+          const source = await localStore2.get(id);
+          if (!source || stableJSON(source.document) !== stableJSON(local.document)) throw new CloudError("LOCAL_CHANGED", "\u672C\u5730\u9879\u76EE\u5728\u8FC1\u79FB\u671F\u95F4\u53D1\u751F\u4FEE\u6539\uFF0C\u8BF7\u91CD\u65B0\u6838\u5BF9\uFF1B\u4E91\u7AEF\u526F\u672C\u5DF2\u7ECF\u4FDD\u7559\u3002");
+          await this.drafts.markMigration(this.accountId, local.document, saved.id);
+          return saved;
+        }
+        async recoverDraft(record) {
+          if (record.accountId !== this.accountId) throw new CloudError("FORBIDDEN", "\u4E0D\u80FD\u6062\u590D\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F", 403);
+          const doc = structuredClone(record.document);
+          doc.title += " \xB7 \u4E91\u7AEF\u6062\u590D\u526F\u672C";
+          const saved = await this.create(doc);
+          await this.drafts.remove(this.accountId, record.key);
+          return saved;
+        }
+      };
+    }
+  });
+
+  // web/admin/app.js
+  function formDialog(document2, title, fields = [], { message = "", confirm = "\u786E\u8BA4" } = {}) {
+    return new Promise((resolve) => {
+      const previous = document2.activeElement, dialog = document2.createElement("dialog"), form = document2.createElement("form"), heading = document2.createElement("h2");
+      heading.textContent = title;
+      heading.id = "admin-dialog-heading";
+      dialog.setAttribute("aria-labelledby", heading.id);
+      form.append(heading);
+      if (message) {
+        const p = document2.createElement("p");
+        p.textContent = message;
+        form.append(p);
+      }
+      const controls = /* @__PURE__ */ new Map();
+      for (const field of fields) {
+        const label = document2.createElement("label");
+        label.textContent = field.label;
+        const input = document2.createElement(field.options ? "select" : field.type === "textarea" ? "textarea" : "input");
+        input.name = field.name;
+        if (field.options) for (const [value, text] of field.options) {
+          const option = document2.createElement("option");
+          option.value = value;
+          option.textContent = text;
+          input.append(option);
+        }
+        else if (field.type !== "textarea") input.type = field.type || "text";
+        for (const key of ["required", "minLength", "maxLength", "pattern", "autocomplete", "placeholder", "min", "max"]) if (field[key] !== void 0) input[key] = field[key];
+        if (field.type === "checkbox") {
+          label.className = "checkbox";
+          input.checked = Boolean(field.value);
+          label.prepend(input);
+        } else {
+          if (field.value !== void 0) input.value = field.value;
+          label.append(input);
+        }
+        form.append(label);
+        controls.set(field.name, input);
+      }
+      const actions = document2.createElement("div");
+      actions.className = "dialog-actions";
+      const cancel = document2.createElement("button");
+      cancel.type = "button";
+      cancel.className = "secondary";
+      cancel.textContent = "\u53D6\u6D88";
+      const submit = document2.createElement("button");
+      submit.type = "submit";
+      submit.textContent = confirm;
+      actions.append(cancel, submit);
+      form.append(actions);
+      dialog.append(form);
+      document2.body.append(dialog);
+      let finished = false;
+      function finish(value) {
+        if (finished) return;
+        finished = true;
+        for (const input of controls.values()) {
+          input.value = "";
+          if (input.type === "checkbox") input.checked = false;
+        }
+        dialog.close?.();
+        dialog.remove();
+        previous?.focus?.();
+        resolve(value);
+      }
+      cancel.onclick = () => finish(null);
+      dialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        finish(null);
+      });
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        finish(Object.fromEntries([...controls].map(([name, input]) => [name, input.type === "checkbox" ? input.checked : input.value])));
+      });
+      if (dialog.showModal) dialog.showModal();
+      else dialog.setAttribute("open", "");
+      (controls.values().next().value || submit).focus();
+    });
+  }
+  async function mountAdmin({ document: document2 = globalThis.document, api = new CloudAPI(), navigate: navigate2 = (url) => globalThis.location.assign(url) } = {}) {
+    const content = document2.querySelector("#admin-content"), status = document2.querySelector("#admin-status");
+    let section = "dashboard", offset = 0, rows = [], search = "", trash = false, busy = false, poll = null, generation = 0;
+    const limit = 25;
+    function node(tag, text, className) {
+      const element = document2.createElement(tag);
+      if (text !== void 0) element.textContent = String(text);
+      if (className) element.className = className;
+      return element;
+    }
+    function notice(message, error = false) {
+      status.textContent = message;
+      status.classList.toggle("error", error);
+      status.hidden = !message;
+    }
+    function report(error) {
+      if (error.code === "UNAUTHENTICATED" || error.code === "ACCOUNT_CHANGED") {
+        navigate2("/login?returnTo=%2Fadmin");
+        return;
+      }
+      notice(error.code === "TIMEOUT" || error.code === "OFFLINE" ? "\u8BF7\u6C42\u7ED3\u679C\u672A\u786E\u8BA4\u3002\u8BF7\u5148\u5237\u65B0\u5217\u8868\u6838\u5BF9\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u91CD\u65B0\u64CD\u4F5C\u3002" : error.message || "\u64CD\u4F5C\u5931\u8D25\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u3002", true);
+    }
+    function button(text, task, { write = false, danger = false } = {}) {
+      const item = node("button", text, danger ? "danger" : "secondary");
+      item.type = "button";
+      if (write) {
+        item.dataset.write = "";
+        item.disabled = busy;
+      }
+      item.onclick = async () => {
+        if (write && busy) return;
+        if (write) {
+          busy = true;
+          for (const control of document2.querySelectorAll("[data-write]")) control.disabled = true;
+        }
+        try {
+          await task();
+        } catch (error) {
+          report(error);
+        } finally {
+          if (write) {
+            busy = false;
+            for (const control of document2.querySelectorAll("[data-write]")) control.disabled = control.hasAttribute("data-unavailable");
+          }
+        }
+      };
+      return item;
+    }
+    async function request(path, options) {
+      try {
+        return await api.request(path, options);
+      } catch (error) {
+        if (error.code !== "REAUTHENTICATION_REQUIRED") throw error;
+        const answer = await formDialog(document2, "\u91CD\u65B0\u9A8C\u8BC1\u5BC6\u7801", [{ name: "password", label: "\u5F53\u524D\u5BC6\u7801", type: "password", autocomplete: "current-password", required: true, maxLength: 1024 }], { message: "\u6B64\u64CD\u4F5C\u9700\u8981\u6700\u8FD1\u5B8C\u6210\u7684\u5BC6\u7801\u9A8C\u8BC1\u3002", confirm: "\u9A8C\u8BC1\u5E76\u7EE7\u7EED" });
+        if (!answer) return null;
+        try {
+          await api.request("/auth/reauth", { method: "POST", body: { password: answer.password } });
+        } finally {
+          answer.password = "";
+        }
+        return api.request(path, options);
+      }
+    }
+    async function confirm(title, message) {
+      return Boolean(await formDialog(document2, title, [], { message, confirm: title }));
+    }
+    async function mutation(path, body, method = "POST") {
+      const result = await request(path, { method, body });
+      if (result === null) return false;
+      notice("\u64CD\u4F5C\u5DF2\u5B8C\u6210\u3002");
+      await load();
+      return true;
+    }
+    function details(primary, secondary) {
+      const cell = node("span", primary);
+      if (secondary) cell.append(node("small", secondary));
+      return cell;
+    }
+    function toolbar({ create, filters = true } = {}) {
+      const bar = node("div", void 0, "admin-toolbar"), left = node("div"), right = node("div");
+      if (filters) {
+        const input = document2.createElement("input");
+        input.type = "search";
+        input.placeholder = "\u7B5B\u9009\u5F53\u524D\u9875";
+        input.setAttribute("aria-label", "\u7B5B\u9009\u5F53\u524D\u9875");
+        input.value = search;
+        input.oninput = () => {
+          search = input.value;
+          renderTable();
+        };
+        left.append(input);
+      }
+      if (section === "projects") {
+        const select = document2.createElement("select");
+        select.setAttribute("aria-label", "\u9879\u76EE\u72B6\u6001");
+        for (const [value, text] of [["false", "\u6D3B\u8DC3\u9879\u76EE"], ["true", "\u56DE\u6536\u7AD9"]]) {
+          const option = node("option", text);
+          option.value = value;
+          select.append(option);
+        }
+        select.value = String(trash);
+        select.onchange = () => {
+          trash = select.value === "true";
+          offset = 0;
+          load().catch(report);
+        };
+        left.append(select);
+      }
+      right.append(button("\u5237\u65B0", load));
+      if (create) right.append(create);
+      bar.append(left, right);
+      content.append(bar);
+    }
+    function table(headers, records, cells) {
+      const wrap = node("div", void 0, "table-wrap"), table2 = document2.createElement("table"), caption = node("caption", sections[section][0]);
+      caption.hidden = true;
+      table2.append(caption);
+      const head = document2.createElement("thead"), header = document2.createElement("tr");
+      for (const text of headers) {
+        const cell = node("th", text);
+        cell.scope = "col";
+        header.append(cell);
+      }
+      head.append(header);
+      table2.append(head);
+      const body = document2.createElement("tbody");
+      for (const record of records) {
+        const row = document2.createElement("tr");
+        for (const value of cells(record)) {
+          const cell = document2.createElement("td");
+          cell.append(value?.nodeType ? value : document2.createTextNode(String(value ?? "\u2014")));
+          row.append(cell);
+        }
+        body.append(row);
+      }
+      table2.append(body);
+      wrap.append(table2);
+      content.append(wrap);
+      if (!records.length) content.append(node("p", search ? "\u5F53\u524D\u9875\u6CA1\u6709\u7B26\u5408\u7B5B\u9009\u6761\u4EF6\u7684\u8BB0\u5F55\u3002" : "\u6682\u65E0\u8BB0\u5F55\u3002", "empty-state"));
+    }
+    function actions(items) {
+      const group = node("div", void 0, "row-actions");
+      for (const item of items) group.append(item);
+      return group;
+    }
+    function pages() {
+      const page = node("div", void 0, "pagination");
+      const previous = button("\u4E0A\u4E00\u9875", async () => {
+        offset -= limit;
+        await load();
+      });
+      previous.disabled = offset === 0;
+      const next = button("\u4E0B\u4E00\u9875", async () => {
+        offset += limit;
+        await load();
+      });
+      next.disabled = rows.length < limit;
+      page.append(previous, node("span", `\u7B2C ${Math.floor(offset / limit) + 1} \u9875`), next);
+      content.append(page);
+    }
+    function filtered() {
+      const term = search.trim().toLocaleLowerCase();
+      return rows.filter((row) => !term || JSON.stringify(row).toLocaleLowerCase().includes(term));
+    }
+    function renderTable() {
+      const oldToolbar = content.querySelector(".admin-toolbar");
+      content.replaceChildren();
+      if (oldToolbar) content.append(oldToolbar);
+      else toolbar({ create: section === "users" ? button("\u521B\u5EFA\u7528\u6237", createUser, { write: true }) : null });
+      if (section === "users") table(["\u8D26\u53F7", "\u89D2\u8272", "\u72B6\u6001", "\u521B\u5EFA\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (user) => [details(user.username, user.id), user.role === "admin" ? "\u7BA1\u7406\u5458" : "\u666E\u901A\u7528\u6237", user.status === "active" ? "\u6709\u6548" : "\u5DF2\u7981\u7528", date(user.createdAt), actions([
+        button("\u91CD\u7F6E\u5BC6\u7801", () => resetPassword(user), { write: true }),
+        button(user.status === "active" ? "\u7981\u7528" : "\u542F\u7528", () => statusUser(user), { write: true, danger: user.status === "active" }),
+        button(user.role === "admin" ? "\u8BBE\u4E3A\u666E\u901A\u7528\u6237" : "\u8BBE\u4E3A\u7BA1\u7406\u5458", () => roleUser(user), { write: true }),
+        button("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", () => revokeSessions(user), { write: true })
+      ])]);
+      if (section === "projects") table(["\u9879\u76EE", "\u6240\u6709\u8005", "\u4FEE\u8BA2", "\u66F4\u65B0\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (project) => [details(project.title, project.id), details(project.ownerUsername, project.ownerId), project.revision, date(project.updatedAt), actions([
+        button("\u8F6C\u79FB\u5F52\u5C5E", () => transferProject(project), { write: true }),
+        button(trash ? "\u6062\u590D" : "\u79FB\u5230\u56DE\u6536\u7AD9", () => trashProject(project), { write: true, danger: !trash })
+      ])]);
+      if (section === "tokens") table(["\u6388\u6743", "\u6240\u5C5E\u7528\u6237", "\u6743\u9650\u4E0E\u9879\u76EE\u8303\u56F4", "\u5230\u671F\u65F6\u95F4", "\u72B6\u6001", "\u64CD\u4F5C"], filtered(), (token) => [details(token.name, token.prefix + "\u2026"), token.userId, details(token.scopes.join("\u3001"), token.projectAllowlist === null ? "\u81EA\u5DF1\u7684\u5168\u90E8\u9879\u76EE" : `\u9650\u5B9A ${token.projectAllowlist.length} \u4E2A\u9879\u76EE`), date(token.expiresAt), token.revokedAt ? "\u5DF2\u64A4\u9500" : Date.parse(token.expiresAt) <= Date.now() ? "\u5DF2\u5230\u671F" : "\u6709\u6548", token.revokedAt ? "\u2014" : actions([button("\u64A4\u9500\u6388\u6743", () => revokeToken(token), { write: true, danger: true })])]);
+      if (section === "audit") table(["\u65F6\u95F4", "\u64CD\u4F5C\u4EBA", "\u64CD\u4F5C", "\u8D44\u6E90", "\u7ED3\u679C"], filtered(), (event) => [date(event.createdAt), event.actorId || "\u672A\u767B\u5F55", event.action, details(event.resourceType, event.resourceId), event.outcome === "success" ? "\u6210\u529F" : "\u5931\u8D25"]);
+      pages();
+    }
+    async function createUser() {
+      const answer = await formDialog(document2, "\u521B\u5EFA\u7528\u6237", [{ name: "username", label: "\u7528\u6237\u540D", required: true, minLength: 3, maxLength: 64, pattern: "[A-Za-z0-9_.-]{3,64}", autocomplete: "off" }, { name: "password", label: "\u521D\u59CB\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }, { name: "role", label: "\u89D2\u8272", options: [["user", "\u666E\u901A\u7528\u6237"], ["admin", "\u7BA1\u7406\u5458"]] }], { confirm: "\u521B\u5EFA\u7528\u6237" });
+      if (answer) try {
+        await mutation("/admin/users", answer);
+      } finally {
+        answer.password = "";
+      }
+    }
+    async function resetPassword(user) {
+      const answer = await formDialog(document2, "\u91CD\u7F6E\u5BC6\u7801", [{ name: "password", label: "\u65B0\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }], { message: `\u91CD\u7F6E ${user.username} \u7684\u5BC6\u7801\u540E\uFF0C\u8BE5\u8D26\u53F7\u7684\u6240\u6709\u767B\u5F55\u4F1A\u8BDD\u90FD\u4F1A\u9000\u51FA\u3002`, confirm: "\u91CD\u7F6E\u5BC6\u7801" });
+      if (answer) try {
+        if (await mutation(`/admin/users/${user.id}/reset-password`, answer) && user.id === api.user.id) navigate2("/login?returnTo=%2Fadmin");
+      } finally {
+        answer.password = "";
+      }
+    }
+    async function statusUser(user) {
+      const disable = user.status === "active";
+      if (await confirm(disable ? "\u7981\u7528\u8D26\u53F7" : "\u542F\u7528\u8D26\u53F7", `${user.username}\uFF1A${disable ? "\u6240\u6709\u767B\u5F55\u4F1A\u8BDD\u53CA Agent \u6388\u6743\u4F1A\u5931\u6548\u3002" : "\u8D26\u53F7\u53EF\u91CD\u65B0\u767B\u5F55\uFF1B\u5DF2\u64A4\u9500\u6388\u6743\u4E0D\u4F1A\u6062\u590D\u3002"}`)) {
+        if (await mutation(`/admin/users/${user.id}/status`, { status: disable ? "disabled" : "active" }, "PATCH") && disable && user.id === api.user.id) navigate2("/login");
+      }
+    }
+    async function roleUser(user) {
+      const role = user.role === "admin" ? "user" : "admin";
+      if (await confirm("\u53D8\u66F4\u89D2\u8272", `\u5C06 ${user.username} \u8BBE\u4E3A${role === "admin" ? "\u7BA1\u7406\u5458\u3002\u7BA1\u7406\u5458\u53EF\u4EE5\u7BA1\u7406\u5176\u4ED6\u8D26\u53F7\u548C\u5E73\u53F0\u8BBE\u7F6E\u3002" : "\u666E\u901A\u7528\u6237\u3002"}`)) {
+        if (await mutation(`/admin/users/${user.id}/role`, { role }, "PATCH") && user.id === api.user.id && role === "user") navigate2("/app");
+      }
+    }
+    async function revokeSessions(user) {
+      if (await confirm("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", `${user.username} \u7684\u6240\u6709\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5C06\u9000\u51FA\u3002`)) {
+        if (await mutation(`/admin/users/${user.id}/sessions`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
+      }
+    }
+    async function transferProject(project) {
+      const answer = await formDialog(document2, "\u8F6C\u79FB\u9879\u76EE\u5F52\u5C5E", [{ name: "newOwnerId", label: "\u65B0\u6240\u6709\u8005\u7684\u8D26\u53F7 ID", required: true, value: project.ownerId, pattern: "[a-fA-F0-9-]{36}" }], { message: `\u8F6C\u79FB\u201C${project.title}\u201D\u540E\uFF0C\u539F\u6240\u6709\u8005\u5C06\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002\u6B63\u5728\u7F16\u8F91\u7684\u9879\u76EE\u65E0\u6CD5\u8F6C\u79FB\u3002`, confirm: "\u8F6C\u79FB\u5F52\u5C5E" });
+      if (answer) await mutation(`/admin/projects/${project.id}/transfer`, { ...answer, expectedRevision: project.revision, clientMutationId: crypto.randomUUID() });
+    }
+    async function trashProject(project) {
+      if (await confirm(trash ? "\u6062\u590D\u9879\u76EE" : "\u79FB\u5230\u56DE\u6536\u7AD9", `\u786E\u8BA4${trash ? "\u6062\u590D" : "\u5C06"}\u201C${project.title}\u201D${trash ? "\uFF1F" : "\u79FB\u5230\u56DE\u6536\u7AD9\uFF1F\u9879\u76EE\u53EF\u6062\u590D\u3002"}`)) await mutation(`/admin/projects/${project.id}/${trash ? "restore" : "trash"}`, { expectedRevision: project.revision, clientMutationId: crypto.randomUUID() });
+    }
+    async function revokeToken(token) {
+      if (await confirm("\u64A4\u9500\u6388\u6743", `\u64A4\u9500\u201C${token.name}\u201D\u540E\uFF0C\u4F7F\u7528\u8BE5\u6388\u6743\u7684 Agent \u5C06\u7ACB\u5373\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002`)) await mutation(`/admin/mcp/tokens/${token.id}/revoke`, void 0);
+    }
+    function renderDashboard(data) {
+      const list = node("dl", void 0, "summary-list");
+      for (const [label, value] of [["\u670D\u52A1\u72B6\u6001", data.service.status === "ok" ? "\u5728\u7EBF" : data.service.status], ["\u6709\u6548\u8D26\u53F7 / \u5168\u90E8\u8D26\u53F7", `${data.users.active} / ${data.users.total}`], ["\u6709\u6548\u7BA1\u7406\u5458", data.users.admins], ["\u6D3B\u8DC3\u9879\u76EE / \u56DE\u6536\u7AD9", `${data.projects.active} / ${data.projects.trash}`], ["\u6709\u6548 Agent \u6388\u6743", data.tokens.active], ["\u6587\u7A3F\u6570\u636E", bytes(data.storage.documentBytes)], ["\u6570\u636E\u5E93\u7A7A\u95F4", bytes(data.storage.databaseBytes)]]) {
+        const item = node("div");
+        item.append(node("dt", label), node("dd", value));
+        list.append(item);
+      }
+      content.append(list);
+      content.append(node("p", "\u7A7A\u95F4\u7EDF\u8BA1\u6765\u81EA\u5F53\u524D\u6570\u636E\u5E93\uFF1B\u9879\u76EE\u5185\u5BB9\u4E0D\u4F1A\u5728\u540E\u53F0\u9884\u89C8\u3002", "admin-detail"));
+      content.append(button("\u5237\u65B0\u72B6\u6001", load));
+    }
+    function renderSettings(settings) {
+      const form = node("form", void 0, "settings-form"), controls = {};
+      for (const [name, title, type] of [["siteName", "\u7AD9\u70B9\u540D\u79F0", "text"], ["announcement", "\u516C\u544A", "textarea"], ["maxUploadBytes", "\u4E0A\u4F20\u4E0A\u9650\uFF08\u5B57\u8282\uFF0C\u6700\u591A 32 MiB\uFF09", "number"], ["maintenanceMode", "\u5F00\u542F\u7EF4\u62A4\u6A21\u5F0F", "checkbox"]]) {
+        const label = node("label", title), input = document2.createElement(type === "textarea" ? "textarea" : "input");
+        input.name = name;
+        if (type !== "textarea") input.type = type;
+        if (type === "checkbox") {
+          input.checked = settings[name];
+          label.prepend(input);
+        } else {
+          input.value = settings[name];
+          label.append(input);
+        }
+        if (name === "siteName") {
+          input.required = true;
+          input.maxLength = 100;
+        }
+        if (name === "announcement") input.maxLength = 2e3;
+        if (name === "maxUploadBytes") {
+          input.required = true;
+          input.min = 1;
+          input.max = 33554432;
+        }
+        controls[name] = input;
+        form.append(label);
+      }
+      form.append(node("p", "\u516C\u5F00\u6CE8\u518C\u4FDD\u6301\u5173\u95ED\u3002\u8D26\u53F7\u7531\u7BA1\u7406\u5458\u521B\u5EFA\u3002", "admin-detail"));
+      const save = button("\u4FDD\u5B58\u8BBE\u7F6E", async () => {
+        if (!form.reportValidity()) return;
+        if (!await confirm("\u4FDD\u5B58\u8BBE\u7F6E", "\u786E\u8BA4\u66F4\u65B0\u7AD9\u70B9\u8BBE\u7F6E\uFF1F\u7EF4\u62A4\u6A21\u5F0F\u4F1A\u5F71\u54CD\u666E\u901A\u7528\u6237\u7684\u4E91\u7AEF\u5199\u5165\u3002")) return;
+        const patch = { siteName: controls.siteName.value, announcement: controls.announcement.value, maxUploadBytes: Number(controls.maxUploadBytes.value), maintenanceMode: controls.maintenanceMode.checked, publicRegistration: false };
+        await mutation("/admin/settings", patch, "PATCH");
+      }, { write: true });
+      form.onsubmit = (event) => {
+        event.preventDefault();
+        save.click();
+      };
+      form.append(save);
+      content.append(form);
+    }
+    function renderBackups(data) {
+      toolbar({ filters: false });
+      const bar = content.querySelector(".admin-toolbar>div:last-child");
+      const running = data.jobs.some((job) => ["queued", "running"].includes(job.status));
+      const start = button("\u521B\u5EFA\u5907\u4EFD", async () => {
+        if (await confirm("\u521B\u5EFA\u5907\u4EFD", "\u5C06\u5907\u4EFD\u6570\u636E\u5E93\u548C\u670D\u52A1\u7D20\u6750\u3002\u4EFB\u52A1\u5728\u670D\u52A1\u7AEF\u6267\u884C\uFF0C\u53EF\u5728\u6B64\u67E5\u770B\u8FDB\u5EA6\u3002")) await mutation("/admin/backups", void 0);
+      }, { write: true });
+      start.toggleAttribute("data-unavailable", !data.configured || running);
+      start.disabled = busy || start.hasAttribute("data-unavailable");
+      const restore = button("\u9A8C\u8BC1\u6062\u590D", async () => {
+        if (await confirm("\u9A8C\u8BC1\u6062\u590D", "\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u6062\u590D\u6700\u65B0\u5907\u4EFD\u5E76\u6838\u5BF9\u5185\u5BB9\u3002\u4E0D\u4F1A\u8986\u76D6\u5F53\u524D\u670D\u52A1\u6570\u636E\u5E93\u3002")) await mutation("/admin/backups/restore-check", void 0);
+      }, { write: true });
+      restore.toggleAttribute("data-unavailable", !data.restoreConfigured || running || !data.jobs.some((job) => ["completed", "verified"].includes(job.status)));
+      restore.disabled = busy || restore.hasAttribute("data-unavailable");
+      bar.append(start, restore);
+      content.append(node("p", !data.configured ? "\u670D\u52A1\u7AEF\u5C1A\u672A\u914D\u7F6E\u5907\u4EFD\u76EE\u5F55\u548C\u6570\u636E\u5E93\u8FDE\u63A5\u3002\u8BF7\u8054\u7CFB\u8FD0\u7EF4\u4EBA\u5458\u5B8C\u6210\u914D\u7F6E\u3002" : data.restoreConfigured ? "\u5907\u4EFD\u548C\u72EC\u7ACB\u6062\u590D\u9A8C\u8BC1\u5747\u5DF2\u914D\u7F6E\u3002" : "\u5907\u4EFD\u5DF2\u914D\u7F6E\uFF0C\u72EC\u7ACB\u6062\u590D\u9A8C\u8BC1\u5C1A\u672A\u914D\u7F6E\u3002", "admin-detail"));
+      const labels = { queued: "\u7B49\u5F85\u6267\u884C", running: "\u6267\u884C\u4E2D", completed: "\u5907\u4EFD\u5B8C\u6210", verified: "\u6062\u590D\u9A8C\u8BC1\u901A\u8FC7", failed: "\u5931\u8D25" };
+      table(["\u4EFB\u52A1", "\u72B6\u6001", "\u521B\u5EFA\u65F6\u95F4", "\u5B8C\u6210\u65F6\u95F4"], data.jobs, (job) => [details(job.id, job.errorCode), labels[job.status] || job.status, date(job.createdAt), date(job.completedAt)]);
+      if (data.jobs.some((job) => ["queued", "running"].includes(job.status))) poll = setTimeout(() => load().catch(report), 2e3);
+    }
+    async function load() {
+      clearTimeout(poll);
+      poll = null;
+      const current = ++generation, target = section;
+      content.setAttribute("aria-busy", "true");
+      content.replaceChildren(node("p", "\u6B63\u5728\u8BFB\u53D6\u670D\u52A1\u6570\u636E\u2026", "empty-state"));
+      try {
+        let data;
+        if (target === "dashboard") data = await api.request("/admin/dashboard");
+        else if (target === "settings") data = await api.request("/admin/settings");
+        else if (target === "backups") data = await api.request("/admin/backups");
+        else data = await api.request(`/admin/${target === "tokens" ? "mcp/tokens" : target}?limit=${limit}&offset=${offset}${target === "projects" ? "&trash=" + trash : ""}`);
+        if (current !== generation) return;
+        content.replaceChildren();
+        if (target === "dashboard") renderDashboard(data);
+        else if (target === "settings") renderSettings(data);
+        else if (target === "backups") renderBackups(data);
+        else {
+          rows = data;
+          renderTable();
+        }
+      } catch (error) {
+        if (current === generation) {
+          content.replaceChildren(node("p", "\u8BFB\u53D6\u5931\u8D25\u3002\u68C0\u67E5\u63D0\u793A\u540E\u5237\u65B0\u91CD\u8BD5\u3002", "empty-state"), button("\u91CD\u65B0\u8BFB\u53D6", load));
+          report(error);
+        }
+      } finally {
+        if (current === generation) content.setAttribute("aria-busy", "false");
+      }
+    }
+    for (const nav of document2.querySelectorAll("[data-section]")) nav.onclick = () => {
+      section = nav.dataset.section;
+      offset = 0;
+      search = "";
+      notice("");
+      for (const item of document2.querySelectorAll("[data-section]")) {
+        item.classList.toggle("active", item === nav);
+        item.setAttribute("aria-current", item === nav ? "page" : "false");
+      }
+      document2.querySelector("#section-name").textContent = sections[section][0];
+      document2.querySelector("#admin-title").textContent = sections[section][0];
+      document2.querySelector("#admin-description").textContent = sections[section][1];
+      load().catch(report);
+    };
+    document2.querySelector("#admin-logout").onclick = async () => {
+      try {
+        await api.logout();
+        navigate2("/login");
+      } catch (error) {
+        report(error);
+      }
+    };
+    try {
+      await api.restoreSession();
+      if (api.user.role !== "admin") {
+        notice("\u6B64\u8D26\u53F7\u6CA1\u6709\u7BA1\u7406\u540E\u53F0\u8BBF\u95EE\u6743\u9650\u3002\u8BF7\u8FD4\u56DE\u521B\u4F5C\u5DE5\u4F5C\u53F0\u3002", true);
+        content.replaceChildren();
+      } else {
+        document2.querySelector("#admin-account").textContent = api.user.username;
+        await load();
+      }
+    } catch (error) {
+      report(error);
+    }
+    return { reload: load, destroy() {
+      clearTimeout(poll);
+      generation++;
+    } };
+  }
+  var sections, date, bytes;
+  var init_app = __esm({
+    "web/admin/app.js"() {
+      init_cloud_project_store();
+      sections = {
+        dashboard: ["\u5E73\u53F0\u6982\u89C8", "\u68C0\u67E5\u670D\u52A1\u3001\u7528\u6237\u548C\u5B58\u50A8\u72B6\u6001\u3002"],
+        users: ["\u7528\u6237", "\u521B\u5EFA\u8D26\u53F7\uFF0C\u7BA1\u7406\u89D2\u8272\u3001\u767B\u5F55\u4F1A\u8BDD\u548C\u8D26\u53F7\u72B6\u6001\u3002"],
+        projects: ["\u9879\u76EE", "\u7BA1\u7406\u5F52\u5C5E\u548C\u56DE\u6536\u7AD9\u3002\u6B64\u5904\u4EC5\u5C55\u793A\u9879\u76EE\u5143\u6570\u636E\u3002"],
+        tokens: ["Agent \u6388\u6743", "\u67E5\u770B\u6388\u6743\u8303\u56F4\u548C\u6709\u6548\u671F\uFF0C\u64A4\u9500\u4E0D\u518D\u4F7F\u7528\u7684\u6388\u6743\u3002"],
+        audit: ["\u5BA1\u8BA1\u8BB0\u5F55", "\u67E5\u770B\u5B89\u5168\u4E0E\u7BA1\u7406\u64CD\u4F5C\u7684\u65F6\u95F4\u3001\u64CD\u4F5C\u4EBA\u548C\u7ED3\u679C\u3002"],
+        settings: ["\u7CFB\u7EDF\u8BBE\u7F6E", "\u8C03\u6574\u7AD9\u70B9\u4FE1\u606F\u3001\u4E0A\u4F20\u4E0A\u9650\u548C\u7EF4\u62A4\u72B6\u6001\u3002"],
+        backups: ["\u5907\u4EFD\u4E0E\u6062\u590D\u9A8C\u8BC1", "\u521B\u5EFA\u670D\u52A1\u5907\u4EFD\uFF0C\u5E76\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u68C0\u67E5\u6062\u590D\u7ED3\u679C\u3002"]
+      };
+      date = (value) => value ? new Date(value).toLocaleString("zh-CN") : "\u2014";
+      bytes = (value) => value >= 1048576 ? (value / 1048576).toFixed(1) + " MiB" : (value / 1024).toFixed(1) + " KiB";
+      if (typeof document !== "undefined" && document.querySelector("[data-admin-root]")) mountAdmin().catch(() => {
+      });
+    }
+  });
+
+  // web/token-settings.js
+  async function mountTokenSettings({ api = new CloudAPI(), container, document: document2 = container?.ownerDocument || globalThis.document, navigate: navigate2 = (url) => globalThis.location.assign(url) } = {}) {
+    if (!container) {
+      container = document2.createElement("section");
+      (document2.querySelector("main") || document2.body).append(container);
+    }
+    container.classList.add("token-settings");
+    const style = document2.createElement("style");
+    style.textContent = ".token-settings{padding:24px 0}.token-settings h2{margin-bottom:12px}.token-settings p{font-size:12px;line-height:1.8;color:var(--muted)}.token-settings .token-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.token-settings .token-row{border-top:1px solid var(--line);padding:18px 0;display:flex;justify-content:space-between;gap:20px}.token-settings .token-row strong{font-size:14px;font-weight:500}.token-settings .token-row small{display:block;color:var(--muted);font-size:11px;margin-top:8px;overflow-wrap:anywhere}.token-settings .token-row button{align-self:center;font-size:11px;padding:8px 12px}.token-settings .token-status.error{color:#873723}.sp-token-dialog label.checkbox{display:flex;gap:9px;align-items:center}.sp-token-dialog label.checkbox input{width:auto;margin:0}.sp-token-dialog textarea{display:block;width:100%;font:inherit;font-size:12px;padding:10px;background:transparent;border:1px solid var(--line);margin-top:8px}.token-secret{width:100%;padding:12px;font:12px monospace;overflow-wrap:anywhere}";
+    container.append(style);
+    const heading = document2.createElement("h2");
+    heading.textContent = "Agent \u6388\u6743";
+    container.append(heading);
+    const description = document2.createElement("p");
+    description.textContent = "\u4E3A\u81EA\u5DF1\u7684\u9879\u76EE\u521B\u5EFA\u9650\u65F6\u6388\u6743\u3002\u5B8C\u6574\u4EE4\u724C\u4EC5\u663E\u793A\u4E00\u6B21\uFF0C\u8BF7\u4FDD\u5B58\u5230 Agent \u7684\u73AF\u5883\u914D\u7F6E\u4E2D\u3002";
+    container.append(description);
+    const status = document2.createElement("p");
+    status.className = "token-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    container.append(status);
+    const toolbar = document2.createElement("div");
+    toolbar.className = "token-toolbar";
+    container.append(toolbar);
+    const list = document2.createElement("div");
+    container.append(list);
+    let busy = false;
+    function notice(text, error = false) {
+      status.textContent = text;
+      status.classList.toggle("error", error);
+    }
+    function report(error) {
+      if (["UNAUTHENTICATED", "ACCOUNT_CHANGED"].includes(error.code)) navigate2("/login?returnTo=%2Fapp");
+      else notice(error.code === "TIMEOUT" || error.code === "OFFLINE" ? "\u8BF7\u6C42\u7ED3\u679C\u672A\u786E\u8BA4\uFF0C\u8BF7\u5237\u65B0\u6388\u6743\u5217\u8868\u6838\u5BF9\u3002" : error.message || "\u64CD\u4F5C\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5\u3002", true);
+    }
+    function button(text, task, write = false) {
+      const button2 = document2.createElement("button");
+      button2.type = "button";
+      button2.textContent = text;
+      button2.className = "secondary";
+      if (write) {
+        button2.dataset.tokenWrite = "";
+        button2.disabled = busy;
+      }
+      button2.onclick = async () => {
+        if (write && busy) return;
+        if (write) {
+          busy = true;
+          for (const element of container.querySelectorAll("[data-token-write]")) element.disabled = true;
+        }
+        try {
+          await task();
+        } catch (error) {
+          report(error);
+        } finally {
+          if (write) {
+            busy = false;
+            for (const element of container.querySelectorAll("[data-token-write]")) element.disabled = false;
+          }
+        }
+      };
+      return button2;
+    }
+    async function oneTimeToken(token) {
+      await new Promise((resolve) => {
+        const previous = document2.activeElement, dialog = document2.createElement("dialog"), title = document2.createElement("h2"), note = document2.createElement("p"), value = document2.createElement("textarea");
+        dialog.className = "sp-token-dialog";
+        title.textContent = "\u4FDD\u5B58\u4F60\u7684\u6388\u6743\u4EE4\u724C";
+        title.id = "token-once-title";
+        dialog.setAttribute("aria-labelledby", title.id);
+        note.textContent = "\u8FD9\u662F\u552F\u4E00\u4E00\u6B21\u663E\u793A\u5B8C\u6574\u4EE4\u724C\u3002\u5173\u95ED\u540E\u65E0\u6CD5\u518D\u6B21\u67E5\u770B\uFF1B\u4E22\u5931\u65F6\u8BF7\u64A4\u9500\u5E76\u91CD\u65B0\u521B\u5EFA\u3002";
+        value.value = token;
+        value.readOnly = true;
+        value.className = "token-secret";
+        value.setAttribute("aria-label", "\u5B8C\u6574\u6388\u6743\u4EE4\u724C");
+        value.rows = 3;
+        const actions = document2.createElement("div");
+        actions.className = "dialog-actions";
+        const copy2 = document2.createElement("button");
+        copy2.type = "button";
+        copy2.className = "secondary";
+        copy2.textContent = "\u590D\u5236\u4EE4\u724C";
+        copy2.onclick = async () => {
+          try {
+            await document2.defaultView.navigator.clipboard.writeText(value.value);
+            copy2.textContent = "\u5DF2\u590D\u5236";
+          } catch {
+            value.focus();
+            value.select();
+            note.textContent = "\u81EA\u52A8\u590D\u5236\u4E0D\u53EF\u7528\uFF0C\u8BF7\u9009\u62E9\u4EE4\u724C\u540E\u624B\u52A8\u590D\u5236\u3002";
+          }
+        };
+        const done = document2.createElement("button");
+        done.type = "button";
+        done.textContent = "\u6211\u5DF2\u4FDD\u5B58";
+        let finished = false;
+        function finish() {
+          if (finished) return;
+          finished = true;
+          value.value = "";
+          token = "";
+          dialog.close?.();
+          dialog.remove();
+          previous?.focus?.();
+          resolve();
+        }
+        done.onclick = finish;
+        dialog.addEventListener("cancel", (event) => {
+          event.preventDefault();
+          finish();
+        });
+        actions.append(copy2, done);
+        dialog.append(title, note, value, actions);
+        document2.body.append(dialog);
+        if (dialog.showModal) dialog.showModal();
+        else dialog.setAttribute("open", "");
+        value.focus();
+        value.select();
+      });
+    }
+    async function create() {
+      const fields = [{ name: "name", label: "\u6388\u6743\u540D\u79F0", required: true, maxLength: 128 }, ...permissions.map(([name, label, value]) => ({ name, label, type: "checkbox", value })), { name: "projectMode", label: "\u9879\u76EE\u8303\u56F4", options: [["all", "\u81EA\u5DF1\u7684\u5168\u90E8\u9879\u76EE"], ["selected", "\u4EC5\u4E0B\u65B9\u6307\u5B9A\u9879\u76EE"], ["none", "\u4E0D\u5141\u8BB8\u8BBF\u95EE\u73B0\u6709\u9879\u76EE"]] }, { name: "projectAllowlist", label: "\u9879\u76EE ID\uFF08\u4EC5\u6307\u5B9A\u9879\u76EE\u65F6\u586B\u5199\uFF0C\u4EE5\u9017\u53F7\u6216\u6362\u884C\u5206\u9694\uFF09", type: "textarea" }, { name: "expiresAt", label: "\u5230\u671F\u65F6\u95F4\uFF08\u7559\u7A7A\u4E3A 30 \u5929\uFF0C\u6700\u591A 365 \u5929\uFF09", type: "datetime-local" }];
+      const pending = formDialog(document2, "\u521B\u5EFA Agent \u6388\u6743", fields, { message: "\u6309 Agent \u5B9E\u9645\u9700\u8981\u9009\u62E9\u6743\u9650\u3002\u9ED8\u8BA4\u4E0D\u5141\u8BB8\u5220\u9664\u9879\u76EE\u3002", confirm: "\u521B\u5EFA\u6388\u6743" });
+      document2.querySelector("dialog")?.classList.add("sp-token-dialog");
+      const answer = await pending;
+      if (!answer) return;
+      const scopes = permissions.filter(([name]) => answer[name]).map(([name]) => name);
+      if (!scopes.length) throw new Error("\u81F3\u5C11\u9009\u62E9\u4E00\u9879\u6743\u9650\u3002");
+      if (answer["projects:delete"] && !await formDialog(document2, "\u5141\u8BB8\u5220\u9664\u9879\u76EE", [], { message: "\u8BE5 Agent \u53EF\u4EE5\u5C06\u6388\u6743\u8303\u56F4\u5185\u7684\u9879\u76EE\u79FB\u5230\u56DE\u6536\u7AD9\u53CA\u6062\u590D\u3002\u786E\u8BA4\u6388\u4E88\u6B64\u6743\u9650\uFF1F", confirm: "\u5141\u8BB8\u5220\u9664" })) return;
+      let projectAllowlist = null;
+      if (answer.projectMode === "none") projectAllowlist = [];
+      if (answer.projectMode === "selected") {
+        projectAllowlist = answer.projectAllowlist.split(/[\s,，]+/).filter(Boolean);
+        if (!projectAllowlist.length || projectAllowlist.some((id) => !uuid.test(id))) throw new Error("\u8BF7\u586B\u5199\u6709\u6548\u7684\u9879\u76EE ID\u3002");
+        projectAllowlist = [...new Set(projectAllowlist.map((id) => id.toLowerCase()))];
+      }
+      const body = { name: answer.name, scopes, projectAllowlist, ...answer.expiresAt ? { expiresAt: new Date(answer.expiresAt).toISOString() } : {} };
+      const created = await api.request("/me/tokens", { method: "POST", body });
+      const token = created.token;
+      delete created.token;
+      await oneTimeToken(token);
+      notice("\u6388\u6743\u5DF2\u521B\u5EFA\u3002");
+      await reload();
+    }
+    async function revoke(token) {
+      if (!await formDialog(document2, "\u64A4\u9500\u6388\u6743", [], { message: `\u4F7F\u7528\u201C${token.name}\u201D\u7684 Agent \u5C06\u7ACB\u5373\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002`, confirm: "\u64A4\u9500\u6388\u6743" })) return;
+      await api.request(`/me/tokens/${encodeURIComponent(token.id)}`, { method: "DELETE" });
+      notice("\u6388\u6743\u5DF2\u64A4\u9500\u3002");
+      await reload();
+    }
+    async function password() {
+      const answer = await formDialog(document2, "\u4FEE\u6539\u5BC6\u7801", [{ name: "currentPassword", label: "\u5F53\u524D\u5BC6\u7801", type: "password", required: true, maxLength: 1024, autocomplete: "current-password" }, { name: "newPassword", label: "\u65B0\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }], { message: "\u4FEE\u6539\u540E\u6240\u6709\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5C06\u9000\u51FA\uFF0C\u8BF7\u4F7F\u7528\u65B0\u5BC6\u7801\u91CD\u65B0\u767B\u5F55\u3002", confirm: "\u4FEE\u6539\u5BC6\u7801" });
+      if (!answer) return;
+      try {
+        await api.request("/auth/password", { method: "POST", body: answer });
+        navigate2("/login?returnTo=%2Fapp");
+      } finally {
+        answer.currentPassword = "";
+        answer.newPassword = "";
+      }
+    }
+    toolbar.append(button("\u521B\u5EFA\u6388\u6743", create, true), button("\u5237\u65B0\u5217\u8868", reload), button("\u4FEE\u6539\u5BC6\u7801", password, true));
+    async function reload() {
+      list.setAttribute("aria-busy", "true");
+      list.replaceChildren();
+      const loading = document2.createElement("p");
+      loading.textContent = "\u6B63\u5728\u8BFB\u53D6\u6388\u6743\u2026";
+      list.append(loading);
+      try {
+        const tokens = await api.request("/me/tokens");
+        list.replaceChildren();
+        if (!tokens.length) {
+          const empty = document2.createElement("p");
+          empty.textContent = "\u6682\u65E0\u6388\u6743\u3002\u521B\u5EFA\u4E00\u4EFD\u9650\u65F6\u6388\u6743\u540E\uFF0C\u5373\u53EF\u8BA9 Agent \u8BBF\u95EE\u81EA\u5DF1\u7684\u9879\u76EE\u3002";
+          list.append(empty);
+        }
+        for (const token of tokens) {
+          const row = document2.createElement("div");
+          row.className = "token-row";
+          const info = document2.createElement("div"), name = document2.createElement("strong");
+          name.textContent = token.name;
+          info.append(name);
+          for (const text of [token.prefix + "\u2026", token.scopes.join("\u3001"), token.projectAllowlist === null ? "\u81EA\u5DF1\u7684\u5168\u90E8\u9879\u76EE" : `\u9650\u5B9A ${token.projectAllowlist.length} \u4E2A\u9879\u76EE`, "\u5230\u671F\uFF1A" + date2(token.expiresAt), token.revokedAt ? "\u5DF2\u64A4\u9500" : Date.parse(token.expiresAt) <= Date.now() ? "\u5DF2\u5230\u671F" : "\u6709\u6548"]) {
+            const small = document2.createElement("small");
+            small.textContent = text;
+            info.append(small);
+          }
+          row.append(info);
+          if (!token.revokedAt) row.append(button("\u64A4\u9500\u6388\u6743", () => revoke(token), true));
+          list.append(row);
+        }
+      } catch (error) {
+        list.replaceChildren();
+        report(error);
+      } finally {
+        list.setAttribute("aria-busy", "false");
+      }
+    }
+    try {
+      if (!api.user) await api.restoreSession();
+      await reload();
+    } catch (error) {
+      report(error);
+    }
+    return { reload, destroy() {
+      container.replaceChildren();
+    } };
+  }
+  var permissions, uuid, date2;
+  var init_token_settings = __esm({
+    "web/token-settings.js"() {
+      init_cloud_project_store();
+      init_app();
+      permissions = [["projects:read", "\u8BFB\u53D6\u9879\u76EE", true], ["projects:create", "\u521B\u5EFA\u9879\u76EE", true], ["projects:write", "\u7F16\u8F91\u9879\u76EE", true], ["projects:export", "\u5BFC\u51FA\u9879\u76EE", true], ["projects:delete", "\u5220\u9664\u548C\u6062\u590D\u9879\u76EE", false]];
+      uuid = /^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$/;
+      date2 = (value) => value ? new Date(value).toLocaleString("zh-CN") : "\u2014";
+    }
+  });
+
+  // web/cloud-workspace.js
+  function cloudRequested(location = globalThis.location) {
+    return !!location && (location.pathname === "/app" || location.pathname === "/login" || new URLSearchParams(location.search).get("cloud") === "1" || new URLSearchParams(location.search).get("storage") === "cloud");
+  }
+  function initCloudWorkspace({ getStore, getLocalStore, switchStore: switchStore2, openProject: openProject2, recoverDraft, handoff: handoff2, resume: resume2, notify: notify2 }) {
+    const api = new CloudAPI(), main = document.querySelector("main"), panel = document.createElement("section");
+    panel.id = "cloud-controls";
+    panel.setAttribute("aria-label", "\u5B58\u50A8\u4F4D\u7F6E\u4E0E\u4E91\u7AEF\u8D26\u53F7");
+    panel.innerHTML = '<div class="cloud-mode"><strong id="storage-mode">\u672C\u5730\u6A21\u5F0F</strong><span id="cloud-account"></span><button id="use-local" class="secondary" type="button">\u4F7F\u7528\u672C\u5730</button><button id="use-cloud" class="secondary" type="button">\u4F7F\u7528\u4E91\u7AEF</button><button id="cloud-logout" class="secondary" type="button" hidden>\u9000\u51FA\u4E91\u7AEF\u8D26\u53F7</button></div><p id="cloud-mode-note">\u672C\u5730\u9879\u76EE\u4FDD\u5B58\u5728\u6B64\u6D4F\u89C8\u5668\uFF1B\u767B\u5F55\u540E\u53EF\u5207\u6362\u5230\u8D26\u53F7\u7684\u4E91\u7AEF\u9879\u76EE\u5E93\u3002</p><form id="cloud-login"><label>\u4E91\u7AEF\u7528\u6237\u540D <input name="username" autocomplete="username" required minlength="3" maxlength="64"></label><label>\u5BC6\u7801 <input name="password" type="password" autocomplete="current-password" required maxlength="1024"></label><button type="submit">\u767B\u5F55\u4E91\u7AEF</button></form><div id="cloud-migrate" hidden><label>\u8FC1\u79FB\u672C\u5730\u9879\u76EE <select id="cloud-local-project" aria-label="\u8981\u8FC1\u79FB\u7684\u672C\u5730\u9879\u76EE"></select></label><button type="button" id="migrate-local">\u590D\u5236\u5230\u4E91\u7AEF\u5E76\u6838\u5BF9</button><span id="migration-result" role="status"></span></div><div id="cloud-draft-controls" hidden><label>\u672C\u5730\u6062\u590D\u8349\u7A3F <select id="cloud-draft" aria-label="\u5F85\u6062\u590D\u7684\u4E91\u7AEF\u8349\u7A3F"></select></label><button type="button" id="recover-cloud-draft">\u6062\u590D\u4E3A\u72EC\u7ACB\u4E91\u7AEF\u9879\u76EE</button><button type="button" id="refresh-cloud-drafts" class="secondary">\u5237\u65B0\u8349\u7A3F</button></div><p id="cloud-error" role="status" hidden></p>';
+    const style = document.createElement("style");
+    style.textContent = "#cloud-controls{margin:0 0 20px;padding:16px 20px;background:#f3f2ed;border:1px solid #dedbd2;border-radius:12px}#cloud-controls .cloud-mode,#cloud-controls form,#cloud-migrate,#cloud-draft-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}#cloud-controls p{font-size:12px;color:#666;margin:10px 0}#cloud-controls label{font-size:12px}#cloud-controls input,#cloud-controls select{max-width:250px;padding:8px;border:1px solid #ccc;background:white;border-radius:5px}#cloud-controls button{padding:8px 12px;font-size:12px}#cloud-controls [hidden]{display:none!important}#cloud-error{color:#a53225!important}";
+    panel.append(style);
+    main.prepend(panel);
+    const $2 = (id) => document.getElementById(id);
+    let cloud = null, drafts = [];
+    let tokenSettings = null, tokenAccount = null;
+    const permissions2 = document.createElement("details");
+    permissions2.id = "cloud-token-settings";
+    permissions2.hidden = true;
+    const summary = document.createElement("summary");
+    summary.textContent = "Agent\u6388\u6743\u4E0E\u8D26\u53F7\u8BBE\u7F6E";
+    const tokenContainer = document.createElement("div");
+    permissions2.append(summary, tokenContainer);
+    panel.append(permissions2);
+    const adminLink = document.createElement("a");
+    adminLink.href = "/admin";
+    adminLink.textContent = "\u7BA1\u7406\u540E\u53F0 \u2197";
+    adminLink.hidden = true;
+    panel.querySelector(".cloud-mode").append(adminLink);
+    const run = (fn) => async (event) => {
+      event?.preventDefault();
+      const button = event?.submitter || event?.currentTarget;
+      if (button?.tagName === "BUTTON") button.disabled = true;
+      $2("cloud-error").hidden = true;
+      try {
+        await fn(event);
+      } catch (error) {
+        $2("cloud-error").textContent = error.message;
+        $2("cloud-error").hidden = false;
+        notify2(error.message, true);
+      } finally {
+        if (button?.tagName === "BUTTON") button.disabled = false;
+      }
+    };
+    async function refresh() {
+      const using = getStore()?.storage === "cloud";
+      permissions2.hidden = !api.user;
+      adminLink.hidden = api.user?.role !== "admin";
+      if (api.user?.id !== tokenAccount) {
+        tokenSettings?.destroy();
+        tokenContainer.replaceChildren();
+        tokenAccount = api.user?.id ?? null;
+        tokenSettings = api.user ? await mountTokenSettings({ api, container: tokenContainer }) : null;
+      }
+      $2("storage-mode").textContent = using ? "\u4E91\u7AEF\u6A21\u5F0F" : "\u672C\u5730\u6A21\u5F0F";
+      $2("cloud-account").textContent = api.user ? "\u8D26\u53F7\uFF1A" + api.user.username : "";
+      $2("cloud-login").hidden = !!api.user;
+      $2("cloud-logout").hidden = !api.user;
+      $2("cloud-migrate").hidden = !using;
+      $2("cloud-mode-note").textContent = using ? "\u4E91\u7AEF\u4FDD\u5B58\u4EE5\u670D\u52A1\u5668\u786E\u8BA4\u63D0\u4EA4\u4E3A\u51C6\u3002\u65AD\u7F51\u4FEE\u6539\u53E6\u5B58\u672C\u5730\u6062\u590D\u8349\u7A3F\uFF1B\u672C\u5730\u539F\u9879\u76EE\u4FDD\u6301\u5B8C\u6574\u3002" : "\u9879\u76EE\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u672C\u5730\u4E0E\u4E91\u7AEF\u9879\u76EE\u5E93\u76F8\u4E92\u72EC\u7ACB\uFF0C\u53EF\u968F\u65F6\u5207\u6362\u3002";
+      document.querySelector(".edition").textContent = using ? "CLOUD WORKSPACE / 01" : "LOCAL WORKSPACE / 01";
+      document.querySelector(".local-note").innerHTML = using ? "<i></i> \u79C1\u6709\u4E91\u7AEF\u9879\u76EE<br><small>\u4FDD\u5B58\u4EE5\u670D\u52A1\u5668\u786E\u8BA4\u4E3A\u51C6\u3002<br>\u79BB\u7EBF\u8349\u7A3F\u53EF\u72EC\u7ACB\u6062\u590D\u3002</small>" : "<i></i> \u672C\u5730\u4F18\u5148<br><small>\u9879\u76EE\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002<br>\u5BFC\u51FA HTML \u53EF\u5E26\u8D70\u5185\u5BB9\u3002</small>";
+      document.querySelector(".subtitle").textContent = using ? "\u4ECE\u4E00\u4E2A\u9879\u76EE\u5F00\u59CB\u3002\u5185\u5BB9\u4FDD\u5B58\u5230\u4F60\u7684\u4E91\u7AEF\u8D26\u53F7\uFF0C\u652F\u6301\u6D4F\u89C8\u5668\u4E0E AI \u63A5\u529B\u7F16\u8F91\u3002" : "\u4ECE\u4E00\u4E2A\u9879\u76EE\u5F00\u59CB\u3002\u5185\u5BB9\u4FDD\u5B58\u5728\u672C\u5730\uFF0C\u968F\u65F6\u5BFC\u51FA\u3001\u91CD\u65B0\u6253\u5F00\u3002";
+      if (using) {
+        const local = await getLocalStore().list(), migrated = await cloud.drafts.migrations(cloud.accountId), select = $2("cloud-local-project"), previous = select.value;
+        select.replaceChildren(...local.map((record) => {
+          const option = document.createElement("option");
+          option.value = record.id;
+          option.textContent = record.document.title + (migrated.some((item) => item.sourceProjectId === record.id && item.sourceRevision === record.document.revision) ? " \xB7 \u5DF2\u6838\u5BF9\u4E91\u7AEF\u526F\u672C" : "");
+          return option;
+        }));
+        if (local.some((record) => record.id === previous)) select.value = previous;
+        $2("migrate-local").disabled = !local.length;
+        await refreshDrafts();
+      } else $2("cloud-draft-controls").hidden = true;
+    }
+    async function refreshDrafts() {
+      if (!cloud) return;
+      drafts = await cloud.drafts.list(cloud.accountId);
+      $2("cloud-draft-controls").hidden = getStore()?.storage !== "cloud" || !drafts.length;
+      $2("cloud-draft").replaceChildren(...drafts.map((record, index2) => {
+        const option = document.createElement("option");
+        option.value = String(index2);
+        option.textContent = record.document.title + " \xB7 \u4E91\u7AEF\u6765\u6E90 r" + record.sourceRevision + " / \u8349\u7A3F r" + record.document.revision;
+        return option;
+      }));
+    }
+    async function useCloud() {
+      if (!api.user) {
+        $2("cloud-login").hidden = false;
+        $2("cloud-login").elements.username.focus();
+        return;
+      }
+      if (!cloud) cloud = new CloudProjectStore({ api });
+      await switchStore2(cloud);
+      await refresh();
+    }
+    $2("cloud-login").onsubmit = run(async (event) => {
+      const form = event.currentTarget;
+      await api.login(form.elements.username.value, form.elements.password.value);
+      form.elements.password.value = "";
+      cloud = new CloudProjectStore({ api });
+      await useCloud();
+    });
+    $2("use-cloud").onclick = run(useCloud);
+    $2("use-local").onclick = run(async () => {
+      await switchStore2(getLocalStore());
+      await refresh();
+    });
+    $2("cloud-logout").onclick = run(async () => {
+      await switchStore2(getLocalStore());
+      await api.logout();
+      cloud?.close();
+      cloud = null;
+      await refresh();
+    });
+    $2("migrate-local").onclick = run(async () => {
+      const record = await cloud.migrate(getLocalStore(), $2("cloud-local-project").value);
+      $2("migration-result").textContent = "\u5DF2\u6838\u5BF9\u4E91\u7AEF\u526F\u672C\uFF1B\u672C\u5730\u539F\u9879\u76EE\u4FDD\u7559\u3002";
+      await openProject2(record.id);
+      await refresh();
+    });
+    $2("refresh-cloud-drafts").onclick = run(refreshDrafts);
+    $2("recover-cloud-draft").onclick = run(async () => {
+      const draft = drafts[Number($2("cloud-draft").value)];
+      if (!draft) throw new Error("\u8BF7\u5148\u9009\u62E9\u6062\u590D\u8349\u7A3F");
+      const record = await recoverDraft(draft);
+      if (!record.alreadyOpened) await openProject2(record.id);
+      await refreshDrafts();
+      notify2("\u6062\u590D\u8349\u7A3F\u5DF2\u6838\u5BF9\u5E76\u4FDD\u5B58\u4E3A\u72EC\u7ACB\u4E91\u7AEF\u9879\u76EE\uFF0C\u539F\u4E91\u7AEF\u6587\u6863\u672A\u88AB\u8986\u76D6\u3002");
+    });
+    const row = panel.querySelector(".cloud-mode");
+    for (const [id, label, action] of [["cloud-handoff", "\u4FDD\u5B58\u5E76\u4EA4\u7ED9 AI", handoff2], ["cloud-resume", "\u53D6\u56DE\u7F16\u8F91", resume2]]) {
+      const button = document.createElement("button");
+      button.id = id;
+      button.textContent = label;
+      button.hidden = true;
+      button.onclick = run(action);
+      row.append(button);
+    }
+    function workspace(readOnly) {
+      const using = getStore()?.storage === "cloud";
+      $2("cloud-handoff").hidden = !using || readOnly;
+      $2("cloud-resume").hidden = !using || !readOnly;
+    }
+    return { api, refresh, refreshDrafts, workspace, async initialize() {
+      if (cloudRequested(globalThis.window?.location)) {
+        try {
+          await api.restoreSession();
+          cloud = new CloudProjectStore({ api });
+          return cloud;
+        } catch (error) {
+          if (error.code !== "UNAUTHENTICATED") {
+            $2("cloud-error").textContent = error.message;
+            $2("cloud-error").hidden = false;
+          }
+        }
+      }
+      return getLocalStore();
+    } };
+  }
+  var init_cloud_workspace = __esm({
+    "web/cloud-workspace.js"() {
+      init_cloud_project_store();
+      init_token_settings();
     }
   });
 
@@ -1662,6 +2896,7 @@ function v24OfflineExportBootstrap(width,height){
     document.body.classList.toggle("editor-integrated", !!editor?.setWorkspaceState);
     document.body.classList.toggle("editor-attention", attention);
     editor?.setWorkspaceState?.({ text: $("save-state").textContent, failed: attention, revision: core?.getDocument().revision, details: [$("recovery-note").textContent, $("import-note").textContent].filter(Boolean).join(" ") });
+    cloudWorkspace?.workspace(!lock);
   }
   function refreshRecoveryControls(failed = false) {
     $("backup-json").hidden = false;
@@ -1675,7 +2910,9 @@ function v24OfflineExportBootstrap(width,height){
   function setState(state, revision, error) {
     const latest = core?.getDocument().revision;
     if (state === "saved" && revision === latest) recoveryError = null;
-    $("save-state").textContent = state === "saved" && revision === latest ? `\u5DF2\u4FDD\u5B58\u5230\u672C\u5730 \xB7 \u4FEE\u8BA2 ${revision}` : state === "failed" ? `\u4FDD\u5B58\u5931\u8D25 \xB7 ${error?.message || "\u8BF7\u91CD\u8BD5\u6216\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE"}` : state === "saving" ? "\u6B63\u5728\u4FDD\u5B58\u2026" : "\u7B49\u5F85\u4FDD\u5B58\u2026";
+    $("save-state").textContent = state === "saved" && revision === latest ? `\u5DF2\u4FDD\u5B58\u5230${store.storage === "cloud" ? "\u4E91\u7AEF" : "\u672C\u5730"} \xB7 \u4FEE\u8BA2 ${revision}` : state === "failed" ? `${store.storage === "cloud" ? "\u4E91\u7AEF\u672A\u786E\u8BA4\u4FDD\u5B58" : "\u4FDD\u5B58\u5931\u8D25"} \xB7 ${error?.message || "\u8BF7\u91CD\u8BD5\u6216\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE"}` : state === "saving" ? "\u6B63\u5728\u4FDD\u5B58\u2026" : store.storage === "cloud" ? "\u4E91\u7AEF\u5C1A\u672A\u4FDD\u5B58 \xB7 \u6B63\u5728\u4FDD\u7559\u672C\u5730\u6062\u590D\u8349\u7A3F\u2026" : "\u7B49\u5F85\u4FDD\u5B58\u2026";
+    if (store.storage === "cloud") cloudWorkspace?.refreshDrafts().catch(() => {
+    });
     $("retry-save").hidden = state !== "failed";
     refreshRecoveryControls(state === "failed");
   }
@@ -1699,7 +2936,7 @@ function v24OfflineExportBootstrap(width,height){
   }
   async function hasWaitingDraft() {
     try {
-      return !!(editor?.getRejectedSnapshot?.() || await editor?.getRecoveryDocument?.());
+      return !!(editor?.getRejectedSnapshot?.() || await editor?.getRecoveryDocument?.() || store.storage === "cloud" && (await store.drafts.list(store.accountId, core.getDocument().id)).length);
     } catch {
       return true;
     }
@@ -1765,7 +3002,7 @@ function v24OfflineExportBootstrap(width,height){
       } catch (error) {
         if (activating) notify("\u5199\u5165\u6743\u5DF2\u53D6\u5F97\uFF0C\u4F46\u91CD\u65B0\u6253\u5F00\u9879\u76EE\u5931\u8D25\uFF0C\u8BF7\u8FD4\u56DE\u5DE5\u4F5C\u53F0\u91CD\u8BD5\uFF1A" + error.message, true);
         else if (current()) {
-          $("save-state").textContent = "\u53EA\u8BFB \xB7 \u6682\u65F6\u65E0\u6CD5\u68C0\u67E5\u5199\u5165\u6743\uFF0C\u7A0D\u540E\u91CD\u8BD5\uFF1B\u53EF\u4E3B\u52A8\u63A5\u7BA1\u3002";
+          $("save-state").textContent = store.storage === "cloud" ? "\u53EA\u8BFB \xB7 \u6682\u65F6\u65E0\u6CD5\u68C0\u67E5\u4E91\u7AEF\u5199\u5165\u6743\uFF0C\u7A0D\u540E\u91CD\u8BD5\uFF1B\u4E0D\u4F1A\u62A2\u5360\u3002" : "\u53EA\u8BFB \xB7 \u6682\u65F6\u65E0\u6CD5\u68C0\u67E5\u5199\u5165\u6743\uFF0C\u7A0D\u540E\u91CD\u8BD5\uFF1B\u53EF\u4E3B\u52A8\u63A5\u7BA1\u3002";
           syncWorkspaceChrome();
           scheduleLeaseWait(waiting);
         } else if (leaseWait === waiting) stopLeaseWait(waiting);
@@ -1781,7 +3018,7 @@ function v24OfflineExportBootstrap(width,height){
     lock = null;
     setEditorReadOnly(true);
     $("project-title").disabled = true;
-    $("takeover").hidden = false;
+    $("takeover").hidden = store.storage === "cloud";
     setState("failed", core?.getDocument().revision, new Error("\u5199\u5165\u6743\u5DF2\u5931\u6548\uFF0C\u6539\u52A8\u4ECD\u4FDD\u7559\u3002\u8BF7\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\uFF0C\u6216\u5BFC\u51FA JSON \u5907\u4EFD\u3002"));
     clearInterval(heartbeat);
   }
@@ -1810,10 +3047,14 @@ function v24OfflineExportBootstrap(width,height){
       notify("\u7F16\u8F91\u5668\u9884\u89C8\u66F4\u65B0\u5931\u8D25\uFF0C\u6587\u6863\u4ECD\u4FDD\u7559\uFF1A" + error.message, true);
     }
   }
+  function rememberCloudDraft(doc) {
+    if (store.storage === "cloud") store.captureDraft(doc, persistedRevision).then(() => cloudWorkspace?.refreshDrafts()).catch((error) => notify("\u672C\u5730\u6062\u590D\u8349\u7A3F\u672A\u4FDD\u5B58\uFF0C\u8BF7\u4FDD\u7559\u5F53\u524D\u9875\u9762\u5E76\u5BFC\u51FA\u5907\u4EFD\uFF1A" + error.message, true));
+  }
   function edit(operations, expectedRevision = core?.getDocument().revision) {
     if (closing && !drainingEditor) throw new Error("\u9879\u76EE\u6B63\u5728\u5207\u6362\uFF0C\u5F53\u524D\u7F16\u8F91\u5DF2\u505C\u6B62");
     if (!core || !lock) throw new Error("\u5F53\u524D\u9879\u76EE\u53EA\u8BFB\uFF0C\u8BF7\u5148\u83B7\u53D6\u5199\u5165\u6743");
     const result = core.edit(operations, { expectedRevision });
+    rememberCloudDraft(result);
     autosave.schedule(core.getDocument());
     repaint();
     return result;
@@ -1899,9 +3140,9 @@ function v24OfflineExportBootstrap(width,height){
     $("home-view").hidden = true;
     $("workspace-view").hidden = false;
     $("project-title").disabled = !lock || closing;
-    $("takeover").hidden = !!lock;
+    $("takeover").hidden = store.storage === "cloud" || !!lock;
     $("retry-save").hidden = true;
-    $("save-state").textContent = lock ? `\u5DF2\u4FDD\u5B58\u5230\u672C\u5730 \xB7 \u4FEE\u8BA2 ${persistedRevision}` : waitForLease ? "\u53EA\u8BFB \xB7 \u5199\u5165\u6743\u6682\u88AB\u5360\u7528\uFF0C\u7B49\u5F85\u91CA\u653E\uFF1B\u53EF\u4E3B\u52A8\u63A5\u7BA1\u3002" : "\u53EA\u8BFB \xB7 \u6682\u672A\u53D6\u5F97\u5199\u5165\u6743\uFF0C\u53EF\u4E3B\u52A8\u63A5\u7BA1\u6216\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u3002";
+    $("save-state").textContent = lock ? `\u5DF2\u4FDD\u5B58\u5230${store.storage === "cloud" ? "\u4E91\u7AEF" : "\u672C\u5730"} \xB7 \u4FEE\u8BA2 ${persistedRevision}` : store.storage === "cloud" ? waitForLease ? "\u53EA\u8BFB \xB7 \u4E91\u7AEF\u5199\u5165\u6743\u88AB\u5360\u7528\uFF0C\u7B49\u5F85\u91CA\u653E\uFF1B\u4E0D\u4F1A\u62A2\u5360\u3002" : "\u53EA\u8BFB \xB7 \u8BF7\u5148\u6062\u590D\u672C\u5730\u8349\u7A3F\uFF0C\u6216\u53D6\u56DE\u4E91\u7AEF\u7F16\u8F91\u3002" : waitForLease ? "\u53EA\u8BFB \xB7 \u5199\u5165\u6743\u6682\u88AB\u5360\u7528\uFF0C\u7B49\u5F85\u91CA\u653E\uFF1B\u53EF\u4E3B\u52A8\u63A5\u7BA1\u3002" : "\u53EA\u8BFB \xB7 \u6682\u672A\u53D6\u5F97\u5199\u5165\u6743\uFF0C\u53EF\u4E3B\u52A8\u63A5\u7BA1\u6216\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u3002";
     const origin = rec.document.metadata.spRecovery;
     const isRecovery = origin?.type === "independent-project" && typeof origin.source?.title === "string";
     $("recovery-note").hidden = !isRecovery;
@@ -1936,7 +3177,8 @@ function v24OfflineExportBootstrap(width,height){
   }
   async function openProjectNow(id, { takeover = false } = {}) {
     await releaseCurrent();
-    const lease = await store.acquire(id, owner, { takeover });
+    const hasDraft = store.storage === "cloud" && (await store.drafts.list(store.accountId, id)).length > 0;
+    const lease = hasDraft ? null : await store.acquire(id, owner, { takeover });
     let rec;
     try {
       rec = await store.get(id);
@@ -1947,7 +3189,8 @@ function v24OfflineExportBootstrap(width,height){
       });
       throw error;
     }
-    return activateProject(rec, lease, { waitForLease: !takeover && !lease });
+    if (hasDraft) notify("\u6B64\u9879\u76EE\u6709\u672C\u5730\u6062\u590D\u8349\u7A3F\u3002\u5DF2\u8BFB\u53D6\u4E91\u7AEF\u7248\u672C\uFF0C\u8BF7\u5148\u5C06\u8349\u7A3F\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u3002");
+    return activateProject(rec, lease, { waitForLease: !takeover && !lease && !hasDraft });
   }
   function recoverProject() {
     if (recoveryFlight) return recoveryFlight;
@@ -2026,6 +3269,7 @@ function v24OfflineExportBootstrap(width,height){
     if (closing) throw new Error("\u9879\u76EE\u6B63\u5728\u5207\u6362");
     if (!lock) throw new Error("\u5F53\u524D\u9879\u76EE\u53EA\u8BFB");
     const doc = core.undo({ expectedRevision: core.getDocument().revision });
+    rememberCloudDraft(doc);
     autosave.schedule(core.getDocument());
     repaint();
     return doc;
@@ -2034,6 +3278,7 @@ function v24OfflineExportBootstrap(width,height){
     if (closing) throw new Error("\u9879\u76EE\u6B63\u5728\u5207\u6362");
     if (!lock) throw new Error("\u5F53\u524D\u9879\u76EE\u53EA\u8BFB");
     const doc = core.redo({ expectedRevision: core.getDocument().revision });
+    rememberCloudDraft(doc);
     autosave.schedule(core.getDocument());
     repaint();
     return doc;
@@ -2085,10 +3330,10 @@ function v24OfflineExportBootstrap(width,height){
   }
   async function newProject(title, ratio = "16:9") {
     const doc = createDocument({ title, slides: [{ id: crypto.randomUUID(), elements: [], animations: [] }], canvas: ratio === "4:3" ? { width: 960, height: 720 } : { width: 1280, height: 720 } });
-    await store.create(doc);
-    await openProject(doc.id);
+    const record = await store.create(doc);
+    const opened = await openProject(record.id);
     announce();
-    return doc;
+    return opened;
   }
   function showImportStatus(message, error = false, projectId = null) {
     $("import-status").hidden = false;
@@ -2251,7 +3496,7 @@ function v24OfflineExportBootstrap(width,height){
       info.append(title);
       const meta = document.createElement("div");
       meta.className = "project-meta";
-      meta.textContent = `${doc.slides.length} \u9875 \xB7 \u672C\u5730 \xB7 ${new Date(rec.modifiedAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+      meta.textContent = `${doc.slides.length} \u9875 \xB7 ${rec.storage === "cloud" ? "\u4E91\u7AEF" : "\u672C\u5730"} \xB7 ${new Date(rec.modifiedAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
       info.append(meta);
       const actions = document.createElement("div");
       actions.className = "project-actions";
@@ -2280,8 +3525,81 @@ function v24OfflineExportBootstrap(width,height){
     document.querySelectorAll("[data-view]").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
     await renderProjects();
   }
-  var $, store, owner, navigation, listRender, session, closing, drainingEditor, recovering, recoveryFlight, recoveryError, importFlight, importSource, leaseWait, navigate, view, core, lock, autosave, editor, persistedRevision, heartbeat, notifyTimer, channel, guard, chooseImport;
-  var init_app = __esm({
+  async function switchStore(next) {
+    return navigate(async () => {
+      if (store === next) {
+        await next.open();
+        return;
+      }
+      try {
+        await releaseCurrent();
+      } catch (error) {
+        if (store.storage !== "cloud" || !core) throw error;
+        const previous = store;
+        closing = true;
+        setEditorReadOnly(true);
+        $("project-title").disabled = true;
+        try {
+          await previous.captureDraft(core.getDocument(), persistedRevision);
+          autosave.pause();
+          await autosave.waitForIdle();
+          autosave.cancel();
+          await previous.release(lock).catch(() => {
+          });
+          clearCurrent();
+          notify("\u4E91\u7AEF\u672A\u786E\u8BA4\u7684\u4FEE\u6539\u5DF2\u4FDD\u7559\u4E3A\u672C\u5730\u6062\u590D\u8349\u7A3F\u3002");
+        } finally {
+          closing = false;
+          if (core) {
+            $("project-title").disabled = !lock;
+            setEditorReadOnly(!lock);
+          }
+        }
+      }
+      store = next;
+      await store.open();
+      await localStore.open();
+      await homeNow("home");
+      syncWorkspaceChrome();
+    });
+  }
+  function handoff() {
+    return navigate(async () => {
+      if (store.storage !== "cloud" || !core || !lock) throw new Error("\u8BF7\u5148\u6253\u5F00\u53EF\u7F16\u8F91\u7684\u4E91\u7AEF\u9879\u76EE");
+      await flushEditor();
+      closing = true;
+      setEditorReadOnly(true);
+      try {
+        await autosave.flush();
+        await store.release(lock);
+        lock = null;
+        clearInterval(heartbeat);
+        $("project-title").disabled = true;
+        $("save-state").textContent = "\u5DF2\u4FDD\u5B58\u5230\u4E91\u7AEF \xB7 \u5DF2\u91CA\u653E\u5199\u5165\u6743\uFF0C\u53EF\u4EA4\u7ED9 AI\uFF1B\u5F53\u524D\u53EA\u8BFB\u3002";
+        syncWorkspaceChrome();
+        notify("\u4E91\u7AEF\u4FDD\u5B58\u5DF2\u786E\u8BA4\uFF0C\u5199\u5165\u6743\u5DF2\u91CA\u653E\u3002");
+      } finally {
+        closing = false;
+        setEditorReadOnly(!lock);
+      }
+    });
+  }
+  async function resume() {
+    if (!core || store.storage !== "cloud") throw new Error("\u8BF7\u5148\u6253\u5F00\u4E91\u7AEF\u9879\u76EE");
+    if ((await store.drafts.list(store.accountId, core.getDocument().id)).length) throw new Error("\u8BF7\u5148\u5C06\u672C\u5730\u8349\u7A3F\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\uFF0C\u518D\u53D6\u56DE\u539F\u9879\u76EE\u7F16\u8F91\u3002");
+    return openProject(core.getDocument().id);
+  }
+  async function recoverCloudDraft(draft) {
+    if (store.storage !== "cloud" || draft.accountId !== store.accountId) throw new Error("\u8BF7\u767B\u5F55\u8349\u7A3F\u6240\u5C5E\u4E91\u7AEF\u8D26\u53F7");
+    if (core?.getDocument().id === draft.projectId && (autosave?.pending || autosave?.running || autosave?.lastError || recoveryError)) {
+      const selected = store, document2 = await recoverProject();
+      await selected.drafts.remove(selected.accountId, draft.key);
+      return { id: document2.id, alreadyOpened: true };
+    }
+    return store.recoverDraft(draft);
+  }
+  var $, localStore, owner, store, cloudWorkspace, navigation, listRender, session, closing, drainingEditor, recovering, recoveryFlight, recoveryError, importFlight, importSource, leaseWait, navigate, view, core, lock, autosave, editor, persistedRevision, heartbeat, notifyTimer, channel, guard, chooseImport;
+  var init_app2 = __esm({
     "web/app.js"() {
       init_five_slides();
       init_document_core();
@@ -2291,9 +3609,12 @@ function v24OfflineExportBootstrap(width,height){
       init_project_import();
       init_editor_export();
       init_editor_adapter();
+      init_cloud_workspace();
       $ = (id) => document.getElementById(id);
-      store = new ProjectStore();
+      localStore = new ProjectStore();
       owner = crypto.randomUUID();
+      store = localStore;
+      cloudWorkspace = null;
       navigation = Promise.resolve();
       listRender = 0;
       session = 0;
@@ -2336,8 +3657,8 @@ function v24OfflineExportBootstrap(width,height){
         doc.id = crypto.randomUUID();
         doc.metadata.createdAt = (/* @__PURE__ */ new Date()).toISOString();
         doc.metadata.updatedAt = doc.metadata.createdAt;
-        await store.create(doc);
-        await openProject(doc.id);
+        const record = await store.create(doc);
+        await openProject(record.id);
       });
       $("new-project").onclick = () => {
         $("new-dialog").showModal();
@@ -2429,9 +3750,19 @@ function v24OfflineExportBootstrap(width,height){
         if (!core) await renderProjects();
         else if (lock && e.data.projectId === core.getDocument().id) await renewCurrentLock();
       });
-      window.SPFramework = { ready: false, store, newProject, openProject, edit, undo, redo, flush: () => autosave?.flush(), getDocument: () => core?.getDocument(), getState: () => ({ readOnly: !lock, persistedRevision, saveError: autosave?.lastError?.message, recoveryError: recoveryError?.message, recovering, importing: !!importFlight, pending: !!autosave?.pending, saving: !!autosave?.running }), recoverProject, exportJSONBackup, importFile, home, exportProject, registerEditorAdapter };
-      store.open().then(() => home()).then(() => window.SPFramework.ready = true).catch((e) => {
-        notify("\u65E0\u6CD5\u6253\u5F00\u672C\u5730\u5B58\u50A8\uFF1A" + e.message, true);
+      window.SPFramework = { ready: false, get store() {
+        return store;
+      }, newProject, openProject, edit, undo, redo, flush: () => autosave?.flush(), getDocument: () => core?.getDocument(), getState: () => ({ storage: store.storage || "local", readOnly: !lock, persistedRevision, saveError: autosave?.lastError?.message, recoveryError: recoveryError?.message, recovering, importing: !!importFlight, pending: !!autosave?.pending, saving: !!autosave?.running }), recoverProject, exportJSONBackup, importFile, home, exportProject, registerEditorAdapter, switchStore, handoff, resume };
+      cloudWorkspace = initCloudWorkspace({ getStore: () => store, getLocalStore: () => localStore, switchStore, openProject, recoverDraft: recoverCloudDraft, handoff, resume, notify });
+      cloudWorkspace.initialize().then(async (selected) => {
+        store = selected;
+        await localStore.open();
+        await store.open();
+        await home();
+        await cloudWorkspace.refresh();
+        window.SPFramework.ready = true;
+      }).catch((e) => {
+        notify("\u65E0\u6CD5\u6253\u5F00\u9879\u76EE\u5B58\u50A8\uFF1A" + e.message, true);
         $("save-state").textContent = "\u5B58\u50A8\u4E0D\u53EF\u7528";
       });
     }
@@ -12262,6 +13593,6 @@ body[data-sp-design=mimo] #ribbon .sr-only{position:absolute;width:1px;height:1p
   if (!globalThis.SP_DISABLE_EDITOR_CANDIDATE) registerEditorAdapter(createLegacyEditorAdapter());
   initHomeMotion();
   initProjectCardMotion();
-  Promise.resolve().then(() => init_app());
+  Promise.resolve().then(() => init_app2());
 })();
 </script></body></html>

@@ -26,9 +26,9 @@ test('auth stores Argon2id and only hashes of session secrets; failures are unif
     assert.notEqual(session.csrf_hash, login.csrfToken);
     assert.deepEqual(Object.keys(login.user).sort(), ['id','role','username']);
     await auth.verifyCsrf(actor, login.csrfToken);
-    await assert.rejects(auth.verifyCsrf(actor, 'wrong'), code('FORBIDDEN'));
+    await assert.rejects(auth.verifyCsrf(actor, 'wrong'), code('CSRF_INVALID'));
     const secondLogin = await auth.login(admin.username, password);
-    await assert.rejects(auth.verifyCsrf(actor, secondLogin.csrfToken), code('FORBIDDEN'));
+    await assert.rejects(auth.verifyCsrf(actor, secondLogin.csrfToken), code('CSRF_INVALID'));
     const ordinary = await auth.createUser(actor, {username: 'ordinary', password});
     await auth.setUserStatus(actor, ordinary.id, 'disabled');
     for (const [username, attempted] of [['missing-account', password], [admin.username, 'wrong'], [ordinary.username, password]]) {
@@ -41,7 +41,7 @@ test('auth stores Argon2id and only hashes of session secrets; failures are unif
     assert.ok(!exposed.includes('password_hash') && !exposed.includes(login.sessionToken));
     await auth.logout(login.sessionToken);
     await assert.rejects(auth.authenticate(login.sessionToken), code('UNAUTHENTICATED'));
-    await assert.rejects(auth.verifyCsrf(actor, login.csrfToken), code('FORBIDDEN'));
+    await assert.rejects(auth.verifyCsrf(actor, login.csrfToken), code('UNAUTHENTICATED'));
     assert.equal((await db.query("SELECT 1 FROM audit_logs WHERE action='auth.logout'")).rowCount, 1);
   } finally {await cleanupTestDatabase(db);}
 });

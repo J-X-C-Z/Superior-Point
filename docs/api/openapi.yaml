@@ -1,71 +1,46 @@
 openapi: 3.1.0
 info:
   title: Superior Point Service API
-  version: 1.0.0
+  version: 0.0.1
   description: >-
-    OpenAPI 3.1 contract for the current SP-001 through SP-007 service routes.
+    Contract for routes currently registered by server/app.ts and
+    server/routes/admin-routes.ts. This is an Alpha candidate API, not a
+    production release. OAuth/OIDC is not implemented.
 servers:
-  - url: /api/v1
-    description: Versioned service API
+  - url: https://sp.example.invalid
+    description: Replace with the configured service origin.
 tags:
-  - name: auth
-  - name: admin-users
-  - name: projects
-  - name: documents
-  - name: leases
-  - name: health
+  - name: Public
+  - name: Auth
+  - name: Projects
+  - name: Tokens
+  - name: Admin
 paths:
   /health/live:
-    servers: [{url: /}]
     get:
-      tags: [health]
-      operationId: healthLive
-      summary: Check whether the process is responding
-      security: []
+      tags: [Public]
+      summary: Liveness probe
       responses:
-        '200':
-          description: Process is live.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [status]
-                properties:
-                  status: {const: ok}
+        '200': {description: Process is live}
   /health/ready:
-    servers: [{url: /}]
     get:
-      tags: [health]
-      operationId: healthReady
-      summary: Check database readiness (Admin only)
-      description: Requires an authenticated active Web Admin session.
-      security:
-        - secureSession: []
-        - developmentSession: []
+      tags: [Admin]
+      summary: Authenticated database readiness probe
+      security: [{sessionCookie: []}]
       responses:
-        '200':
-          description: Database is reachable.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [status]
-                properties:
-                  status: {const: ready}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /auth/login:
+        '200': {description: Database query succeeded}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/public/config:
+    get:
+      tags: [Public]
+      summary: Read public site settings
+      responses:
+        '200': {description: Public settings}
+  /api/v1/auth/login:
     post:
-      tags: [auth]
-      operationId: login
-      summary: Create a web session
-      description: Exact Origin validation applies. Public registration is not provided.
-      security: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
+      tags: [Auth]
+      summary: Create a browser session
       requestBody:
         required: true
         content:
@@ -75,119 +50,72 @@ paths:
               additionalProperties: false
               required: [username, password]
               properties:
-                username:
-                  type: string
-                  minLength: 3
-                  maxLength: 64
-                password:
-                  type: string
-                  minLength: 1
-                  maxLength: 1024
+                username: {type: string, minLength: 3, maxLength: 64}
+                password: {type: string, minLength: 1, maxLength: 1024, format: password}
       responses:
-        '200':
-          description: Authenticated user and CSRF token; session is set in an HttpOnly cookie.
-          headers:
-            Set-Cookie:
-              schema: {type: string}
-              description: >-
-                Production uses __Host-sp-session; loopback development uses
-                sp-session. Both are HttpOnly and SameSite=Strict; production
-                also sets Secure and Path=/.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [user, csrfToken]
-                properties:
-                  user: {$ref: '#/components/schemas/PublicUser'}
-                  csrfToken: {type: string}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '429': {$ref: '#/components/responses/RateLimited'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /auth/logout:
-    post:
-      tags: [auth]
-      operationId: logout
-      summary: Revoke the current session
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
-      responses:
-        '200':
-          description: Session revoked and cookie expired.
-          headers:
-            Set-Cookie:
-              schema: {type: string}
-              description: The environment's session cookie is cleared with Max-Age=0.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [success]
-                properties:
-                  success: {const: true}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /auth/me:
+        '200': {description: User, CSRF token, and session cookie}
+        '401': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/me:
     get:
-      tags: [auth]
-      operationId: getCurrentUser
-      summary: Read the current session identity
-      security:
-        - secureSession: []
-        - developmentSession: []
+      tags: [Auth]
+      summary: Read the current account
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
       responses:
-        '200':
-          description: Current authenticated user.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [user]
-                properties:
-                  user: {$ref: '#/components/schemas/User'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /admin/users:
-    get:
-      tags: [admin-users]
-      operationId: listUsers
-      summary: List platform users
-      security:
-        - secureSession: []
-        - developmentSession: []
-      responses:
-        '200':
-          description: User metadata; password hashes and session secrets are never returned.
-          content:
-            application/json:
-              schema:
-                type: array
-                items: {$ref: '#/components/schemas/User'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: Current user}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/csrf:
     post:
-      tags: [admin-users]
-      operationId: createUser
-      summary: Create a user account
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Auth]
+      summary: Rotate browser CSRF token
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: New CSRF token}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/reauth:
+    post:
+      tags: [Auth]
+      summary: Reauthenticate the current user
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [password], properties: {password: {type: string, format: password}}}
+      responses:
+        '200': {description: Reauthentication accepted}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/password:
+    post:
+      tags: [Auth]
+      summary: Change the current password
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [currentPassword, newPassword], properties: {currentPassword: {type: string, format: password}, newPassword: {type: string, minLength: 12, maxLength: 1024, format: password}}}
+      responses:
+        '200': {description: Password changed}
+        '400': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: End the current session
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Session ended and cookie cleared}
+  /api/v1/me/tokens:
+    get:
+      tags: [Tokens]
+      summary: List the current user's personal access tokens
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Token metadata; secret values are not returned}
+    post:
+      tags: [Tokens]
+      summary: Create a personal access token
+      security: [{sessionCookie: []}]
       requestBody:
         required: true
         content:
@@ -195,157 +123,45 @@ paths:
             schema:
               type: object
               additionalProperties: false
-              required: [username, password]
+              required: [name]
               properties:
-                username: {type: string, minLength: 3, maxLength: 64, pattern: '^[A-Za-z0-9_.-]{3,64}$'}
-                password: {type: string, minLength: 12, maxLength: 1024}
-                role: {$ref: '#/components/schemas/Role'}
+                name: {type: string}
+                scopes:
+                  type: array
+                  uniqueItems: true
+                  maxItems: 6
+                  items: {type: string, enum: [projects:read, projects:create, projects:write, projects:delete, projects:export, assets:write]}
+                projectAllowlist:
+                  oneOf:
+                    - {type: 'null'}
+                    - {type: array, uniqueItems: true, maxItems: 1000, items: {type: string}}
+                expiresAt: {type: string, maxLength: 64}
       responses:
-        '201':
-          description: Account created.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/User'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /admin/users/{userId}/status:
-    patch:
-      tags: [admin-users]
-      operationId: setUserStatus
-      summary: Enable or disable a user
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [status]
-              properties:
-                status: {$ref: '#/components/schemas/UserStatus'}
-      responses:
-        '200':
-          description: Updated account metadata.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/User'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /admin/users/{userId}/role:
-    patch:
-      tags: [admin-users]
-      operationId: setUserRole
-      summary: Change a user's platform role
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [role]
-              properties:
-                role: {$ref: '#/components/schemas/Role'}
-      responses:
-        '200':
-          description: Updated account metadata.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/User'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /admin/users/{userId}/sessions:
+        '201': {description: Token metadata and one-time secret value}
+        '400': {$ref: '#/components/responses/Error'}
+  /api/v1/me/tokens/{id}:
     delete:
-      tags: [admin-users]
-      operationId: revokeUserSessions
-      summary: Revoke all sessions for a user
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Tokens]
+      summary: Revoke one of the current user's tokens
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
       responses:
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '200':
-          description: All active sessions for the target user were revoked.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [success]
-                properties:
-                  success: {const: true}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /projects:
+        '200': {description: Token revoked}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects:
     get:
-      tags: [projects]
-      operationId: listProjects
+      tags: [Projects]
       summary: List the current user's projects
-      security:
-        - secureSession: []
-        - developmentSession: []
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
       parameters:
-        - name: trash
-          in: query
-          required: false
-          schema: {type: boolean, default: false}
+        - {name: trash, in: query, schema: {type: boolean}, description: Include or select trashed projects}
       responses:
-        '200':
-          description: Owned projects or owned soft-deleted projects.
-          content:
-            application/json:
-              schema:
-                type: array
-                items: {$ref: '#/components/schemas/ProjectSummary'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: Project summaries}
     post:
-      tags: [projects]
-      operationId: createProject
-      summary: Create an owned project
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Projects]
+      summary: Create a project
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
       requestBody:
-        required: false
         content:
           application/json:
             schema:
@@ -353,503 +169,405 @@ paths:
               additionalProperties: false
               properties:
                 title: {type: string, maxLength: 500}
-                canvas:
-                  type: object
-                  additionalProperties: false
-                  required: [width, height]
-                  properties:
-                    width: {type: number, exclusiveMinimum: 0}
-                    height: {type: number, exclusiveMinimum: 0}
+                canvas: {type: object, additionalProperties: false, required: [width, height], properties: {width: {type: number, exclusiveMinimum: 0}, height: {type: number, exclusiveMinimum: 0}}}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '201':
-          description: Created project and canonical document.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /projects/{projectId}:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
+        '201': {description: Created project}
+        '400': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/import:
+    post:
+      tags: [Projects]
+      summary: Import a document as a new project
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [document, clientMutationId], properties: {document: {type: object}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '201': {description: Imported project}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
     get:
-      tags: [projects]
-      operationId: getProject
-      summary: Read an owned project document
-      security:
-        - secureSession: []
-        - developmentSession: []
+      tags: [Projects]
+      summary: Read a project summary/document
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
       responses:
-        '200':
-          description: Canonical project document.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: Project document and revision}
+        '404': {$ref: '#/components/responses/Error'}
     patch:
-      tags: [projects]
-      operationId: renameProject
-      summary: Rename an owned project using revision CAS
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/ProjectRenameMutation'}
+      tags: [Projects]
+      summary: Rename a project
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Persisted canonical document.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: Updated project}
+        '409': {$ref: '#/components/responses/Error'}
     delete:
-      tags: [projects]
-      operationId: deleteProject
-      summary: Soft-delete an owned project using revision CAS
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/RevisionMutation'}
+      tags: [Projects]
+      summary: Move a project to trash
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Persisted canonical document after soft deletion.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /projects/{projectId}/restore:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
-    post:
-      tags: [projects]
-      operationId: restoreProject
-      summary: Restore an owned soft-deleted project using revision CAS
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: {$ref: '#/components/schemas/RevisionMutation'}
-      responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Persisted canonical document after restoration.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /projects/{projectId}/document:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
+        '200': {description: Updated project}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/document:
+    parameters: [{$ref: '#/components/parameters/id'}]
     get:
-      tags: [documents]
-      operationId: getProjectDocument
-      summary: Read an owned canonical document
-      security:
-        - secureSession: []
-        - developmentSession: []
+      tags: [Projects]
+      summary: Read a project document
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{name: trash, in: query, schema: {type: boolean}}]
       responses:
-        '200':
-          description: Canonical document and current revision.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: Document and revision}
     patch:
-      tags: [documents]
-      operationId: editProjectDocument
-      summary: Apply Document Core operations with revision CAS
-      description: >-
-        Operations use the existing Document Core vocabulary and properties
-        fields. A full-content replacement requires a valid lease. Operation
-        count is limited to 1 through 1000. Revisions, audit records, and
-        idempotency receipts commit atomically.
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Projects]
+      summary: Apply document operations
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/DocumentMutation'}
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId, operations], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string}, operations: {type: array, minItems: 1, maxItems: 1000, items: {type: object}}}}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Persisted canonical document and new revision.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/CanonicalDocument'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /projects/{projectId}/lease:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
+        '200': {description: Updated document}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/snapshot:
+    put:
+      tags: [Projects]
+      summary: Replace document with a full snapshot under an active lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId, leaseToken, document], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string}, document: {type: object}}}
+      responses:
+        '200': {description: Snapshot saved}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/slides:
+    get:
+      tags: [Projects]
+      summary: List slides
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Slides and project revision}
+  /api/v1/projects/{id}/slides/{slideId}:
+    get:
+      tags: [Projects]
+      summary: Read one slide
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}, {name: slideId, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: Slide and project revision}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/slides/{slideId}/render:
+    get:
+      tags: [Projects]
+      summary: Render a static SVG preview
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}, {name: slideId, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: SVG string, MIME type, revision, compatibility report, and limitations}
+  /api/v1/projects/{id}/validate:
+    get:
+      tags: [Projects]
+      summary: Validate a project document
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Validation findings and render compatibility}
+  /api/v1/projects/{id}/exports:
     post:
-      tags: [leases]
-      operationId: acquireProjectLease
-      summary: Acquire the single-writer project lease
-      description: Active leases cannot be taken over. Lease lifetime is 60 seconds.
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Projects]
+      summary: Export editable or audience HTML
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [holder]
-              properties:
-                holder: {type: string, minLength: 1}
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, format], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, format: {type: string, enum: [editable-html, audience-html]}}}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Lease acquired.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/Lease'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: HTML, MIME type, revision, and compatibility report}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/restore:
+    post:
+      tags: [Projects]
+      summary: Restore a trashed project
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Restored project}
+  /api/v1/projects/{id}/lease:
+    post:
+      tags: [Projects]
+      summary: Acquire a short-lived write lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [holder], properties: {holder: {type: string, minLength: 1}}}
+      responses:
+        '200': {description: Lease token and expiration}
+        '409': {$ref: '#/components/responses/Error'}
     delete:
-      tags: [leases]
-      operationId: releaseProjectLease
-      summary: Release the caller's project lease
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Projects]
+      summary: Release a write lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [leaseToken]
-              properties:
-                leaseToken: {type: string, minLength: 1}
+            schema: {type: object, additionalProperties: false, required: [leaseToken], properties: {leaseToken: {type: string}}}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Lease released.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [released]
-                properties:
-                  released: {const: true}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
-  /projects/{projectId}/lease/renew:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
+        '200': {description: Lease released}
+  /api/v1/projects/{id}/lease/renew:
     post:
-      tags: [leases]
-      operationId: renewProjectLease
-      summary: Renew the caller's project lease
-      security:
-        - secureSession: []
-        - developmentSession: []
-      parameters:
-        - $ref: '#/components/parameters/Origin'
-        - $ref: '#/components/parameters/CsrfToken'
+      tags: [Projects]
+      summary: Renew a write lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [leaseToken]
-              properties:
-                leaseToken: {type: string, minLength: 1}
+            schema: {type: object, additionalProperties: false, required: [leaseToken], properties: {leaseToken: {type: string}}}
       responses:
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '200':
-          description: Lease renewed for 60 seconds.
-          content:
-            application/json:
-              schema: {$ref: '#/components/schemas/Lease'}
-        '400': {$ref: '#/components/responses/InvalidRequest'}
-        '401': {$ref: '#/components/responses/Unauthenticated'}
-        '404': {$ref: '#/components/responses/NotFound'}
-        '409': {$ref: '#/components/responses/Conflict'}
-        '413': {$ref: '#/components/responses/PayloadTooLarge'}
-        '500': {$ref: '#/components/responses/InternalError'}
+        '200': {description: Lease expiration renewed}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Read administration dashboard metrics
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Dashboard data}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/health:
+    get:
+      tags: [Admin]
+      summary: Check administrator access and database readiness
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Ready}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/users:
+    get:
+      tags: [Admin]
+      summary: List users
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/limit'}, {$ref: '#/components/parameters/offset'}]
+      responses:
+        '200': {description: Paginated users}
+    post:
+      tags: [Admin]
+      summary: Create a user
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [username, password], properties: {username: {type: string, minLength: 3, maxLength: 64}, password: {type: string, minLength: 12, maxLength: 1024, format: password}, role: {type: string, enum: [admin, user]}}}
+      responses:
+        '201': {description: Created user}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/users/{id}/status:
+    patch:
+      tags: [Admin]
+      summary: Enable or disable a user
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [status], properties: {status: {type: string, enum: [active, disabled]}}}
+      responses:
+        '200': {description: Updated user}
+  /api/v1/admin/users/{id}/role:
+    patch:
+      tags: [Admin]
+      summary: Change a user's role
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [role], properties: {role: {type: string, enum: [admin, user]}}}
+      responses:
+        '200': {description: Updated user}
+  /api/v1/admin/users/{id}/sessions:
+    delete:
+      tags: [Admin]
+      summary: Revoke a user's sessions
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Sessions revoked}
+  /api/v1/admin/users/{id}/reset-password:
+    post:
+      tags: [Admin]
+      summary: Set a user's password
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [password], properties: {password: {type: string, minLength: 12, maxLength: 1024, format: password}}}
+      responses:
+        '200': {description: Password reset}
+  /api/v1/admin/projects:
+    get:
+      tags: [Admin]
+      summary: List projects across users
+      security: [{sessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/limit'}
+        - {$ref: '#/components/parameters/offset'}
+        - {name: trash, in: query, schema: {type: string, enum: ['true', 'false']}}
+      responses:
+        '200': {description: Paginated project records}
+  /api/v1/admin/projects/{id}/transfer:
+    post:
+      tags: [Admin]
+      summary: Transfer project ownership
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [newOwnerId, expectedRevision, clientMutationId], properties: {newOwnerId: {type: string, format: uuid}, expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '200': {description: Project ownership transferred}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/projects/{id}/trash:
+    post:
+      tags: [Admin]
+      summary: Move any project to trash
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Project trashed}
+  /api/v1/admin/projects/{id}/restore:
+    post:
+      tags: [Admin]
+      summary: Restore any project from trash
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Project restored}
+  /api/v1/admin/mcp/tokens:
+    get:
+      tags: [Admin]
+      summary: List personal access token metadata
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/limit'}, {$ref: '#/components/parameters/offset'}]
+      responses:
+        '200': {description: Paginated token records}
+  /api/v1/admin/mcp/tokens/{id}/revoke:
+    post:
+      tags: [Admin]
+      summary: Revoke a token after recent reauthentication
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Token revoked}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/audit:
+    get:
+      tags: [Admin]
+      summary: List audit events
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/limit'}, {$ref: '#/components/parameters/offset'}]
+      responses:
+        '200': {description: Paginated audit events}
+  /api/v1/admin/settings:
+    get:
+      tags: [Admin]
+      summary: Read service settings
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Settings}
+    patch:
+      tags: [Admin]
+      summary: Update service settings
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, properties: {siteName: {type: string, minLength: 1, maxLength: 100}, announcement: {type: string, maxLength: 2000}, maxUploadBytes: {type: integer, minimum: 1, maximum: 33554432}, publicRegistration: {const: false}, maintenanceMode: {type: boolean}}}
+      responses:
+        '200': {description: Settings updated}
+  /api/v1/admin/backups:
+    get:
+      tags: [Admin]
+      summary: List configured backups
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Backup metadata}
+        '503': {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Admin]
+      summary: Start a backup (requires recent reauthentication)
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Backup operation result}
+        '503': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/backups/restore-check:
+    post:
+      tags: [Admin]
+      summary: Run configured restore checks (requires recent reauthentication)
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Restore-check results}
+        '503': {$ref: '#/components/responses/Error'}
 components:
   securitySchemes:
-    secureSession:
-      type: apiKey
-      in: cookie
-      name: __Host-sp-session
-      description: >-
-        Production cookie set with HttpOnly, Secure, Path=/ and SameSite=Strict.
-    developmentSession:
+    sessionCookie:
       type: apiKey
       in: cookie
       name: sp-session
-      description: Loopback-only development cookie set with HttpOnly and SameSite=Strict.
+      description: Development cookie; production uses __Host-sp-session.
+    personalAccessToken:
+      type: http
+      scheme: bearer
+      description: Personal token; available scopes are enforced per route.
   parameters:
-    Origin:
-      name: Origin
-      in: header
-      required: true
-      description: Must exactly match the configured service origin for writes.
-      schema: {type: string, format: uri}
-    CsrfToken:
-      name: X-CSRF-Token
-      in: header
-      required: true
-      description: Required for cookie-authenticated writes.
-      schema: {type: string, minLength: 1}
-    UserId:
-      name: userId
-      in: path
-      required: true
-      schema: {type: string, format: uuid}
-    ProjectId:
-      name: projectId
-      in: path
-      required: true
-      schema: {type: string, format: uuid}
+    id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    limit: {name: limit, in: query, schema: {type: string, pattern: '^[0-9]{1,3}$'}, description: Pagination limit string; default and maximum enforced by server}
+    offset: {name: offset, in: query, schema: {type: string, pattern: '^[0-9]{1,16}$'}, description: Pagination offset string}
   schemas:
-    Role:
-      type: string
-      enum: [admin, user]
-    UserStatus:
-      type: string
-      enum: [active, disabled]
-    PublicUser:
+    Revision: {type: integer, minimum: 0, maximum: 9007199254740991}
+    ClientMutationId: {type: string, minLength: 1, maxLength: 128}
+    Error:
       type: object
-      additionalProperties: false
-      required: [id, username, role]
       properties:
-        id: {type: string, format: uuid}
-        username: {type: string}
-        role: {$ref: '#/components/schemas/Role'}
-    User:
-      type: object
-      additionalProperties: false
-      required: [id, username, role, status, createdAt]
-      properties:
-        id: {type: string, format: uuid}
-        username: {type: string, minLength: 3, maxLength: 64, pattern: '^[A-Za-z0-9_.-]{3,64}$'}
-        role: {$ref: '#/components/schemas/Role'}
-        status: {$ref: '#/components/schemas/UserStatus'}
-        createdAt: {type: string, format: date-time}
-    ProjectSummary:
-      type: object
-      additionalProperties: false
-      required: [id, title, revision, deletedAt, updatedAt]
-      properties:
-        id: {type: string, format: uuid}
-        title: {type: string, maxLength: 500}
-        revision: {type: integer, minimum: 0, maximum: 9007199254740991}
-        deletedAt:
-          type: [string, 'null']
-          format: date-time
-        updatedAt: {type: string, format: date-time}
-    CanonicalDocument:
-      type: object
-      additionalProperties: true
-      required: [format, schemaVersion, id, title, revision, canvas, slides, assets, metadata, extensions]
-      properties:
-        format: {const: superior-point}
-        schemaVersion: {const: 1}
-        id: {type: string, format: uuid}
-        title: {type: string, maxLength: 500}
-        revision: {type: integer, minimum: 0, maximum: 9007199254740991}
-        canvas:
-          type: object
-          required: [width, height]
-          additionalProperties: true
-          properties:
-            width: {type: number, exclusiveMinimum: 0}
-            height: {type: number, exclusiveMinimum: 0}
-        slides:
-          type: array
-          items: {type: object, required: [id, elements], additionalProperties: true}
-        assets:
-          type: array
-          items: {type: object, required: [id], additionalProperties: true}
-        metadata:
-          type: object
-          required: [createdAt, updatedAt]
-          properties:
-            createdAt: {type: string, format: date-time}
-            updatedAt: {type: string, format: date-time}
-          additionalProperties: true
-        extensions: {type: object, additionalProperties: true}
-    RevisionMutation:
-      type: object
-      additionalProperties: false
-      required: [expectedRevision, clientMutationId]
-      properties:
-        expectedRevision: {type: integer, minimum: 0, maximum: 9007199254740991}
-        clientMutationId: {type: string, minLength: 1, maxLength: 128, pattern: '.*\S.*'}
-        leaseToken: {type: string, minLength: 1, maxLength: 128}
-    ProjectRenameMutation:
-      type: object
-      additionalProperties: false
-      required: [title, expectedRevision, clientMutationId]
-      properties:
-        title: {type: string, maxLength: 500}
-        expectedRevision: {type: integer, minimum: 0, maximum: 9007199254740991}
-        clientMutationId: {type: string, minLength: 1, maxLength: 128, pattern: '.*\S.*'}
-        leaseToken: {type: string, minLength: 1, maxLength: 128}
-    DocumentMutation:
-      type: object
-      additionalProperties: false
-      required: [expectedRevision, clientMutationId, operations]
-      properties:
-        expectedRevision: {type: integer, minimum: 0, maximum: 9007199254740991}
-        clientMutationId: {type: string, minLength: 1, maxLength: 128, pattern: '.*\S.*'}
-        operations:
-          type: array
-          minItems: 1
-          maxItems: 1000
-          items:
-            type: object
-            properties:
-              type: {type: string}
-            additionalProperties: true
-        leaseToken: {type: string, minLength: 1, maxLength: 128}
-    Lease:
-      type: object
-      additionalProperties: false
-      required: [leaseToken, holder, expiresAt]
-      properties:
-        leaseToken: {type: string, minLength: 1, maxLength: 128}
-        holder: {type: string, minLength: 1, maxLength: 128}
-        expiresAt: {type: string, format: date-time}
-    ErrorEnvelope:
-      type: object
-      additionalProperties: false
-      required: [error]
-      properties:
-        requestId: {type: string}
-        error:
-          type: object
-          additionalProperties: false
-          required: [code, message]
-          properties:
-            code:
-              type: string
-              enum: [INVALID_REQUEST, UNAUTHENTICATED, INVALID_CREDENTIALS, INVALID_ORIGIN, CSRF_INVALID, FORBIDDEN, NOT_FOUND, REVISION_CONFLICT, MUTATION_ID_REUSED, PROJECT_BUSY, LOCK_LOST, LAST_ADMIN, USERNAME_EXISTS, BOOTSTRAP_COMPLETE, PAYLOAD_TOO_LARGE, RATE_LIMITED, INTERNAL_ERROR]
-            message: {type: string}
-            details:
-              type: object
-              additionalProperties: true
+        error: {type: string}
+        code: {type: string}
+        message: {type: string}
+  requestBodies:
+    Mutation:
+      required: true
+      content:
+        application/json:
+          schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string}}}
   responses:
-    InvalidRequest:
-      description: Invalid request shape or value.
+    Error:
+      description: Request failed with a service error
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    Unauthenticated:
-      description: Missing, expired, revoked, or disabled session.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    Forbidden:
-      description: >-
-        Role denied (FORBIDDEN), exact Origin mismatch (INVALID_ORIGIN), or
-        CSRF rejected. Missing CSRF header is CSRF_INVALID; an incorrect token
-        currently maps to FORBIDDEN.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    NotFound:
-      description: Resource missing or inaccessible under owner-scoped project access.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    Conflict:
-      description: Revision, mutation-id, lease, or protected-account conflict.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    RateLimited:
-      description: Login rate limit exceeded.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-      headers:
-        Retry-After:
-          schema: {type: integer, minimum: 0}
-          description: Seconds until the login rate limit window expires.
-    PayloadTooLarge:
-      description: Request body exceeds 32 MiB.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    InternalError:
-      description: Internal error; database details are not exposed.
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          schema: {$ref: '#/components/schemas/Error'}

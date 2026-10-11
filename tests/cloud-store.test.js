@@ -1,0 +1,88 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {JSDOM} from 'jsdom';
+import 'fake-indexeddb/auto';
+import {createDocument,DocumentCore} from '../core/document-core.js';
+import {ProjectStore} from '../storage/project-store.js';
+import {CloudAPI,CloudError,CloudProjectStore,stableJSON} from '../storage/cloud-project-store.js';
+import {CloudDraftStore} from '../storage/cloud-drafts.js';
+
+function cloudBackend(){
+ const docs=new Map(),locks=new Map(),receipts=new Map(),calls=[];let drop=false,offline=false,forceConflict=false;
+ const clone=value=>structuredClone(value),api={user:{id:crypto.randomUUID(),username:'cloud-user'},async request(path,{method='GET',body}={}){
+  calls.push({path,method,body:clone(body)});if(offline)throw new CloudError('OFFLINE','offline');
+  if(path==='/projects/import'){let record=receipts.get(body.clientMutationId);if(!record){record=clone(body.document);record.id=crypto.randomUUID();record.revision=0;record.metadata.createdAt=new Date().toISOString();record.metadata.spCloudImport={projectId:body.document.id,revision:body.document.revision};docs.set(record.id,record);receipts.set(body.clientMutationId,record);}return clone(record);}
+  if(path==='/projects'||path==='/projects?trash=true')return [...docs.values()].filter(doc=>!!doc._trash===path.endsWith('true')).map(doc=>({id:doc.id,title:doc.title,revision:doc.revision,deletedAt:doc._trash||null,updatedAt:doc.metadata.updatedAt}));
+  const id=path.split('/')[2],doc=docs.get(id);if(!doc)throw new CloudError('NOT_FOUND','missing',404);
+  if(path.includes('/document')){if(doc._trash&&!path.includes('trash=true'))throw new CloudError('NOT_FOUND','trashed',404);const result=clone(doc);delete result._trash;return result;}
+  if(path.endsWith('/snapshot')){const previous=receipts.get(body.clientMutationId);if(previous)return clone(previous);if(forceConflict||doc.revision!==body.expectedRevision)throw new CloudError('REVISION_CONFLICT','conflict',409);if(locks.get(id)?.leaseToken!==body.leaseToken)throw new CloudError('LOCK_LOST','lost',409);const saved=clone(body.document);docs.set(id,saved);receipts.set(body.clientMutationId,saved);if(drop){drop=false;throw new CloudError('TIMEOUT','commit uncertain');}return clone(saved);}
+  if(path.endsWith('/lease/renew')){if(locks.get(id)?.leaseToken!==body.leaseToken)throw new CloudError('LOCK_LOST','lost',409);return clone(locks.get(id));}
+  if(path.endsWith('/lease')){if(method==='DELETE'){if(locks.get(id)?.leaseToken!==body.leaseToken)throw new CloudError('LOCK_LOST','lost',409);locks.delete(id);return {released:true};}if(locks.has(id))throw new CloudError('PROJECT_BUSY','busy',409);const lease={holder:body.holder,leaseToken:crypto.randomUUID(),expiresAt:new Date(Date.now()+60000).toISOString()};locks.set(id,lease);return clone(lease);}
+  if(method==='DELETE'||path.endsWith('/restore')){doc.revision++;doc._trash=method==='DELETE'?new Date().toISOString():null;return clone(doc);}
+  throw Error('Unhandled fake API '+path);
+ }};
+ return {api,docs,locks,calls,set drop(value){drop=value;},set offline(value){offline=value;},set conflict(value){forceConflict=value;}};
+}
+function setup(){const backend=cloudBackend(),drafts=new CloudDraftStore({name:'cloud-test-'+crypto.randomUUID()}),store=new CloudProjectStore({api:backend.api,drafts});return {backend,drafts,store};}
+
+test('timeout after commit replays the exact mutation across store reopen and preserves newer drafts',async()=>{
+ const {backend,drafts,store}=setup();let reopened;
+ try{const rec=await store.create(createDocument({title:'Deck'})),lock=await store.acquire(rec.id,'browser'),core=new DocumentCore(rec.document);const changed=core.edit([{type:'updateProject',properties:{title:'Once'}}]);backend.drop=true;
+  await assert.rejects(store.save(changed,{expectedRevision:0,lock}),{code:'TIMEOUT'});const first=backend.calls.filter(call=>call.path.endsWith('/snapshot'))[0];assert.equal((await drafts.list(store.accountId)).length,1);store.close();
+  reopened=new CloudProjectStore({api:backend.api,drafts:new CloudDraftStore({name:drafts.name})});const saved=await reopened.save(changed,{expectedRevision:0,lock});assert.deepEqual(saved.document,changed);const retries=backend.calls.filter(call=>call.path.endsWith('/snapshot'));assert.equal(retries.length,2);assert.deepEqual(retries[1].body,first.body);assert.equal((await reopened.drafts.list(store.accountId)).length,0);assert.equal(backend.docs.get(rec.id).revision,1);
+ }finally{store.close();reopened?.close();}
+});
+
+test('known CAS conflicts are not retried blindly; offline drafts survive connection reopen and isolate accounts and branches',async()=>{
+ const {backend,drafts,store}=setup();const sibling=new CloudDraftStore({name:drafts.name});
+ try{const rec=await store.create(createDocument()),lock=await store.acquire(rec.id,'browser'),core=new DocumentCore(rec.document),changed=core.edit([{type:'updateProject',properties:{title:'draft'}}]);backend.conflict=true;
+  await assert.rejects(store.save(changed,{expectedRevision:0,lock}),{code:'REVISION_CONFLICT'});await assert.rejects(store.save(changed,{expectedRevision:0,lock}),{code:'REVISION_CONFLICT'});const reopened=new CloudProjectStore({api:backend.api,drafts:new CloudDraftStore({name:drafts.name})});try{await assert.rejects(reopened.save(changed,{expectedRevision:0,lock}),{code:'REVISION_CONFLICT'});}finally{reopened.close();}assert.equal(backend.calls.filter(call=>call.path.endsWith('/snapshot')).length,1);
+  await sibling.save(store.accountId,{...changed,title:'other tab losing branch'},{sourceRevision:0});await drafts.clearSaved(store.accountId,rec.id,1);assert.equal((await sibling.list(store.accountId))[0].document.title,'other tab losing branch');assert.deepEqual(await sibling.list('other-account'),[]);
+  backend.offline=true;const next=core.edit([{type:'updateProject',properties:{title:'offline latest'}}]);await assert.rejects(store.save(next,{expectedRevision:0,lock}),{code:'OFFLINE'});drafts.close();await drafts.open();assert.ok((await drafts.list(store.accountId)).some(record=>record.document.title==='offline latest'));
+ }finally{store.close();sibling.close();}
+});
+
+test('migration uploads a new identity, checks semantic content/readback, and leaves the local original unchanged',async()=>{
+ const {backend,store}=setup(),local=new ProjectStore({name:'local-cloud-migration-'+crypto.randomUUID()});
+ try{const doc=createDocument({title:'Migrate',slides:[{id:'s',elements:[],notes:'private notes',unknown:{nested:[1,'x']}}],extensions:{future:{data:'preserve'}}});await local.create(doc);const saved=await store.migrate(local,doc.id);assert.notEqual(saved.id,doc.id);assert.deepEqual(saved.document.slides,doc.slides);assert.deepEqual(saved.document.extensions,doc.extensions);assert.deepEqual((await local.get(doc.id)).document,doc);assert.equal((await store.list())[0].storage,'cloud');store.drafts.close();assert.equal((await store.drafts.migrations(store.accountId))[0].cloudProjectId,saved.id);assert.deepEqual(await store.drafts.migrations('another-account'),[]);
+  const request=backend.api.request.bind(backend.api);backend.api.request=async(path,options)=>{const result=await request(path,options);if(path==='/projects/import'){result.extensions.future.data='lost';backend.docs.set(result.id,result);}return result;};await assert.rejects(store.migrate(local,doc.id),{code:'IMPORT_READBACK_MISMATCH'});assert.deepEqual((await local.get(doc.id)).document,doc);
+ }finally{store.close();local.close();}
+});
+
+test('busy cloud leases never take over and restore records retain cloud revision/trash identity',async()=>{
+ const {store}=setup();try{const rec=await store.create(createDocument()),lease=await store.acquire(rec.id,'one');assert.equal(await store.acquire(rec.id,'two'),null);await assert.rejects(store.acquire(rec.id,'two',{takeover:true}),{code:'PROJECT_BUSY'});assert.equal((await store.renew(lease)).token,lease.token);await store.release(lease);await store.setDeleted(rec.id,true,{owner:'one'});const trash=await store.list({trash:true});assert.equal(trash[0].id,rec.id);assert.equal(trash[0].document.revision,1);assert.ok(trash[0].deletedAt);await store.setDeleted(rec.id,false);assert.equal((await store.get(rec.id)).document.revision,2);}finally{store.close();}
+});
+
+test('CSRF rotation retries only an explicit rejected request; network timeout never retries writes automatically',async()=>{
+ const calls=[];let csrfFail=true;
+ const api=new CloudAPI({fetch:async(url,options)=>{calls.push({url,options});if(url.endsWith('/auth/csrf'))return {ok:true,status:200,json:async()=>({csrfToken:'fresh'})};if(csrfFail){csrfFail=false;return {ok:false,status:403,json:async()=>({error:{code:'CSRF_INVALID',message:'expired'}})};}return {ok:true,status:200,json:async()=>({saved:true})};}});api.csrfToken='old';const body={clientMutationId:'stable',document:{title:'same'}};assert.deepEqual(await api.request('/projects/id/snapshot',{method:'PUT',body}),{saved:true});assert.equal(calls.length,3);assert.equal(calls[0].options.body,calls[2].options.body);assert.equal(calls[2].options.headers['X-CSRF-Token'],'fresh');
+ let writes=0;const offline=new CloudAPI({fetch:async()=>{writes++;throw Error('network');}});await assert.rejects(offline.request('/projects/id/snapshot',{method:'PUT',body}),{code:'OFFLINE'});assert.equal(writes,1);
+ const timeout=new CloudAPI({timeoutMs:5,fetch:(_url,{signal})=>new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted'))))});await assert.rejects(timeout.request('/projects/id/snapshot',{method:'PUT',body}),{code:'TIMEOUT'});
+ const slowBody=new CloudAPI({timeoutMs:5,fetch:async(_url,{signal})=>({ok:true,status:200,json:()=>new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted body'))))})});await assert.rejects(slowBody.request('/projects/id/snapshot',{method:'PUT',body}),{code:'TIMEOUT'});
+ let accountWrites=0;const switched=new CloudAPI({fetch:async url=>url.endsWith('/auth/me')?{ok:true,status:200,json:async()=>({user:{id:'different-account'}})}:(accountWrites++,{ok:false,status:403,json:async()=>({error:{code:'CSRF_INVALID'}})})});switched.user={id:'original-account'};await assert.rejects(switched.request('/projects/import',{method:'POST',body}),{code:'ACCOUNT_CHANGED'});assert.equal(accountWrites,1,'Never retry a write under a different Cookie account');
+ assert.equal(stableJSON({a:1,b:{c:2}}),stableJSON({b:{c:2},a:1}));
+});
+
+test('DOM cloud login, verified migration, batched save, AI handoff/resume, offline recovery and local toggle use one editor workspace',async()=>{
+ const backend=cloudBackend(),previousFetch=globalThis.fetch;
+ globalThis.fetch=async(url,options={})=>{const path=String(url).replace('/api/v1',''),body=options.body?JSON.parse(options.body):undefined;try{let result;if(path==='/auth/login'||path==='/auth/me')result={user:backend.api.user,csrfToken:'csrf'};else if(path==='/auth/csrf')result={csrfToken:'csrf'};else if(path==='/auth/logout')result={success:true};else if(path==='/me/tokens')result=[];else result=await backend.api.request(path,{method:options.method,body});return {ok:true,status:200,json:async()=>result};}catch(error){if(!error.status)throw error;return {ok:false,status:error.status,json:async()=>({error:{code:error.code,message:error.message}})};}};
+ const dom=new JSDOM(await readFile(new URL('../web/index.html',import.meta.url),'utf8'),{url:'http://localhost/local'});globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.BroadcastChannel=undefined;
+ const wait=async check=>{for(let attempt=0;attempt<200;attempt++){if(check())return;await new Promise(resolve=>setTimeout(resolve,5));}throw Error('DOM wait timed out');};
+ const $=id=>document.getElementById(id);let app,cloud,local;
+ try{
+  await import('../web/app.js?cloud-test='+crypto.randomUUID());await wait(()=>window.SPFramework?.ready);app=window.SPFramework;local=app.store;app.registerEditorAdapter({mount(){return {update(){},setReadOnly(){},destroy(){},flush(){}};}});
+  assert.equal(app.getState().storage,'local');const original=await app.newProject('Local original');await app.home();
+  const form=$('cloud-login');form.elements.username.value='cloud-user';form.elements.password.value='not-a-real-password';form.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await wait(()=>app.getState().storage==='cloud'&&$('cloud-local-project').options.length>0);cloud=app.store;
+  assert.equal(form.elements.password.value,'');assert.equal($('cloud-handoff').parentElement,$('cloud-controls').querySelector('.cloud-mode'));assert.match($('cloud-token-settings').textContent,/暂无授权/);assert.match($('storage-mode').textContent,/云端/);$('cloud-local-project').value=original.id;$('migrate-local').click();await wait(()=>app.getDocument()?.id&&app.getDocument().id!==original.id&&!$('migrate-local').disabled);
+  const cloudId=app.getDocument().id;assert.deepEqual((await local.get(original.id)).document,original);assert.match($('migration-result').textContent,/核对.*保留/);
+  app.edit([{type:'updateProject',properties:{title:'First'}}]);app.edit([{type:'updateProject',properties:{title:'Batched'}}]);await app.flush();assert.equal(backend.docs.get(cloudId).revision,2);assert.match($('save-state').textContent,/已保存到云端/);assert.equal((await cloud.drafts.list(cloud.accountId)).length,0);
+  await app.handoff();assert.equal(app.getState().readOnly,true);assert.equal(backend.locks.has(cloudId),false);assert.match($('save-state').textContent,/已释放写入权/);
+  const ai=new DocumentCore(backend.docs.get(cloudId));backend.docs.set(cloudId,ai.edit([{type:'updateProject',properties:{title:'AI revision'}}]));await app.resume();assert.equal(app.getDocument().title,'AI revision');assert.equal(app.getState().persistedRevision,3);assert.equal(app.getState().readOnly,false);
+  backend.offline=true;app.edit([{type:'updateProject',properties:{title:'Offline draft'}}]);await assert.rejects(app.flush(),{code:'OFFLINE'});assert.match($('save-state').textContent,/云端未确认保存/);assert.doesNotMatch($('save-state').textContent,/已保存到云端/);
+  await app.switchStore(local);assert.equal(app.getState().storage,'local');assert.deepEqual((await local.get(original.id)).document,original);assert.equal((await cloud.drafts.list(cloud.accountId))[0].document.title,'Offline draft');
+  backend.offline=false;$('use-cloud').click();await wait(()=>app.getState().storage==='cloud'&&!$('cloud-draft-controls').hidden);await app.openProject(cloudId);assert.equal(app.getState().readOnly,true);assert.equal($('takeover').hidden,true);await assert.rejects(app.resume(),/恢复/);
+  $('recover-cloud-draft').click();await wait(()=>app.getDocument()?.id!==cloudId&&!$('recover-cloud-draft').disabled);assert.match(app.getDocument().title,/Offline draft.*恢复/);assert.equal(backend.docs.get(cloudId).title,'AI revision');assert.equal((await cloud.drafts.list(cloud.accountId)).length,0);
+  const currentId=app.getDocument().id,currentSaved=structuredClone(backend.docs.get(currentId));backend.offline=true;app.edit([{type:'updateProject',properties:{title:'Current unsaved'}}]);await assert.rejects(app.flush(),{code:'OFFLINE'});await wait(()=>!$('cloud-draft-controls').hidden);backend.offline=false;$('recover-cloud-draft').click();await wait(()=>app.getDocument()?.id!==currentId&&!$('recover-cloud-draft').disabled);assert.match(app.getDocument().title,/Current unsaved.*恢复/);assert.deepEqual(backend.docs.get(currentId),currentSaved,'Recovering a failed live session must not flush its draft into the source');
+ }finally{backend.offline=false;if(app)await app.home().catch(()=>{});cloud?.close();local?.close();dom.window.close();globalThis.fetch=previousFetch;}
+});

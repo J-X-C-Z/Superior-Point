@@ -124,12 +124,13 @@ test('invalid batches and database audit failure roll back document, revision, a
   assert.equal((await service.edit(owner, doc.id, {expectedRevision: 0, clientMutationId: 'db-failure', operations: title('retry saved')})).revision, 1);
 }));
 
-test('rename, trash and restore honor lease tokens and bind receipts to the supplied token', async () => fixture(async (_db, service, owner) => {
+test('rename, trash and restore honor lease tokens and replay committed semantic mutations across renewed lease tokens', async () => fixture(async (_db, service, owner) => {
   const doc = await service.create(owner);
   const lease = await service.acquireLease(owner, doc.id, 'editor');
   await assert.rejects(service.rename(owner, doc.id, {expectedRevision: 0, clientMutationId: 'rename', title: 'renamed'}), {code: 'PROJECT_BUSY'});
   const renamed = await service.rename(owner, doc.id, {expectedRevision: 0, clientMutationId: 'rename', title: 'renamed', leaseToken: lease.leaseToken});
-  await assert.rejects(service.rename(owner, doc.id, {expectedRevision: 0, clientMutationId: 'rename', title: 'renamed', leaseToken: randomUUID()}), {code: 'MUTATION_ID_REUSED'});
+  assert.deepEqual(await service.rename(owner, doc.id, {expectedRevision: 0, clientMutationId: 'rename', title: 'renamed', leaseToken: randomUUID()}),renamed);
+  await assert.rejects(service.rename(owner,doc.id,{expectedRevision:0,clientMutationId:'rename',title:'different',leaseToken:lease.leaseToken}),{code:'MUTATION_ID_REUSED'});
   const request = {expectedRevision: 1, clientMutationId: 'trash', leaseToken: lease.leaseToken};
   const removed = await service.remove(owner, doc.id, request); assert.equal(removed.revision, renamed.revision + 1);
   assert.deepEqual(await service.remove(owner, doc.id, request), removed);

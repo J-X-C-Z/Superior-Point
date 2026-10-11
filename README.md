@@ -2,9 +2,11 @@
 
 本地优先的演示文稿工作台，集成 v0.39 编辑器。此版本是可试用的早期预览版（pre-release），不是功能完整或生产稳定版。发布版本 v0.0.1 与内部编辑器版本 v0.39 分别编号。
 
-## 服务化基础开发（未发布）
+## Alpha 候选（未生产发布）
 
-已增加路线图 v1.0 第1批的 TypeScript/Fastify/PostgreSQL 服务：登录与会话、管理员CLI初始化、账号管理API、统一项目服务、修订CAS、幂等和租约。运行与验收见 [服务基础开发](docs/development/service-foundation.md)，接口见 [OpenAPI](docs/api/openapi.yaml)，阶段证据见 [状态台账](docs/architecture/service-foundation-status.md)。现有浏览器和MCP的存储入口尚未切到云端；本阶段不代表Hakari部署或Alpha发布。
+当前工作树包含 Alpha 候选服务：TypeScript/Fastify/PostgreSQL API、账号与会话、管理员页面、项目云端存储、个人访问令牌和同库 MCP Bridge。它仍是待验收候选，**尚未生产发布**；本轮不调整框架版本号 `0.0.1`，也不宣称生产可用。生产 DNS、容器部署和离机备份/恢复仍待实际环境验收。现有 `npm start` 单文件演示工作台仍按本地 IndexedDB 运行，服务端 API 与旧文件 MCP 不会自动接管其数据。
+
+服务环境、首次管理员初始化、迁移和隔离测试参数见 [服务与运维指南](docs/admin/service-operations.md)；面向用户的账号、项目和 Bridge 使用说明见 [用户指南](docs/user/service-guide.md)。完整接口以 [OpenAPI](docs/api/openapi.yaml) 为准。OAuth/OIDC 尚未实现，也不在当前契约中。
 
 ## 最快查看
 

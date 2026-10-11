@@ -1,6 +1,6 @@
 import type {Pool, PoolClient} from 'pg';
 
-export type Actor = {id: string; role: 'admin' | 'user'; source: 'web' | 'mcp'; sessionId?: string; scopes?: string[]; projectAllowlist?: string[] | null};
+export type Actor = {id: string; role: 'admin' | 'user'; source: 'web' | 'mcp'; sessionId?: string; tokenId?: string; scopes?: string[]; projectAllowlist?: string[] | null};
 export type Database = Pool;
 export type Transaction = PoolClient;
 export class ServiceError extends Error {

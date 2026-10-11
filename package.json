@@ -17,7 +17,9 @@
     "service:migrate": "node --import tsx server/db/migrate.ts",
     "service:bootstrap": "node --import tsx server/bootstrap-admin.ts",
     "typecheck:service": "tsc -p tsconfig.server.json",
-    "test:service": "node --import tsx --test tests/service/*.test.ts"
+    "test:service": "node --import tsx --test --test-concurrency=1 tests/service/*.test.ts",
+    "mcp:bridge": "node mcp/bridge/server.js",
+    "service:backup": "node --import tsx server/backup.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
