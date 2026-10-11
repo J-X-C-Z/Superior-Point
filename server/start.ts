@@ -4,7 +4,7 @@ if(!process.env.DATABASE_URL) throw Error('DATABASE_URL is required; run service
 const db=new pg.Pool({connectionString:process.env.DATABASE_URL,max:10});
 const development=process.env.SP_DEV_HTTP==='1';
 const origin=process.env.SP_ORIGIN??(development?'http://127.0.0.1:3000':'https://sp.jxcz.top');
-const app=buildApp({db,origin,secureCookies:!development,backupDirectory:process.env.SP_BACKUP_DIR,assetDirectory:process.env.SP_ASSET_DIR,backupDatabaseUrl:process.env.DATABASE_URL,restoreDatabaseUrl:process.env.SP_RESTORE_DATABASE_URL,pgBinDirectory:process.env.SP_PG_BIN});
+const app=buildApp({db,origin,secureCookies:!development,trustProxyHops:process.env.SP_TRUST_PROXY_HOPS==='1'?1:0,backupDirectory:process.env.SP_BACKUP_DIR,assetDirectory:process.env.SP_ASSET_DIR,backupDatabaseUrl:process.env.DATABASE_URL,restoreDatabaseUrl:process.env.SP_RESTORE_DATABASE_URL,pgBinDirectory:process.env.SP_PG_BIN});
 await app.listen({host:process.env.SP_BIND??'127.0.0.1',port:Number(process.env.SP_PORT??3000)});
 console.log('SP foundation API listening at '+origin);
 for(const signal of ['SIGINT','SIGTERM'] as const)process.once(signal,()=>{app.close().then(()=>db.end()).then(()=>process.exit(0)).catch(()=>process.exit(1));});

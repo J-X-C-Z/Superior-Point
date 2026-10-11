@@ -45,6 +45,7 @@ services:
         condition: service_healthy
     environment:
       <<: *app-environment
+      SP_TRUST_PROXY_HOPS: 1
       DATABASE_URL: postgresql://${SP_APP_DB_USER:?set SP_APP_DB_USER in deploy/hakari/.env}:${SP_APP_DB_PASSWORD:?set SP_APP_DB_PASSWORD in deploy/hakari/.env}@db:5432/${POSTGRES_DB:?set POSTGRES_DB in deploy/hakari/.env}
       SP_RESTORE_DATABASE_URL: ${SP_RESTORE_DATABASE_URL:-}
     volumes:

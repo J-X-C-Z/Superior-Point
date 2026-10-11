@@ -9,7 +9,7 @@ import {registerStaticRoutes} from './routes/static-routes.js';
 import {BackupService} from './services/backup-service.js';
 import {validateDocument} from '../core/document-core.js';
 import {exportHTML,renderSlideSVG,inspectRenderCompatibility} from '../io/html.js';
-export type AppOptions = {db: Database; origin: string; secureCookies?: boolean; loginLimit?: number; loginWindowMs?: number; backupDirectory?:string; assetDirectory?:string; backupDatabaseUrl?:string; restoreDatabaseUrl?:string; pgBinDirectory?:string};
+export type AppOptions = {db: Database; origin: string; secureCookies?: boolean; loginLimit?: number; loginWindowMs?: number; trustProxyHops?:number; backupDirectory?:string; assetDirectory?:string; backupDatabaseUrl?:string; restoreDatabaseUrl?:string; pgBinDirectory?:string};
 const text={type:'string',minLength:1,maxLength:128} as const;
 const revision={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER} as const;
 const mutation={expectedRevision:revision,clientMutationId:text};
@@ -17,9 +17,11 @@ const schema=(properties:Record<string,unknown>,required:string[])=>({type:'obje
 function body(request: FastifyRequest): any {return request.body;}
 export function buildApp(options: AppOptions) {
  const {db,origin}=options;const originURL=new URL(origin);
+ if(options.trustProxyHops!==undefined&&options.trustProxyHops!==0&&options.trustProxyHops!==1)throw Error('Trust exactly zero or one proxy hop');
  if(originURL.origin!==origin || (!options.secureCookies && !['localhost','127.0.0.1','[::1]'].includes(originURL.hostname)) || (options.secureCookies && originURL.protocol!=='https:')) throw Error('Use exact HTTPS origin, or explicit loopback development HTTP');
  const auth=new AuthService(db,{origin,secureCookies:options.secureCookies});const projects=new ProjectService(db);const tokens=new TokenService(db);
- const app=Fastify({logger:false,bodyLimit:32*1024*1024,ajv:{customOptions:{removeAdditional:false,coerceTypes:false}},genReqId:()=>randomUUID()});
+ // This opt-in requires private app access through a single ingress proxy.
+ const app=Fastify({logger:false,trustProxy:options.trustProxyHops===1?(_address,hop)=>hop===0:false,bodyLimit:32*1024*1024,ajv:{customOptions:{removeAdditional:false,coerceTypes:false}},genReqId:()=>randomUUID()});
  const cookieName=options.secureCookies?'__Host-sp-session':'sp-session';
  const cookie=(value:string,maxAge:number)=>`${cookieName}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${options.secureCookies?'; Secure':''}`;
  function session(request:FastifyRequest){const entries=(request.headers.cookie??'').split(';').map(c=>c.trim().split('='));const values=entries.filter(([k])=>k===cookieName);if(values.length!==1)return '';return values[0][1]??'';}

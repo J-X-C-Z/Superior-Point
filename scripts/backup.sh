@@ -28,7 +28,7 @@ else
 fi
 
 if [ -z "${RESTIC_REPOSITORY:-}" ]; then
-  printf 'Off-site backup not configured; the verified local backup remains in data/backups.\n'
+  printf 'Off-site backup not configured; the completed local backup remains in data/backups.\n'
   exit 0
 fi
 if ! command -v restic >/dev/null 2>&1 || [ -z "${RESTIC_PASSWORD_FILE:-}" ] || [ ! -r "$RESTIC_PASSWORD_FILE" ]; then
