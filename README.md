@@ -2,6 +2,10 @@
 
 本地优先的演示文稿工作台，集成 v0.39 编辑器。此版本是可试用的早期预览版（pre-release），不是功能完整或生产稳定版。发布版本 v0.0.1 与内部编辑器版本 v0.39 分别编号。
 
+## 服务化基础开发（未发布）
+
+已增加路线图 v1.0 第1批的 TypeScript/Fastify/PostgreSQL 服务：登录与会话、管理员CLI初始化、账号管理API、统一项目服务、修订CAS、幂等和租约。运行与验收见 [服务基础开发](docs/development/service-foundation.md)，接口见 [OpenAPI](docs/api/openapi.yaml)，阶段证据见 [状态台账](docs/architecture/service-foundation-status.md)。现有浏览器和MCP的存储入口尚未切到云端；本阶段不代表Hakari部署或Alpha发布。
+
 ## 最快查看
 
 打开 `dist/SuperiorPoint_v0.0.1.html` 可尝试单文件工作台。不同浏览器对 `file://` 下 IndexedDB 的支持有差异；推荐以下本地服务方式，使用固定端口维持同一存储来源。
@@ -78,7 +82,7 @@ npm test
 - `examples/`：五页示例、生成器
 - `tests/`：核心、文件、协议、存储、DOM 与浏览器验收脚本
 
-本轮不开发主题系统、账号、云同步、PPTX 新能力、实时 MCP 配对或独立 `.sp` 文件格式。
+v0.0.1发布版不包含主题系统、账号、云同步、PPTX新能力、实时MCP配对或独立 `.sp` 文件格式；未发布服务基础进度见上方说明。
 
 ## 许可
 

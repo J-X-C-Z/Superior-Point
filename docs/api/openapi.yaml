@@ -1,0 +1,855 @@
+openapi: 3.1.0
+info:
+  title: Superior Point Service API
+  version: 1.0.0
+  description: >-
+    OpenAPI 3.1 contract for the current SP-001 through SP-007 service routes.
+servers:
+  - url: /api/v1
+    description: Versioned service API
+tags:
+  - name: auth
+  - name: admin-users
+  - name: projects
+  - name: documents
+  - name: leases
+  - name: health
+paths:
+  /health/live:
+    servers: [{url: /}]
+    get:
+      tags: [health]
+      operationId: healthLive
+      summary: Check whether the process is responding
+      security: []
+      responses:
+        '200':
+          description: Process is live.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status: {const: ok}
+  /health/ready:
+    servers: [{url: /}]
+    get:
+      tags: [health]
+      operationId: healthReady
+      summary: Check database readiness (Admin only)
+      description: Requires an authenticated active Web Admin session.
+      security:
+        - secureSession: []
+        - developmentSession: []
+      responses:
+        '200':
+          description: Database is reachable.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status: {const: ready}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Create a web session
+      description: Exact Origin validation applies. Public registration is not provided.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 64
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 1024
+      responses:
+        '200':
+          description: Authenticated user and CSRF token; session is set in an HttpOnly cookie.
+          headers:
+            Set-Cookie:
+              schema: {type: string}
+              description: >-
+                Production uses __Host-sp-session; loopback development uses
+                sp-session. Both are HttpOnly and SameSite=Strict; production
+                also sets Secure and Path=/.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [user, csrfToken]
+                properties:
+                  user: {$ref: '#/components/schemas/PublicUser'}
+                  csrfToken: {type: string}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Revoke the current session
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Session revoked and cookie expired.
+          headers:
+            Set-Cookie:
+              schema: {type: string}
+              description: The environment's session cookie is cleared with Max-Age=0.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [success]
+                properties:
+                  success: {const: true}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /auth/me:
+    get:
+      tags: [auth]
+      operationId: getCurrentUser
+      summary: Read the current session identity
+      security:
+        - secureSession: []
+        - developmentSession: []
+      responses:
+        '200':
+          description: Current authenticated user.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [user]
+                properties:
+                  user: {$ref: '#/components/schemas/User'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /admin/users:
+    get:
+      tags: [admin-users]
+      operationId: listUsers
+      summary: List platform users
+      security:
+        - secureSession: []
+        - developmentSession: []
+      responses:
+        '200':
+          description: User metadata; password hashes and session secrets are never returned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/User'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [admin-users]
+      operationId: createUser
+      summary: Create a user account
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username: {type: string, minLength: 3, maxLength: 64, pattern: '^[A-Za-z0-9_.-]{3,64}$'}
+                password: {type: string, minLength: 12, maxLength: 1024}
+                role: {$ref: '#/components/schemas/Role'}
+      responses:
+        '201':
+          description: Account created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /admin/users/{userId}/status:
+    patch:
+      tags: [admin-users]
+      operationId: setUserStatus
+      summary: Enable or disable a user
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status]
+              properties:
+                status: {$ref: '#/components/schemas/UserStatus'}
+      responses:
+        '200':
+          description: Updated account metadata.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /admin/users/{userId}/role:
+    patch:
+      tags: [admin-users]
+      operationId: setUserRole
+      summary: Change a user's platform role
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [role]
+              properties:
+                role: {$ref: '#/components/schemas/Role'}
+      responses:
+        '200':
+          description: Updated account metadata.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /admin/users/{userId}/sessions:
+    delete:
+      tags: [admin-users]
+      operationId: revokeUserSessions
+      summary: Revoke all sessions for a user
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '200':
+          description: All active sessions for the target user were revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [success]
+                properties:
+                  success: {const: true}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      summary: List the current user's projects
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - name: trash
+          in: query
+          required: false
+          schema: {type: boolean, default: false}
+      responses:
+        '200':
+          description: Owned projects or owned soft-deleted projects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/ProjectSummary'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [projects]
+      operationId: createProject
+      summary: Create an owned project
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                title: {type: string, maxLength: 500}
+                canvas:
+                  type: object
+                  additionalProperties: false
+                  required: [width, height]
+                  properties:
+                    width: {type: number, exclusiveMinimum: 0}
+                    height: {type: number, exclusiveMinimum: 0}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '201':
+          description: Created project and canonical document.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [projects]
+      operationId: getProject
+      summary: Read an owned project document
+      security:
+        - secureSession: []
+        - developmentSession: []
+      responses:
+        '200':
+          description: Canonical project document.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    patch:
+      tags: [projects]
+      operationId: renameProject
+      summary: Rename an owned project using revision CAS
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProjectRenameMutation'}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Persisted canonical document.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [projects]
+      operationId: deleteProject
+      summary: Soft-delete an owned project using revision CAS
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RevisionMutation'}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Persisted canonical document after soft deletion.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /projects/{projectId}/restore:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [projects]
+      operationId: restoreProject
+      summary: Restore an owned soft-deleted project using revision CAS
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RevisionMutation'}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Persisted canonical document after restoration.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /projects/{projectId}/document:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [documents]
+      operationId: getProjectDocument
+      summary: Read an owned canonical document
+      security:
+        - secureSession: []
+        - developmentSession: []
+      responses:
+        '200':
+          description: Canonical document and current revision.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    patch:
+      tags: [documents]
+      operationId: editProjectDocument
+      summary: Apply Document Core operations with revision CAS
+      description: >-
+        Operations use the existing Document Core vocabulary and properties
+        fields. A full-content replacement requires a valid lease. Operation
+        count is limited to 1 through 1000. Revisions, audit records, and
+        idempotency receipts commit atomically.
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DocumentMutation'}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Persisted canonical document and new revision.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CanonicalDocument'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /projects/{projectId}/lease:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [leases]
+      operationId: acquireProjectLease
+      summary: Acquire the single-writer project lease
+      description: Active leases cannot be taken over. Lease lifetime is 60 seconds.
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [holder]
+              properties:
+                holder: {type: string, minLength: 1}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Lease acquired.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lease'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [leases]
+      operationId: releaseProjectLease
+      summary: Release the caller's project lease
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [leaseToken]
+              properties:
+                leaseToken: {type: string, minLength: 1}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Lease released.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [released]
+                properties:
+                  released: {const: true}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /projects/{projectId}/lease/renew:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    post:
+      tags: [leases]
+      operationId: renewProjectLease
+      summary: Renew the caller's project lease
+      security:
+        - secureSession: []
+        - developmentSession: []
+      parameters:
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [leaseToken]
+              properties:
+                leaseToken: {type: string, minLength: 1}
+      responses:
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '200':
+          description: Lease renewed for 60 seconds.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Lease'}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '500': {$ref: '#/components/responses/InternalError'}
+components:
+  securitySchemes:
+    secureSession:
+      type: apiKey
+      in: cookie
+      name: __Host-sp-session
+      description: >-
+        Production cookie set with HttpOnly, Secure, Path=/ and SameSite=Strict.
+    developmentSession:
+      type: apiKey
+      in: cookie
+      name: sp-session
+      description: Loopback-only development cookie set with HttpOnly and SameSite=Strict.
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      description: Must exactly match the configured service origin for writes.
+      schema: {type: string, format: uri}
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: Required for cookie-authenticated writes.
+      schema: {type: string, minLength: 1}
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  schemas:
+    Role:
+      type: string
+      enum: [admin, user]
+    UserStatus:
+      type: string
+      enum: [active, disabled]
+    PublicUser:
+      type: object
+      additionalProperties: false
+      required: [id, username, role]
+      properties:
+        id: {type: string, format: uuid}
+        username: {type: string}
+        role: {$ref: '#/components/schemas/Role'}
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, username, role, status, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        username: {type: string, minLength: 3, maxLength: 64, pattern: '^[A-Za-z0-9_.-]{3,64}$'}
+        role: {$ref: '#/components/schemas/Role'}
+        status: {$ref: '#/components/schemas/UserStatus'}
+        createdAt: {type: string, format: date-time}
+    ProjectSummary:
+      type: object
+      additionalProperties: false
+      required: [id, title, revision, deletedAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        title: {type: string, maxLength: 500}
+        revision: {type: integer, minimum: 0, maximum: 9007199254740991}
+        deletedAt:
+          type: [string, 'null']
+          format: date-time
+        updatedAt: {type: string, format: date-time}
+    CanonicalDocument:
+      type: object
+      additionalProperties: true
+      required: [format, schemaVersion, id, title, revision, canvas, slides, assets, metadata, extensions]
+      properties:
+        format: {const: superior-point}
+        schemaVersion: {const: 1}
+        id: {type: string, format: uuid}
+        title: {type: string, maxLength: 500}
+        revision: {type: integer, minimum: 0, maximum: 9007199254740991}
+        canvas:
+          type: object
+          required: [width, height]
+          additionalProperties: true
+          properties:
+            width: {type: number, exclusiveMinimum: 0}
+            height: {type: number, exclusiveMinimum: 0}
+        slides:
+          type: array
+          items: {type: object, required: [id, elements], additionalProperties: true}
+        assets:
+          type: array
+          items: {type: object, required: [id], additionalProperties: true}
+        metadata:
+          type: object
+          required: [createdAt, updatedAt]
+          properties:
+            createdAt: {type: string, format: date-time}
+            updatedAt: {type: string, format: date-time}
+          additionalProperties: true
+        extensions: {type: object, additionalProperties: true}
+    RevisionMutation:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, clientMutationId]
+      properties:
+        expectedRevision: {type: integer, minimum: 0, maximum: 9007199254740991}
+        clientMutationId: {type: string, minLength: 1, maxLength: 128, pattern: '.*\S.*'}
+        leaseToken: {type: string, minLength: 1, maxLength: 128}
+    ProjectRenameMutation:
+      type: object
+      additionalProperties: false
+      required: [title, expectedRevision, clientMutationId]
+      properties:
+        title: {type: string, maxLength: 500}
+        expectedRevision: {type: integer, minimum: 0, maximum: 9007199254740991}
+        clientMutationId: {type: string, minLength: 1, maxLength: 128, pattern: '.*\S.*'}
+        leaseToken: {type: string, minLength: 1, maxLength: 128}
+    DocumentMutation:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, clientMutationId, operations]
+      properties:
+        expectedRevision: {type: integer, minimum: 0, maximum: 9007199254740991}
+        clientMutationId: {type: string, minLength: 1, maxLength: 128, pattern: '.*\S.*'}
+        operations:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: object
+            properties:
+              type: {type: string}
+            additionalProperties: true
+        leaseToken: {type: string, minLength: 1, maxLength: 128}
+    Lease:
+      type: object
+      additionalProperties: false
+      required: [leaseToken, holder, expiresAt]
+      properties:
+        leaseToken: {type: string, minLength: 1, maxLength: 128}
+        holder: {type: string, minLength: 1, maxLength: 128}
+        expiresAt: {type: string, format: date-time}
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        requestId: {type: string}
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [INVALID_REQUEST, UNAUTHENTICATED, INVALID_CREDENTIALS, INVALID_ORIGIN, CSRF_INVALID, FORBIDDEN, NOT_FOUND, REVISION_CONFLICT, MUTATION_ID_REUSED, PROJECT_BUSY, LOCK_LOST, LAST_ADMIN, USERNAME_EXISTS, BOOTSTRAP_COMPLETE, PAYLOAD_TOO_LARGE, RATE_LIMITED, INTERNAL_ERROR]
+            message: {type: string}
+            details:
+              type: object
+              additionalProperties: true
+  responses:
+    InvalidRequest:
+      description: Invalid request shape or value.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    Unauthenticated:
+      description: Missing, expired, revoked, or disabled session.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    Forbidden:
+      description: >-
+        Role denied (FORBIDDEN), exact Origin mismatch (INVALID_ORIGIN), or
+        CSRF rejected. Missing CSRF header is CSRF_INVALID; an incorrect token
+        currently maps to FORBIDDEN.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    NotFound:
+      description: Resource missing or inaccessible under owner-scoped project access.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    Conflict:
+      description: Revision, mutation-id, lease, or protected-account conflict.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    RateLimited:
+      description: Login rate limit exceeded.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+      headers:
+        Retry-After:
+          schema: {type: integer, minimum: 0}
+          description: Seconds until the login rate limit window expires.
+    PayloadTooLarge:
+      description: Request body exceeds 32 MiB.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    InternalError:
+      description: Internal error; database details are not exposed.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}

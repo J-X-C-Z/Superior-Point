@@ -1,0 +1,11 @@
+import pg from 'pg';
+import {buildApp} from './app.js';
+if(!process.env.DATABASE_URL) throw Error('DATABASE_URL is required; run service:migrate first');
+const db=new pg.Pool({connectionString:process.env.DATABASE_URL,max:10});
+const development=process.env.SP_DEV_HTTP==='1';
+const origin=process.env.SP_ORIGIN??(development?'http://127.0.0.1:3000':'https://sp.jxcz.top');
+const app=buildApp({db,origin,secureCookies:!development});
+app.addHook('onClose',async()=>db.end());
+await app.listen({host:'127.0.0.1',port:Number(process.env.SP_PORT??3000)});
+console.log('SP foundation API listening at '+origin);
+for(const signal of ['SIGINT','SIGTERM'] as const)process.once(signal,()=>{app.close().then(()=>process.exit(0)).catch(()=>process.exit(1));});
