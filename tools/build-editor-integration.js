@@ -3,12 +3,16 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {Script} from 'node:vm';
 import {revealJS,revealCSS} from '../vendor/reveal-bundle.js';
+import {patchAnimationLibrary} from './editor-animation-library.js';
+import {patchTransitionLibrary} from './editor-transition-library.js';
 const root=new URL('../',import.meta.url);
 const read=p=>readFile(new URL(p,root),'utf8');
 let html=await read('vendor/editor-v039.source.html');
 const sourceHash=createHash('sha256').update(html).digest('hex');
 const expected=(await read('vendor/editor-v039.source.sha256')).trim().split(/\s+/)[0];
 if(sourceHash!==expected)throw new Error('v0.39 source SHA-256 mismatch; candidate build refused');
+// Both embedded editing and trusted exports must use the same expanded effects.
+html=patchTransitionLibrary(patchAnimationLibrary(html));
 const trustedSource=html;
 function sourceBetween(start,end){const a=trustedSource.indexOf(start),b=trustedSource.indexOf(end,a+start.length);if(a<0||b<0)throw Error('Trusted playback boundary missing');return trustedSource.slice(a,b).trim();}
 const legacyPlaybackBootstrap=sourceBetween('  function v15PlaybackBootstrap(){','  v15PlaybackBootstrap();')+'\n'+sourceBetween('  function v24OfflineExportBootstrap(width,height){','  function v24OfflineExportCSS()');
@@ -21,7 +25,7 @@ const trustedStyleFunctions=['revealStyleSheet','v15ExportCSS','v24OfflineExport
 const legacyPresentationCSS='export function legacyPresentationCSS(width,height){const deck={width,height};\n'+trustedStyleFunctions+'\nreturn revealStyleSheet()+v24OfflineExportCSS();}';
 new Script(legacyPresentationCSS.replace('export function','function'),{filename:'trusted-v039-styles.js'});
 await writeFile(new URL('vendor/editor-integrated-playback.js',root),'// Generated from SHA-256 '+sourceHash+'; trusted source, not iframe output.\nexport const legacyPlaybackBootstrap='+JSON.stringify(legacyPlaybackBootstrap)+';\n'+legacyPresentationCSS+'\n');
-const patches=[];
+const patches=['shared object animation library','directional page transition library'];
 function replace(label,needle,replacement){
  const hits=html.split(needle).length-1;if(hits!==1)throw new Error(`${label}: expected one exact source match, got ${hits}`);
  html=html.replace(needle,()=>replacement);patches.push(label);

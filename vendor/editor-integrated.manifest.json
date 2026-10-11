@@ -1,8 +1,10 @@
 {
   "source": "editor-v039.source.html",
   "sourceSHA256": "74ae7d23c75e294d0821a2a89de1ee9068395f3dd050c27e1621c2ec62e76a6b",
-  "candidateSHA256": "1e3e999582c63040d908d6cf7966c37d6134cadcd3c865140223502512e3e692",
+  "candidateSHA256": "a2b25042342c5cbff710b1b51a1c3f2de593f6aac6c831251693475a48841c8a",
   "patches": [
+    "shared object animation library",
+    "directional page transition library",
     "embedded CSP + early interaction gate",
     "isolated preference storage",
     "parent-only commits",
