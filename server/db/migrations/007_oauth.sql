@@ -1,0 +1,4 @@
+CREATE TABLE oauth_clients (id text PRIMARY KEY, metadata jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT clock_timestamp());
+CREATE TABLE oauth_requests (id text PRIMARY KEY, client_id text NOT NULL REFERENCES oauth_clients(id), params jsonb NOT NULL, expires_at timestamptz NOT NULL DEFAULT clock_timestamp()+interval '10 minutes');
+CREATE TABLE oauth_codes (code_hash text PRIMARY KEY, client_id text NOT NULL REFERENCES oauth_clients(id), user_id uuid NOT NULL REFERENCES users(id), params jsonb NOT NULL, project_allowlist jsonb, expires_at timestamptz NOT NULL DEFAULT clock_timestamp()+interval '60 seconds');
+CREATE TABLE oauth_access_tokens (token_id uuid PRIMARY KEY REFERENCES api_tokens(id) ON DELETE CASCADE, client_id text NOT NULL REFERENCES oauth_clients(id), resource text NOT NULL);

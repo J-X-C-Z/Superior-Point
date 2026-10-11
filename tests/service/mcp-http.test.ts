@@ -1,0 +1,70 @@
+import test from 'node:test';
+import {createServer} from 'node:net';
+import assert from 'node:assert/strict';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {buildApp} from '../../server/app.js';
+import {AuthService} from '../../server/auth/auth-service.js';
+import {TokenService} from '../../server/auth/token-service.js';
+import {ProjectService} from '../../server/services/project-service.js';
+import {createTestDatabase,cleanupTestDatabase} from './helpers.js';
+async function waitFor(check:()=>Promise<boolean>|boolean){const deadline=Date.now()+2000;while(!await check()){if(Date.now()>=deadline)assert.fail('asynchronous telemetry did not settle within two seconds');await new Promise(resolve=>setTimeout(resolve,10));}}
+test('native stateless SDK HTTP uses shared tools, live bearer ACL, CAS, theme refs and bounded file semantics',async()=>{
+ const probe=createServer();await new Promise<void>(resolve=>probe.listen(0,'127.0.0.1',resolve));const port=(probe.address() as {port:number}).port;await new Promise<void>((resolve,reject)=>probe.close(error=>error?reject(error):resolve()));
+ const host='127.0.0.1:'+port,origin='http://'+host;
+ const db=await createTestDatabase(),app=buildApp({db,origin}),clients:Client[]=[];
+ try {
+  const auth=new AuthService(db);await auth.bootstrapAdmin('http-mcp-admin','http-mcp-strong-password');
+  const login=await auth.login('http-mcp-admin','http-mcp-strong-password'),owner=await auth.authenticate(login.sessionToken),tokens=new TokenService(db),projects=new ProjectService(db);
+  const writer=await tokens.create(owner,{name:'http-mcp',scopes:['projects:read','projects:create','projects:write','projects:export','themes:read','themes:write','themes:publish']});
+  const url=await app.listen({host:'127.0.0.1',port});
+  const connect=async(raw:string)=>{const client=new Client({name:'http-acceptance',version:'1'});clients.push(client);await client.connect(new StreamableHTTPClientTransport(new URL('/mcp',url),{requestInit:{headers:{authorization:'Bearer '+raw,host}}}));return client;};
+  const client=await connect(writer.token);
+  const call=async(name:string,args:Record<string,unknown>,c=client)=>{const result=await c.callTool({name,arguments:args});return {isError:result.isError,value:JSON.parse((result.content as {text:string}[])[0].text)};};
+  const tools=await client.listTools();assert.equal(tools.tools.length,16);
+  const document=(await call('sp_create_project',{title:'HTTP MCP'})).value;assert.equal(document.revision,0);
+  assert.equal((await call('sp_get_document',{projectId:document.id,full:true})).value.title,'HTTP MCP');
+  const edit={projectId:document.id,expectedRevision:0,clientMutationId:'remote-edit',operations:[{type:'createSlide',slide:{id:'remote-slide',elements:[]}}]};
+  const changed=await call('sp_edit',edit);assert.equal(changed.isError,undefined,JSON.stringify(changed));assert.equal(changed.value.revision,1);
+  assert.deepEqual((await call('sp_edit',edit)).value,changed.value);
+  assert.equal((await call('sp_edit',{...edit,clientMutationId:'stale-edit'})).value.error.code,'REVISION_CONFLICT');
+  const builtin=(await call('sp_list_themes',{})).value[0];const ref=(await call('sp_get_theme',{themeId:builtin.id,version:builtin.version})).value;
+  const theme=(await call('sp_save_theme',{theme:ref.snapshot,clientMutationId:'remote-theme'})).value;
+  assert.ok(theme.ref);
+  const applied=await call('sp_apply_theme',{projectId:document.id,expectedRevision:1,themeId:theme.id,version:theme.ref.version,hash:theme.ref.hash,clientMutationId:'apply-remote-theme'});assert.equal(applied.isError,undefined,JSON.stringify(applied));assert.equal(applied.value.revision,2);
+  await waitFor(async()=>Number((await db.query("SELECT count(*) AS count FROM mcp_tool_metrics WHERE actor_id=$1",[owner.id])).rows[0].count)===9);
+  const telemetry=(await app.inject({url:'/api/v1/admin/observability/tools?tool=sp_edit&userId='+owner.id,headers:{cookie:'sp-session='+login.sessionToken}}));assert.equal(telemetry.statusCode,200,telemetry.body);
+  const toolStats=telemetry.json();assert.equal(toolStats.total,3);assert.equal(toolStats.summary.errors,1);assert.ok(toolStats.rows.every((row:{transport:string;durationMs:number})=>row.transport==='streamable-http'&&Number.isFinite(row.durationMs)&&row.durationMs>=0));assert.equal(toolStats.rows.find((row:{outcome:string})=>row.outcome==='error').errorCode,'REVISION_CONFLICT');
+  const eventCount=(await db.query('SELECT count(*)::int AS count FROM mcp_tool_metrics')).rows[0].count;
+  await db.query('ALTER TABLE mcp_tool_metrics RENAME TO mcp_tool_metrics_unavailable');
+  try{
+   const independent=await call('sp_create_project',{title:'business success with metrics offline'});assert.equal(independent.isError,undefined,JSON.stringify(independent));
+   const independentEdit=await call('sp_edit',{projectId:independent.value.id,expectedRevision:0,clientMutationId:'metrics-offline-edit',operations:[{type:'createSlide',slide:{id:'metrics-offline',elements:[]}}]});assert.equal(independentEdit.isError,undefined,JSON.stringify(independentEdit));assert.equal(independentEdit.value.revision,1);
+   assert.equal((await projects.get(owner,independent.value.id)).revision,1);
+   assert.equal((await db.query('SELECT count(*)::int AS count FROM projects WHERE owner_id=$1',[owner.id])).rows[0].count,2);
+   await waitFor(()=>db.idleCount===db.totalCount);
+  }finally{await db.query('ALTER TABLE mcp_tool_metrics_unavailable RENAME TO mcp_tool_metrics');}
+  assert.equal((await db.query('SELECT count(*)::int AS count FROM mcp_tool_metrics')).rows[0].count,eventCount);
+  assert.equal((await call('sp_open_project',{filename:'client-local.html'})).value.error.code,'ROOT_REQUIRED');
+  assert.equal((await call('sp_save_export',{projectId:document.id,expectedRevision:2,filename:'client-local.html'})).value.error.code,'ROOT_REQUIRED');
+  const other=await auth.createUser(owner,{username:'other-http-mcp',password:'http-mcp-strong-password',role:'user'});
+  const otherLogin=await auth.login('other-http-mcp','http-mcp-strong-password'),otherActor=await auth.authenticate(otherLogin.sessionToken),otherToken=await tokens.create(otherActor,{name:'other-http'}),otherClient=await connect(otherToken.token);
+  assert.equal((await call('sp_get_document',{projectId:document.id},otherClient)).value.error.code,'NOT_FOUND');
+  const limited=await tokens.create(owner,{name:'limited',scopes:['projects:read'],projectAllowlist:[]}),limitedClient=await connect(limited.token);
+  assert.equal((await call('sp_get_document',{projectId:document.id},limitedClient)).value.error.code,'FORBIDDEN');
+  assert.equal((await call('sp_list_themes',{},limitedClient)).value.error.code,'FORBIDDEN');
+  const payload={jsonrpc:'2.0',id:1,method:'tools/list',params:{}};
+  const inject=async(headers:Record<string,string>,method:'POST'|'GET'='POST')=>app.inject({method,url:'/mcp',headers:{host,accept:'application/json, text/event-stream',...headers},...(method==='POST'?{payload}:{})});
+  const anonymous=await inject({});assert.equal(anonymous.statusCode,401);assert.equal(anonymous.headers['www-authenticate'],`Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp"`);
+  assert.equal((await app.inject({url:'/api/v1/projects',headers:{authorization:'Bearer sp_oauth_forged','x-sp-mcp-relay':'forged'}})).statusCode,401);
+  assert.equal((await inject({authorization:'Bearer '+writer.token,cookie:'sp-session=anything'})).statusCode,401);
+  assert.equal((await inject({authorization:'Bearer '+writer.token,origin:'https://evil.invalid'})).statusCode,403);
+  assert.equal((await inject({authorization:'Bearer '+writer.token,host:'evil.invalid'})).statusCode,403);
+  assert.equal((await inject({authorization:'Bearer '+writer.token,'mcp-session-id':'stolen-session'})).statusCode,400);
+  assert.equal((await inject({authorization:'Bearer '+writer.token},'GET')).statusCode,405);
+  await tokens.revoke(owner,writer.id);
+  assert.equal((await inject({authorization:'Bearer '+writer.token})).statusCode,401);
+  await assert.rejects(client.listTools(),/UNAUTHENTICATED/);
+  assert.equal((await projects.get(owner,document.id)).revision,2);assert.ok(other.id);
+ }finally{for(const client of clients)await client.close();await app.close();await cleanupTestDatabase(db);}
+});

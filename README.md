@@ -2,6 +2,8 @@
 
 演示文稿工作台，集成 v0.39 编辑器。`0.1.0-alpha` 是可试用的预发布候选，不代表稳定版或完整路线图交付；产品版本与内部编辑器版本分别编号。
 
+当前 v1.1 服务开发分支新增原生 Streamable HTTP MCP、OAuth 授权码 + PKCE S256，以及管理员工具调用和资源统计；这是待部署开发能力，不能据此推断 Hakari 已上线。OAuth 授权仅用于 MCP，外部 REST API 继续使用 PAT。原生 HTTP MCP 采用无状态 JSON 响应，尚无 SSE 通知；stdio 完整调用统计、第三方客户端、真实浏览器授权和 Hakari 整机采集仍待验收。见 [远程 MCP](docs/mcp/http.md)、[OAuth](docs/mcp/oauth.md)、[运行统计](docs/deployment/observability.md)。
+
 ## Alpha 候选已部署
 
 Alpha 候选已部署到 [sp.jxcz.top](https://sp.jxcz.top/)，管理入口为 [/admin](https://sp.jxcz.top/admin)。部署包括 API、PostgreSQL、云端工作台、PAT、连接同一 PostgreSQL 的 stdio MCP Bridge、单写者租约、CAS 草稿与恢复、独立 Admin。此版本作为 **pre-release 候选**发布，不是 Stable，也不代表路线图全部完成。

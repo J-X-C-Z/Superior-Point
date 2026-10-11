@@ -216,9 +216,9 @@ body.editor-open #account-menu{display:none}
   };
 
   // io/image-assets.js
-  function crc32(bytes2, start, end) {
+  function crc32(bytes3, start, end) {
     let crc = 4294967295;
-    for (let i = start; i < end; i++) crc = crcTable[(crc ^ bytes2[i]) & 255] ^ crc >>> 8;
+    for (let i = start; i < end; i++) crc = crcTable[(crc ^ bytes3[i]) & 255] ^ crc >>> 8;
     return (crc ^ 4294967295) >>> 0;
   }
   function dimensions(width, height) {
@@ -312,8 +312,8 @@ body.editor-open #account-menu{display:none}
       invalid("invalid base64");
     }
     if (binary.length > IMAGE_LIMITS.maxBytes || btoa(binary) !== encoded) invalid("noncanonical base64 or byte limit");
-    const bytes2 = Uint8Array.from(binary, (c) => c.charCodeAt(0)), kind = match[1] === "jpg" ? "jpeg" : match[1], size = { png, jpeg, gif, webp }[kind](bytes2);
-    return { mimeType: "image/" + kind, byteLength: bytes2.length, ...size };
+    const bytes3 = Uint8Array.from(binary, (c) => c.charCodeAt(0)), kind = match[1] === "jpg" ? "jpeg" : match[1], size = { png, jpeg, gif, webp }[kind](bytes3);
+    return { mimeType: "image/" + kind, byteLength: bytes3.length, ...size };
   }
   var IMAGE_LIMITS, invalid, uint32, little32, ascii, crcTable;
   var init_image_assets = __esm({
@@ -1092,9 +1092,9 @@ body.editor-open #account-menu{display:none}
 
   // examples/five-slides.js
   function fiveSlideDocument() {
-    const time = "2026-10-10T00:00:00.000Z";
+    const time2 = "2026-10-10T00:00:00.000Z";
     const text2 = (id, text3, x, y, w = 850, h = 70, fontSize = 32) => ({ id, type: "text", text: text3, x, y, w, h, fontSize, color: "#24324b" });
-    return { format: "superior-point", schemaVersion: 1, id: "sp-framework-demo", title: "Superior Point \u2014 framework acceptance", revision: 0, canvas: { width: 1280, height: 720 }, metadata: { createdAt: time, updatedAt: time }, extensions: { editorIntegration: { sourceVersion: "0.39", handoffAccepted: true }, roundTripSentinel: { array: [1, "\u4E8C", true], nested: { preserved: true } } }, assets: [{ id: "demo-image", mimeType: "image/png", dataUrl: "data:image/png;base64,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" }], slides: [
+    return { format: "superior-point", schemaVersion: 1, id: "sp-framework-demo", title: "Superior Point \u2014 framework acceptance", revision: 0, canvas: { width: 1280, height: 720 }, metadata: { createdAt: time2, updatedAt: time2 }, extensions: { editorIntegration: { sourceVersion: "0.39", handoffAccepted: true }, roundTripSentinel: { array: [1, "\u4E8C", true], nested: { preserved: true } } }, assets: [{ id: "demo-image", mimeType: "image/png", dataUrl: "data:image/png;base64,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" }], slides: [
       { id: "slide-1", title: "Cover", background: "#eef3fc", elements: [{ id: "cover-accent", type: "shape", shape: "rect", x: 80, y: 100, w: 16, h: 430, fill: "#537bda", stroke: "#537bda" }, text2("cover-title", "Superior Point", 135, 180, 1e3, 110, 68), text2("cover-subtitle", "Document \u2192 storage \u2192 HTML \u2192 MCP", 140, 320, 1e3, 65, 32), text2("cover-note", "Integration candidate \u2022 Editor v0.38 + shared document core", 140, 470, 1e3, 50, 23)], animations: [], notes: "Five-page integration candidate. Real browser acceptance remains pending." },
       { id: "slide-2", title: "Embedded image", elements: [text2("image-title", "Embedded raster, portable document", 80, 65), { id: "image-frame", type: "shape", shape: "rect", x: 80, y: 200, w: 490, h: 320, fill: "#7a9fe8" }, { id: "image", type: "image", assetId: "demo-image", x: 120, y: 240, w: 410, h: 240 }, text2("image-caption", "PNG is embedded as a data URL.\nNo external image request.\nAll element IDs survive re-import.", 630, 245, 550, 220, 28)], animations: [] },
       { id: "slide-3", title: "Workflow", elements: [text2("flow-title", "A shared document for every entry point", 80, 65), { id: "step-1", type: "shape", shape: "rect", text: "Create", x: 95, y: 270, w: 255, h: 120, fill: "#dce7fc" }, { id: "link-1", type: "connector", x: 365, y: 330, w: 75, h: 0 }, { id: "step-2", type: "shape", shape: "rect", text: "Edit via MCP", x: 455, y: 270, w: 290, h: 120, fill: "#dce7fc", fragment: true, fragmentIndex: 0 }, { id: "link-2", type: "connector", x: 765, y: 330, w: 70, h: 0, fragment: true, fragmentIndex: 0 }, { id: "step-3", type: "shape", shape: "rect", text: "Export / re-import", x: 850, y: 270, w: 330, h: 120, fill: "#dce7fc", fragment: true, fragmentIndex: 1 }, text2("flow-note", "Press \u2192 to reveal the next step, then advance.", 95, 520, 1050, 65, 26)], animations: [{ id: "anim-step-2", targetId: "step-2", type: "appear", trigger: "click", duration: 0.3, delay: 0, easing: "ease", order: 0 }, { id: "anim-step-3", targetId: "step-3", type: "appear", trigger: "click", duration: 0.3, delay: 0, easing: "ease", order: 1 }] },
@@ -1430,13 +1430,13 @@ body.editor-open #account-menu{display:none}
     if (file.size > MAX_IMPORT_BYTES) throw tooLarge();
     if (typeof file.stream === "function") {
       const reader = file.stream().getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
-      let bytes2 = 0, text3 = "";
+      let bytes3 = 0, text3 = "";
       try {
         for (; ; ) {
           const { done, value } = await reader.read();
           if (done) break;
-          bytes2 += value.byteLength;
-          if (bytes2 > MAX_IMPORT_BYTES) throw tooLarge();
+          bytes3 += value.byteLength;
+          if (bytes3 > MAX_IMPORT_BYTES) throw tooLarge();
           text3 += decoder.decode(value, { stream: true });
         }
         return text3 + decoder.decode();
@@ -1722,8 +1722,8 @@ function v24OfflineExportBootstrap(width,height){
 
   // io/editor-export.js
   async function scriptHash(source) {
-    const bytes2 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
-    return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes2))) + "'";
+    const bytes3 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+    return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes3))) + "'";
   }
   async function exportEditorHTML(input, renderedHTML, { domDocument = globalThis.document, audience = false } = {}) {
     const doc = importDocument(input);
@@ -2187,6 +2187,150 @@ function v24OfflineExportBootstrap(width,height){
     }
   });
 
+  // web/admin/observability.js
+  function mountObservability({ container, api }) {
+    const document2 = container.ownerDocument, view2 = document2.defaultView;
+    let offset = 0, destroyed = false, generation = 0, total = 0;
+    const limit = 25;
+    const node = (tag, text2) => {
+      const el = document2.createElement(tag);
+      if (text2 !== void 0) el.textContent = String(text2);
+      return el;
+    };
+    const form = node("form");
+    form.className = "admin-toolbar";
+    function field(name, label, type, value) {
+      const wrap = node("label", label), input = node("input");
+      input.name = name;
+      input.type = type;
+      input.value = value ?? "";
+      wrap.append(input);
+      form.append(wrap);
+      return input;
+    }
+    const from = field("from", "\u5F00\u59CB\u65F6\u95F4", "datetime-local", localDate(new Date(Date.now() - 864e5))), to = field("to", "\u7ED3\u675F\u65F6\u95F4", "datetime-local", localDate(/* @__PURE__ */ new Date()));
+    from.required = to.required = true;
+    const user = field("userId", "\u7528\u6237 ID", "text");
+    user.placeholder = "\u5168\u90E8\u7528\u6237";
+    user.pattern = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    const toolWrap = node("label", "\u5DE5\u5177"), tool = node("select");
+    tool.name = "tool";
+    for (const name of ["", ...tools]) {
+      const option = node("option", name || "\u5168\u90E8\u5DE5\u5177");
+      option.value = name;
+      tool.append(option);
+    }
+    toolWrap.append(tool);
+    form.append(toolWrap);
+    const submit = node("button", "\u67E5\u8BE2");
+    submit.type = "submit";
+    form.append(submit);
+    const status = node("p");
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const resources = node("section"), calls = node("section"), pages = node("div");
+    pages.className = "pagination";
+    const previous = node("button", "\u4E0A\u4E00\u9875"), next = node("button", "\u4E0B\u4E00\u9875"), page = node("span");
+    previous.type = next.type = "button";
+    pages.append(previous, page, next);
+    container.replaceChildren(form, status, resources, calls, pages);
+    function table(section, caption, headers, rows) {
+      section.append(node("h3", caption));
+      const wrap = node("div");
+      wrap.className = "table-wrap";
+      const table2 = node("table"), head = node("thead"), tr = node("tr");
+      for (const title of headers) {
+        const th = node("th", title);
+        th.scope = "col";
+        tr.append(th);
+      }
+      head.append(tr);
+      table2.append(head);
+      const body = node("tbody");
+      for (const values of rows) {
+        const row = node("tr");
+        for (const value of values) row.append(node("td", value ?? "\u2014"));
+        body.append(row);
+      }
+      table2.append(body);
+      wrap.append(table2);
+      section.append(wrap);
+    }
+    function renderResources(data) {
+      resources.replaceChildren(node("h2", "\u8D44\u6E90\u72B6\u6001"));
+      resources.append(node("p", "\u91C7\u96C6\u65F6\u95F4\uFF1A" + time(data.generatedAt)));
+      const app = data.application, host = data.host;
+      table(resources, "\u5E94\u7528\u8FDB\u7A0B\u3001\u5BB9\u5668\u4E0E\u6570\u636E\u5E93", ["\u6307\u6807\u8303\u56F4", "\u72B6\u6001", "\u5B9E\u9645\u6570\u636E"], [
+        ["\u5E94\u7528\u8FDB\u7A0B", app.status, `RSS ${bytes(app.memory.rssBytes)}\uFF1B\u5806 ${bytes(app.memory.heapUsedBytes)}\uFF1BCPU \u5355\u6838\u5360\u6BD4 ${app.cpu.oneCorePercent === null ? "\u91C7\u96C6\u4E2D" : app.cpu.oneCorePercent.toFixed(1) + "%"}\uFF1B\u8FD0\u884C ${Math.floor(app.uptimeSeconds)} \u79D2`],
+        ["\u53EF\u89C1 cgroup \u8D44\u6E90", app.cgroup.status, app.cgroup.status === "ok" ? `\u5185\u5B58 ${bytes(app.cgroup.memoryBytes)} / ${bytes(app.cgroup.memoryLimitBytes)}\uFF1B\u7D2F\u8BA1 CPU ${app.cgroup.cpuUsageMs.toFixed(1)} ms` : app.cgroup.reason],
+        ["\u5E94\u7528\u6587\u4EF6\u7CFB\u7EDF", app.disk.status, app.disk.status === "ok" ? `\u53EF\u7528 ${bytes(app.disk.availableBytes)} / ${bytes(app.disk.totalBytes)}` : "\u4E0D\u53EF\u7528"],
+        ["\u5F53\u524D API \u8BF7\u6C42", data.api.status, "\u6B64\u8BF7\u6C42\u5DF2\u54CD\u5E94\uFF0C\u4E0D\u4EE3\u8868\u5176\u4ED6\u63A5\u53E3\u5168\u90E8\u6B63\u5E38"],
+        ["\u5F53\u524D\u6570\u636E\u5E93", data.database.status, `\u8FDE\u63A5 ${data.database.connections}\uFF0C\u6D3B\u8DC3 ${data.database.active}\uFF1B\u63A2\u6D4B ${data.database.probeDurationMs.toFixed(1)} ms`]
+      ]);
+      table(resources, "Hakari \u6574\u673A", ["\u72B6\u6001", "\u91C7\u96C6\u65F6\u95F4", "CPU", "\u5185\u5B58", "\u78C1\u76D8"], [[host.status === "ok" ? "\u6B63\u5E38" : "\u4E0D\u53EF\u7528", host.status === "ok" ? time(host.generatedAt) : host.reason, host.status === "ok" ? host.cpu.percent.toFixed(1) + "%" : "\u2014", host.status === "ok" ? `\u53EF\u7528 ${bytes(host.memory.availableBytes)} / ${bytes(host.memory.totalBytes)}` : "\u2014", host.status === "ok" ? `\u53EF\u7528 ${bytes(host.disk.availableBytes)} / ${bytes(host.disk.totalBytes)}` : "\u2014"]]);
+      if (host.status === "ok") resources.append(node("p", "\u6574\u673A\u5BB9\u5668\u72B6\u6001\uFF1A" + host.containers.reason));
+    }
+    async function refresh() {
+      if (destroyed) return;
+      const current = ++generation;
+      status.textContent = "\u6B63\u5728\u8BFB\u53D6\u5B9E\u9645\u7EDF\u8BA1\u2026";
+      try {
+        const fromDate = new Date(from.value), toDate = new Date(to.value);
+        if (!Number.isFinite(fromDate.getTime()) || !Number.isFinite(toDate.getTime()) || fromDate >= toDate) throw Error("\u8BF7\u9009\u62E9\u6709\u6548\u7684\u5F00\u59CB\u548C\u7ED3\u675F\u65F6\u95F4\u3002");
+        const query = new URLSearchParams({ from: fromDate.toISOString(), to: toDate.toISOString(), limit: String(limit), offset: String(offset) });
+        if (user.value.trim()) query.set("userId", user.value.trim());
+        if (tool.value) query.set("tool", tool.value);
+        const [stats, data] = await Promise.all([api.request("/admin/observability/tools?" + query), api.request("/admin/observability/resources")]);
+        if (destroyed || current !== generation) return;
+        total = stats.total;
+        calls.replaceChildren(node("h2", "Agent \u5DE5\u5177\u8C03\u7528"));
+        calls.append(node("p", `${stats.summary.calls} \u6B21\u8C03\u7528\uFF1B${stats.summary.errors} \u6B21\u5931\u8D25\uFF1B\u9519\u8BEF\u7387 ${(stats.summary.errorRate * 100).toFixed(1)}%\uFF1B\u5E73\u5747 ${stats.summary.averageDurationMs.toFixed(1)} ms`));
+        table(calls, "\u8C03\u7528\u8BB0\u5F55", ["\u65F6\u95F4", "\u7528\u6237", "\u5DE5\u5177", "\u4F20\u8F93", "\u7ED3\u679C", "\u8017\u65F6", "\u9519\u8BEF\u4EE3\u7801"], stats.rows.map((row) => [time(row.createdAt), row.userId || "\u5DF2\u5220\u9664\u7528\u6237", row.tool, row.transport, row.outcome === "success" ? "\u6210\u529F" : "\u5931\u8D25", row.durationMs.toFixed(1) + " ms", row.errorCode]));
+        if (!stats.rows.length) calls.append(node("p", "\u6B64\u65F6\u95F4\u8303\u56F4\u6682\u65E0\u8C03\u7528\u8BB0\u5F55\u3002"));
+        renderResources(data);
+        previous.disabled = offset === 0;
+        next.disabled = offset + limit >= total;
+        page.textContent = `\u7B2C ${Math.floor(offset / limit) + 1} \u9875\uFF0C\u5171 ${total} \u6761`;
+        status.textContent = "\u6570\u636E\u5DF2\u66F4\u65B0\u3002";
+      } catch (error) {
+        if (!destroyed && current === generation) status.textContent = error.message || "\u7EDF\u8BA1\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u91CD\u8BD5\u3002";
+      }
+    }
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      offset = 0;
+      refresh();
+    };
+    previous.onclick = () => {
+      offset = Math.max(0, offset - limit);
+      refresh();
+    };
+    next.onclick = () => {
+      if (offset + limit < total) {
+        offset += limit;
+        refresh();
+      }
+    };
+    const interval = view2.setInterval(refresh, 3e4);
+    refresh();
+    return { refresh, destroy() {
+      destroyed = true;
+      generation++;
+      view2.clearInterval(interval);
+      form.onsubmit = previous.onclick = next.onclick = null;
+    } };
+  }
+  var tools, bytes, time, localDate;
+  var init_observability = __esm({
+    "web/admin/observability.js"() {
+      tools = ["sp_create_project", "sp_open_project", "sp_get_document", "sp_get_slide", "sp_edit", "sp_render_slide", "sp_validate", "sp_save_export", "sp_list_projects", "sp_project_info", "sp_list_slides", "sp_list_themes", "sp_get_theme", "sp_preview_theme", "sp_apply_theme", "sp_save_theme"];
+      bytes = (value) => Number.isFinite(value) ? (value / 1048576).toFixed(1) + " MiB" : "\u4E0D\u53EF\u7528";
+      time = (value) => new Date(value).toLocaleString("zh-CN");
+      localDate = (value) => new Date(value.getTime() - value.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+    }
+  });
+
   // web/admin/app.js
   function formDialog(document2, title, fields2 = [], { message = "", confirm = "\u786E\u8BA4" } = {}) {
     return new Promise((resolve) => {
@@ -2269,6 +2413,7 @@ function v24OfflineExportBootstrap(width,height){
   async function mountAdmin({ document: document2 = globalThis.document, api = new CloudAPI(), navigate: navigate2 = (url) => globalThis.location.assign(url) } = {}) {
     const content = document2.querySelector("#admin-content"), status = document2.querySelector("#admin-status");
     let section = "dashboard", offset = 0, rows = [], search = "", trash = false, busy = false, poll = null, generation = 0;
+    let observabilityView = null;
     const limit = 25;
     function node(tag, text2, className) {
       const element = document2.createElement(tag);
@@ -2498,7 +2643,7 @@ function v24OfflineExportBootstrap(width,height){
     }
     function renderDashboard(data) {
       const list = node("dl", void 0, "summary-list");
-      for (const [label, value] of [["\u670D\u52A1\u72B6\u6001", data.service.status === "ok" ? "\u5728\u7EBF" : data.service.status], ["\u6709\u6548\u8D26\u53F7 / \u5168\u90E8\u8D26\u53F7", `${data.users.active} / ${data.users.total}`], ["\u6709\u6548\u7BA1\u7406\u5458", data.users.admins], ["\u6D3B\u8DC3\u9879\u76EE / \u56DE\u6536\u7AD9", `${data.projects.active} / ${data.projects.trash}`], ["\u6709\u6548 Agent \u6388\u6743", data.tokens.active], ["\u6587\u7A3F\u6570\u636E", bytes(data.storage.documentBytes)], ["\u6570\u636E\u5E93\u7A7A\u95F4", bytes(data.storage.databaseBytes)]]) {
+      for (const [label, value] of [["\u670D\u52A1\u72B6\u6001", data.service.status === "ok" ? "\u5728\u7EBF" : data.service.status], ["\u6709\u6548\u8D26\u53F7 / \u5168\u90E8\u8D26\u53F7", `${data.users.active} / ${data.users.total}`], ["\u6709\u6548\u7BA1\u7406\u5458", data.users.admins], ["\u6D3B\u8DC3\u9879\u76EE / \u56DE\u6536\u7AD9", `${data.projects.active} / ${data.projects.trash}`], ["\u6709\u6548 Agent \u6388\u6743", data.tokens.active], ["\u6587\u7A3F\u6570\u636E", bytes2(data.storage.documentBytes)], ["\u6570\u636E\u5E93\u7A7A\u95F4", bytes2(data.storage.databaseBytes)]]) {
         const item = node("div");
         item.append(node("dt", label), node("dd", value));
         list.append(item);
@@ -2568,12 +2713,19 @@ function v24OfflineExportBootstrap(width,height){
       if (data.jobs.some((job) => ["queued", "running"].includes(job.status))) poll = setTimeout(() => load().catch(report), 2e3);
     }
     async function load() {
+      observabilityView?.destroy();
+      observabilityView = null;
       clearTimeout(poll);
       poll = null;
       const current = ++generation, target = section;
       content.setAttribute("aria-busy", "true");
       content.replaceChildren(node("p", "\u6B63\u5728\u8BFB\u53D6\u670D\u52A1\u6570\u636E\u2026", "empty-state"));
       try {
+        if (target === "observability") {
+          content.replaceChildren();
+          observabilityView = mountObservability({ container: content, api });
+          return;
+        }
         let data;
         if (target === "dashboard") data = await api.request("/admin/dashboard");
         else if (target === "settings") data = await api.request("/admin/settings");
@@ -2632,15 +2784,18 @@ function v24OfflineExportBootstrap(width,height){
       report(error);
     }
     return { reload: load, destroy() {
+      observabilityView?.destroy();
       clearTimeout(poll);
       generation++;
     } };
   }
-  var sections, date, bytes;
+  var sections, date, bytes2;
   var init_app = __esm({
     "web/admin/app.js"() {
+      init_observability();
       init_cloud_project_store();
       sections = {
+        observability: ["\u8FD0\u884C\u7EDF\u8BA1", "\u67E5\u770B Agent \u8C03\u7528\u8BB0\u5F55\u548C\u5B9E\u9645\u8D44\u6E90\u72B6\u6001\u3002"],
         dashboard: ["\u5E73\u53F0\u6982\u89C8", "\u68C0\u67E5\u670D\u52A1\u3001\u7528\u6237\u548C\u5B58\u50A8\u72B6\u6001\u3002"],
         users: ["\u7528\u6237", "\u521B\u5EFA\u8D26\u53F7\uFF0C\u7BA1\u7406\u89D2\u8272\u3001\u767B\u5F55\u4F1A\u8BDD\u548C\u8D26\u53F7\u72B6\u6001\u3002"],
         projects: ["\u9879\u76EE", "\u7BA1\u7406\u5F52\u5C5E\u548C\u56DE\u6536\u7AD9\u3002\u6B64\u5904\u4EC5\u5C55\u793A\u9879\u76EE\u5143\u6570\u636E\u3002"],
@@ -2650,7 +2805,7 @@ function v24OfflineExportBootstrap(width,height){
         backups: ["\u5907\u4EFD\u4E0E\u6062\u590D\u9A8C\u8BC1", "\u521B\u5EFA\u670D\u52A1\u5907\u4EFD\uFF0C\u5E76\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u68C0\u67E5\u6062\u590D\u7ED3\u679C\u3002"]
       };
       date = (value) => value ? new Date(value).toLocaleString("zh-CN") : "\u2014";
-      bytes = (value) => value >= 1048576 ? (value / 1048576).toFixed(1) + " MiB" : (value / 1024).toFixed(1) + " KiB";
+      bytes2 = (value) => value >= 1048576 ? (value / 1048576).toFixed(1) + " MiB" : (value / 1024).toFixed(1) + " KiB";
       if (typeof document !== "undefined" && document.querySelector("[data-admin-root]")) mountAdmin().catch(() => {
       });
     }
@@ -3524,14 +3679,14 @@ claude mcp list
   }
   function bytesOf(asset) {
     if (typeof asset.data !== "string" || !asset.data.length || asset.data.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(asset.data)) fail2("Asset data must be canonical base64");
-    const raw = atob(asset.data), bytes2 = Uint8Array.from(raw, (c) => c.charCodeAt(0));
+    const raw = atob(asset.data), bytes3 = Uint8Array.from(raw, (c) => c.charCodeAt(0));
     if (btoa(raw) !== asset.data) fail2("Asset data must be canonical base64");
-    return bytes2;
+    return bytes3;
   }
-  function matchesImage(bytes2, mime) {
-    if (mime === "image/png") return bytes2.length >= 24 && [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => bytes2[i] === v) && String.fromCharCode(...bytes2.slice(12, 16)) === "IHDR";
-    if (mime === "image/jpeg") return bytes2.length >= 4 && bytes2[0] === 255 && bytes2[1] === 216 && bytes2.at(-2) === 255 && bytes2.at(-1) === 217;
-    if (mime === "image/webp") return bytes2.length >= 12 && String.fromCharCode(...bytes2.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes2.slice(8, 12)) === "WEBP";
+  function matchesImage(bytes3, mime) {
+    if (mime === "image/png") return bytes3.length >= 24 && [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => bytes3[i] === v) && String.fromCharCode(...bytes3.slice(12, 16)) === "IHDR";
+    if (mime === "image/jpeg") return bytes3.length >= 4 && bytes3[0] === 255 && bytes3[1] === 216 && bytes3.at(-2) === 255 && bytes3.at(-1) === 217;
+    if (mime === "image/webp") return bytes3.length >= 12 && String.fromCharCode(...bytes3.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes3.slice(8, 12)) === "WEBP";
     return false;
   }
   function validateTheme(raw) {
@@ -3616,10 +3771,10 @@ claude mcp list
       }
       assetIds.add(asset.id);
       try {
-        const bytes2 = bytesOf(asset);
-        total += bytes2.length;
-        if (bytes2.length > THEME_LIMITS.assetBytes) errors.push("Asset exceeds size limit");
-        if (!matchesImage(bytes2, asset.mimeType)) errors.push("Asset format or signature not supported");
+        const bytes3 = bytesOf(asset);
+        total += bytes3.length;
+        if (bytes3.length > THEME_LIMITS.assetBytes) errors.push("Asset exceeds size limit");
+        if (!matchesImage(bytes3, asset.mimeType)) errors.push("Asset format or signature not supported");
       } catch (e) {
         errors.push(e.message);
       }
@@ -3645,8 +3800,8 @@ claude mcp list
     if (object4(value)) return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${canonical(value[k])}`).join(",")}}`;
     return JSON.stringify(value);
   }
-  async function sha256(bytes2) {
-    return "sha256:" + Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes2)), (b) => b.toString(16).padStart(2, "0")).join("");
+  async function sha256(bytes3) {
+    return "sha256:" + Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes3)), (b) => b.toString(16).padStart(2, "0")).join("");
   }
   async function verifyThemeAssets(input) {
     const theme = importTheme(input);
@@ -3872,7 +4027,7 @@ claude mcp list
           const key = JSON.stringify([this.accountId, path, ref.hash, expectedRevision]);
           let body = this.pending.get(key);
           if (!body) {
-            const bytes2 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)), hex = Array.from(new Uint8Array(bytes2), (b) => b.toString(16).padStart(2, "0")).join("");
+            const bytes3 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)), hex = Array.from(new Uint8Array(bytes3), (b) => b.toString(16).padStart(2, "0")).join("");
             const clientMutationId = hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-4" + hex.slice(13, 16) + "-8" + hex.slice(17, 20) + "-" + hex.slice(20, 32);
             body = { theme, clientMutationId, ...importing ? {} : { expectedRevision } };
             this.pending.set(key, body);
@@ -5987,14 +6142,14 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
       velocity = [0, 0, 0];
       target = [0, 0, 0];
     }
-    function tick(time) {
+    function tick(time2) {
       frame = 0;
       if (!svg?.isConnected) {
         reset();
         return;
       }
-      const dt = last ? Math.min((time - last) / 1e3, 1 / 60) : 1 / 60;
-      last = time;
+      const dt = last ? Math.min((time2 - last) / 1e3, 1 / 60) : 1 / 60;
+      last = time2;
       let moving = false;
       for (let i = 0; i < 3; i++) {
         velocity[i] += ((target[i] - value[i]) * 100 - velocity[i] * 10) * dt;

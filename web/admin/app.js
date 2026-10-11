@@ -1,6 +1,8 @@
+import {mountObservability} from './observability.js';
 import {CloudAPI} from '../../storage/cloud-project-store.js';
 
 const sections = {
+ observability: ['运行统计', '查看 Agent 调用记录和实际资源状态。'],
  dashboard: ['平台概览', '检查服务、用户和存储状态。'], users: ['用户', '创建账号，管理角色、登录会话和账号状态。'],
  projects: ['项目', '管理归属和回收站。此处仅展示项目元数据。'], tokens: ['Agent 授权', '查看授权范围和有效期，撤销不再使用的授权。'],
  audit: ['审计记录', '查看安全与管理操作的时间、操作人和结果。'], settings: ['系统设置', '调整站点信息、上传上限和维护状态。'], backups: ['备份与恢复验证', '创建服务备份，并在独立数据库中检查恢复结果。'],
@@ -40,6 +42,7 @@ export function formDialog(document, title, fields = [], {message = '', confirm 
 export async function mountAdmin({document = globalThis.document, api = new CloudAPI(), navigate = url => globalThis.location.assign(url)} = {}) {
  const content = document.querySelector('#admin-content'), status = document.querySelector('#admin-status');
  let section = 'dashboard', offset = 0, rows = [], search = '', trash = false, busy = false, poll = null, generation = 0;
+ let observabilityView=null;
  const limit = 25;
  function node(tag, text, className) {const element = document.createElement(tag); if (text !== undefined) element.textContent = String(text); if (className) element.className = className; return element;}
  function notice(message, error = false) {status.textContent = message; status.classList.toggle('error', error); status.hidden = !message;}
@@ -162,8 +165,10 @@ export async function mountAdmin({document = globalThis.document, api = new Clou
   if (data.jobs.some(job => ['queued', 'running'].includes(job.status))) poll = setTimeout(() => load().catch(report), 2000);
  }
  async function load() {
+  observabilityView?.destroy();observabilityView=null;
   clearTimeout(poll); poll = null; const current = ++generation, target = section; content.setAttribute('aria-busy', 'true'); content.replaceChildren(node('p', '正在读取服务数据…', 'empty-state'));
   try {
+   if(target==='observability'){content.replaceChildren();observabilityView=mountObservability({container:content,api});return;}
    let data;
    if (target === 'dashboard') data = await api.request('/admin/dashboard');
    else if (target === 'settings') data = await api.request('/admin/settings');
@@ -176,7 +181,7 @@ export async function mountAdmin({document = globalThis.document, api = new Clou
  for (const nav of document.querySelectorAll('[data-section]')) nav.onclick = () => {section = nav.dataset.section; offset = 0; search = ''; notice(''); for (const item of document.querySelectorAll('[data-section]')) {item.classList.toggle('active', item === nav); item.setAttribute('aria-current', item === nav ? 'page' : 'false');} document.querySelector('#section-name').textContent = sections[section][0]; document.querySelector('#admin-title').textContent = sections[section][0]; document.querySelector('#admin-description').textContent = sections[section][1]; load().catch(report);};
  document.querySelector('#admin-logout').onclick = async () => {try {await api.logout(); navigate('/login');} catch (error) {report(error);}};
  try {await api.restoreSession(); if (api.user.role !== 'admin') {notice('此账号没有管理后台访问权限。请返回创作工作台。', true); content.replaceChildren();} else {document.querySelector('#admin-account').textContent = api.user.username; await load();}} catch (error) {report(error);}
- return {reload: load, destroy() {clearTimeout(poll); generation++;}};
+ return {reload: load, destroy() {observabilityView?.destroy();clearTimeout(poll); generation++;}};
 }
 
 if (typeof document !== 'undefined' && document.querySelector('[data-admin-root]')) mountAdmin().catch(() => {});

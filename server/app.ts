@@ -1,3 +1,8 @@
+import {MetricsService} from './observability/metrics-service.js';
+import {registerObservabilityRoutes} from './observability/routes.js';
+import {registerMcpHttp, type McpAuthenticator} from './mcp-http.js';
+import {OAuthService} from './auth/oauth-service.js';
+import {registerOAuthRoutes} from './auth/oauth-routes.js';
 import Fastify, {type FastifyRequest} from 'fastify';
 import {randomUUID} from 'node:crypto';
 import {ServiceError, errors, requireAdmin, type Database, type Actor} from './contracts.js';
@@ -10,7 +15,7 @@ import {registerStaticRoutes} from './routes/static-routes.js';
 import {BackupService} from './services/backup-service.js';
 import {validateDocument} from '../core/document-core.js';
 import {exportHTML,renderSlideSVG,inspectRenderCompatibility} from '../io/html.js';
-export type AppOptions = {db: Database; origin: string; secureCookies?: boolean; loginLimit?: number; loginWindowMs?: number; trustProxyHops?:number; backupDirectory?:string; assetDirectory?:string; backupDatabaseUrl?:string; restoreDatabaseUrl?:string; pgBinDirectory?:string};
+export type AppOptions = {hostMetricsFile?:string; authenticateMcp?:McpAuthenticator; db: Database; origin: string; secureCookies?: boolean; loginLimit?: number; loginWindowMs?: number; trustProxyHops?:number; backupDirectory?:string; assetDirectory?:string; backupDatabaseUrl?:string; restoreDatabaseUrl?:string; pgBinDirectory?:string};
 const text={type:'string',minLength:1,maxLength:128} as const;
 const revision={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER} as const;
 const mutation={expectedRevision:revision,clientMutationId:text};
@@ -23,12 +28,14 @@ export function buildApp(options: AppOptions) {
  const auth=new AuthService(db,{origin,secureCookies:options.secureCookies});const projects=new ProjectService(db);const tokens=new TokenService(db);const themes=new ThemeService(db);
  // This opt-in requires private app access through a single ingress proxy.
  const app=Fastify({logger:false,trustProxy:options.trustProxyHops===1?(_address,hop)=>hop===0:false,bodyLimit:32*1024*1024,ajv:{customOptions:{removeAdditional:false,coerceTypes:false}},genReqId:()=>randomUUID()});
+ const mcpRelays=new Map<string,string>();
+ const oauth=new OAuthService(db,origin);const authenticateMcp=options.authenticateMcp??(raw=>raw.startsWith('sp_oauth_')?oauth.authenticate(raw):tokens.authenticate(raw));
  const cookieName=options.secureCookies?'__Host-sp-session':'sp-session';
  const cookie=(value:string,maxAge:number)=>`${cookieName}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${options.secureCookies?'; Secure':''}`;
  function session(request:FastifyRequest){const entries=(request.headers.cookie??'').split(';').map(c=>c.trim().split('='));const values=entries.filter(([k])=>k===cookieName);if(values.length!==1)return '';return values[0][1]??'';}
  async function actor(request:FastifyRequest) {
   const authorization=request.headers.authorization;
-  if(authorization!==undefined){if(request.headers.cookie||!/^Bearer \S+$/.test(authorization))throw errors.unauthorized();return tokens.authenticate(authorization.slice(7));}
+  if(authorization!==undefined){if(request.headers.cookie||!/^Bearer \S+$/.test(authorization))throw errors.unauthorized();const raw=authorization.slice(7),relay=request.headers['x-sp-mcp-relay'];if(typeof relay==='string' && mcpRelays.get(relay)===raw){return authenticateMcp(raw);}return tokens.authenticate(raw);}
   const current=await auth.authenticate(session(request));const expected=request.headers['x-sp-account-id'];if(expected!==undefined&&(typeof expected!=='string'||expected!==current.id))throw new ServiceError('ACCOUNT_CHANGED',403,'账号已在其他标签页变更，请重新登录；当前草稿保留。');return current;
  }
  const attempts=new Map<string,{count:number;expires:number}>();
@@ -36,7 +43,7 @@ export function buildApp(options: AppOptions) {
   reply.header('X-Content-Type-Options','nosniff').header('Cache-Control','no-store').header('Referrer-Policy','no-referrer');
   reply.header('Content-Security-Policy',"frame-ancestors 'self'; object-src 'none'; base-uri 'self'").header('X-Frame-Options','SAMEORIGIN');
   if(options.secureCookies)reply.header('Strict-Transport-Security','max-age=31536000');
-  if(['POST','PATCH','PUT','DELETE'].includes(request.method) && request.headers.origin!==origin && !(request.headers.authorization?.startsWith('Bearer ') && !request.headers.cookie && request.headers.origin===undefined && /^\/api\/v1\/(?:projects|themes)(?:\/|$)/.test(request.url))) throw new ServiceError('INVALID_ORIGIN',403,'请求来源无效');
+  if(!['/mcp','/token','/register','/revoke'].includes(request.url.split('?')[0]) && ['POST','PATCH','PUT','DELETE'].includes(request.method) && request.headers.origin!==origin && !(request.headers.authorization?.startsWith('Bearer ') && !request.headers.cookie && request.headers.origin===undefined && /^\/api\/v1\/(?:projects|themes)(?:\/|$)/.test(request.url))) throw new ServiceError('INVALID_ORIGIN',403,'请求来源无效');
   if(request.method==='POST' && request.url.split('?')[0]==='/api/v1/auth/login'){
    const now=Date.now();for(const [key,item] of attempts)if(item.expires<=now)attempts.delete(key);
    const limit=options.loginLimit??10; const item=attempts.get(request.ip)??{count:0,expires:now+(options.loginWindowMs??15*60*1000)};
@@ -117,5 +124,12 @@ export function buildApp(options: AppOptions) {
  app.addHook('onClose',async()=>backupService.waitForIdle());
  registerAdminRoutes(app,{db,auth,tokens,projects,actor,writable,backupService});
  registerStaticRoutes(app,actor);
+ registerOAuthRoutes(app,{db,origin,auth,actor,service:oauth});
+ const metrics=new MetricsService(db,{hostMetricsFile:options.hostMetricsFile});
+ registerObservabilityRoutes(app,{metrics,actor});
+ registerMcpHttp(app,{onToolCall:call=>metrics.recordToolCall(call),origin,authenticate:authenticateMcp,dispatch:async(raw,method,route,payload)=>{
+  const relay=randomUUID();mcpRelays.set(relay,raw);
+  try{return await app.inject({method:method as 'GET'|'POST'|'PATCH'|'DELETE',url:'/api/v1'+route,headers:{authorization:'Bearer '+raw,host:originURL.host,'x-sp-mcp-relay':relay},...(payload===undefined?{}:{payload:payload as object})});}finally{mcpRelays.delete(relay);}
+ }});
  return app;
 }
