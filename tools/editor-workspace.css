@@ -58,3 +58,15 @@ body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)
 /* Slide commands remain in the ribbon; thumbnails start directly below it. */
 body[data-sp-design=mimo] .slide-sidebar>.pane-heading,
 body[data-sp-design=mimo] .slide-sidebar>.sp-slide-mini-tools{display:none!important}
+/* Keep accessible field names out of the compact ribbon's visual layout. */
+body[data-sp-design=mimo] #ribbon .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+@media(min-width:821px){
+ body[data-sp-design=mimo] #ribbon .sp30-font{height:78px}
+ body[data-sp-design=mimo] #ribbon .sp30-type-grid{width:248px;min-width:248px;height:56px;gap:4px}
+ body[data-sp-design=mimo] #ribbon .sp30-font .sp30-field-row{display:grid;grid-template-columns:126px 54px 28px 28px;gap:4px;min-height:26px}
+ body[data-sp-design=mimo] #ribbon .sp30-font .sp30-field-row+ .sp30-field-row{grid-template-columns:repeat(4,28px) 1fr}
+ body[data-sp-design=mimo] #ribbon .sp30-font :is(.sp30-font-label,.sp30-size-label){display:flex;align-items:center;min-width:0}
+ body[data-sp-design=mimo] #ribbon .sp30-font :is(select,input[type=number],.sp30-tiny,.sp30-color){height:26px;box-sizing:border-box}
+ body[data-sp-design=mimo] #ribbon .sp30-font .sp30-tiny{width:28px}
+ body[data-sp-design=mimo] #ribbon .sp30-font .sp30-color{justify-content:center}
+}
