@@ -27,3 +27,13 @@ body.editor-integrated.editor-attention .save-row{padding:7px 12px;background:#E
 body.editor-integrated.editor-attention .document-toolbar{display:flex;padding:5px 12px 0;background:#ECD9CA}
 body.editor-integrated.editor-attention .document-toolbar>:not(#back-home){display:none}
 body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11px}
+
+/* A quiet halftone field; only its decorative dots respond to the pointer. */
+.intro{position:relative}
+.intro > :first-child,.intro > .new-card{position:relative;z-index:1}
+.home-dots{position:absolute;right:298px;top:50%;transform:translateY(-50%);width:clamp(100px,calc(100% - 650px),300px);height:210px;pointer-events:none;color:#75804b}
+.home-dots i{position:absolute;display:block;border-radius:50%;background:currentColor}
+@media(max-width:1200px){.home-dots{opacity:.45}}
+@media(max-width:900px){.home-dots{right:246px;top:43%;width:160px;height:150px;opacity:.65}}
+@media(max-width:660px){.home-dots{right:150px;top:50%;width:85px;height:150px;opacity:.24}}
+@media(prefers-reduced-motion:reduce),(hover:none),(pointer:coarse){.home-dots i{transform:none!important}}
