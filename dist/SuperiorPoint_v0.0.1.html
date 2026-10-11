@@ -42,7 +42,7 @@ body.editor-open .recovery-note,body.editor-open .import-status{margin:4px 0;pad
 <section id="home-view"><div class="intro"><div><p class="eyebrow">SUPERIOR POINT / PRESENTATION STUDIO</p><h1>让想法，<br><em>有序呈现。</em></h1><p class="subtitle">从一个项目开始。内容保存在本地，随时导出、重新打开。</p></div><button id="new-project" class="new-card"><span class="plus">＋</span><strong>新建演示文稿</strong><small>空白项目 · 16:9 / 4:3</small><b>开始创作 ↗</b></button></div>
 <div class="library-toolbar"><h2 id="list-title">我的项目 <small id="count"></small></h2><div><input id="search" type="search" placeholder="搜索项目名称" aria-label="搜索项目"><select id="sort" aria-label="项目排序"><option value="modified">最近修改</option><option value="title">按名称</option></select></div></div><div id="projects" class="projects"></div><div id="empty" hidden><h3>这里还没有项目。</h3><p>新建一份演示文稿，或打开 SP 导出的 HTML / JSON 备份。</p></div>
 <div class="framework-note"><span>v0.0.1 开发预览</span> <button id="open-example" class="secondary">试用五页示例 ↗</button> 已集成 v0.39 编辑器，保存由工作台统一管理。此为早期预览版，验证范围见发布说明。</div></section>
-<section id="workspace-view" hidden><div class="document-toolbar"><button id="back-home" class="secondary">← 工作台</button><input id="project-title" aria-label="项目名称"><span id="revision"></span><button id="export-project" title="可重新编辑版：包含备注与批注，请勿直接作为公开分享版">导出可编辑 HTML ↗</button></div><div class="save-row"><span id="save-state">读取中</span><button id="retry-save" hidden>重试保存</button><button id="backup-json" title="完整保留数据，可重新导入此工作台">导出备份 JSON</button><button id="recover-project" hidden>恢复为独立项目</button><button id="takeover" hidden>接管编辑</button></div><p id="recovery-note" class="recovery-note" role="status" hidden></p><p id="import-note" class="recovery-note" role="status" hidden></p><p class="export-privacy-note">可重新编辑版：包含备注与批注，请勿直接作为公开分享版。</p><div id="editor-mount"></div></section>
+<section id="workspace-view" hidden><div class="document-toolbar"><button id="back-home" class="secondary">← 工作台</button><input id="project-title" aria-label="项目名称"><span id="revision"></span><button id="export-project" title="可重新编辑版：包含备注与批注，请勿直接作为公开分享版">备份可编辑 HTML ↗</button><button id="share-project" title="仅供观众放映，不含备注、批注、历史或编辑项目数据">分享观众 HTML ↗</button></div><div class="save-row"><span id="save-state">读取中</span><button id="retry-save" hidden>重试保存</button><button id="backup-json" title="完整保留数据，可重新导入此工作台">导出备份 JSON</button><button id="recover-project" hidden>恢复为独立项目</button><button id="takeover" hidden>接管编辑</button></div><p id="recovery-note" class="recovery-note" role="status" hidden></p><p id="import-note" class="recovery-note" role="status" hidden></p><p class="export-privacy-note">备份 HTML 含备注与批注；观众分享 HTML 仅供放映，不能恢复为编辑项目。</p><div id="editor-mount"></div></section>
 <footer><span>SP / LOCAL FIRST</span><span>你的内容，你的文件。</span></footer></main>
 <dialog id="new-dialog"><form id="new-form"><p class="eyebrow">NEW PRESENTATION</p><h2>从空白开始</h2><label>项目名称<input id="new-title" required maxlength="200" value="未命名演示文稿"></label><label>画布比例<select id="new-ratio"><option value="16:9">16:9 · 宽屏</option><option value="4:3">4:3 · 标准</option></select></label><div class="dialog-actions"><button type="button" id="cancel-new" class="secondary">取消</button><button type="submit">创建项目 ↗</button></div></form></dialog>
 <input id="file-input" type="file" accept=".html,.htm,.json" hidden><div id="notification" role="status" hidden></div><script>(() => {
@@ -628,13 +628,13 @@ body.editor-open .recovery-note,body.editor-open .import-status{margin:4px 0;pad
     if (!slide) throw new Error(`Unknown slide: ${slideId}`);
     return slideSVG(doc, slide);
   }
-  async function exportHTML(document2) {
+  async function exportHTML(document2, { audience = false } = {}) {
     const doc = importDocument(document2);
     assertSafeResources(doc);
     const json = JSON.stringify(doc).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
     const sections = doc.slides.filter((s) => !s.hidden).map((s) => `<section data-slide-id="${esc(s.id)}" data-transition="${transition(s.transition)}">${slideSVG(doc, s, true)}</section>`).join("\n");
     return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="sp-format" content="superior-point/1"><title>${esc(doc.title)}</title><style>${revealCSS}</style><style>html,body{margin:0;background:#182033}.reveal .slides section{padding:0}.reveal svg{display:block;width:100%;height:auto}.sp-notice{position:fixed;bottom:4px;left:8px;z-index:99;color:#93a4bf;font:11px Arial;max-width:65%}</style></head><body><div class="reveal"><div class="slides">${sections}</div></div><div class="sp-notice" title="${esc(RENDERER_LIMITATIONS.join(" "))}">SP framework preview \xB7 Generic renderer \xB7 Re-import this HTML to recover full document</div><script id="sp-document" type="application/json">${json}<\/script><script>${revealJS.replace(/<\/script/gi, "<\\/script")}<\/script><script>window.spDeck = new Reveal(document.querySelector('.reveal'),{width:${doc.canvas.width},height:${doc.canvas.height},margin:0.04,hash:false,controls:true,progress:true,center:false,transition:'fade',embedded:false});window.spDeck.initialize().then(function(){document.documentElement.dataset.spReady='true';});<\/script></body></html>`;
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">${audience ? "" : '<meta name="sp-format" content="superior-point/1">'}<title>${esc(doc.title)}</title><style>${revealCSS}</style><style>html,body{margin:0;background:#182033}.reveal .slides section{padding:0}.reveal svg{display:block;width:100%;height:auto}.sp-notice{position:fixed;bottom:4px;left:8px;z-index:99;color:#93a4bf;font:11px Arial;max-width:65%}</style></head><body><div class="reveal"><div class="slides">${sections}</div></div><div class="sp-notice" title="${esc(RENDERER_LIMITATIONS.join(" "))}">SP framework preview \xB7 Generic renderer \xB7 ${audience ? "Audience presentation \xB7 Playback only" : "Re-import this HTML to recover full document"}</div>${audience ? "" : `<script id="sp-document" type="application/json">${json}<\/script>`}<script>${revealJS.replace(/<\/script/gi, "<\\/script")}<\/script><script>window.spDeck = new Reveal(document.querySelector('.reveal'),{width:${doc.canvas.width},height:${doc.canvas.height},margin:0.04,hash:false,controls:true,progress:true,center:false,transition:'fade',embedded:false});window.spDeck.initialize().then(function(){document.documentElement.dataset.spReady='true';});<\/script></body></html>`;
   }
   function importHTML(html) {
     if (typeof html !== "string" || html.length > 64 * 1024 * 1024) throw new Error("Invalid or oversized HTML");
@@ -1344,6 +1344,19 @@ body.editor-open .recovery-note,body.editor-open .import-status{margin:4px 0;pad
   });
 
   // vendor/editor-integrated-playback.js
+  function legacyPresentationCSS(width, height) {
+    const deck = { width, height };
+    function revealStyleSheet() {
+      return `html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#161715}*{box-sizing:border-box}.reveal{font-family:'Helvetica Neue',Arial,'PingFang SC','Microsoft YaHei',sans-serif}.reveal .slides{text-align:left}.reveal .slides section.sp-reveal-section{padding:0!important;box-sizing:border-box;overflow:hidden;text-align:left}.canvas-stage{position:absolute;inset:0;overflow:hidden;isolation:isolate;user-select:none}.v13-master-layer{position:absolute;inset:0;z-index:200;pointer-events:none}.v13-master-rule,.v13-master-footer,.v13-master-number{position:absolute}.v13-master-rule{height:2px}.v13-master-footer,.v13-master-number{font-size:13px;line-height:1;white-space:nowrap}.slide-object{position:absolute;overflow:visible;outline:0;box-sizing:border-box;isolation:isolate;pointer-events:none}.slide-object .obj-text{width:100%;height:100%;overflow:hidden;box-sizing:border-box;display:flex;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}.slide-object .obj-image{width:100%;height:100%;display:block;pointer-events:none}.obj-image-clip{width:100%;height:100%;overflow:hidden;position:relative}.obj-image-clip .obj-image{width:100%;height:100%}.media-face{display:flex;align-items:center;justify-content:center;flex-direction:column;width:100%;height:100%;background:#242520;color:#fbfaf6;text-align:center;gap:8px;padding:12px}.media-kind{font-size:11px;color:#d75c3c}.media-face strong{font-size:18px}.media-face small{font-size:10px;color:#c8cac1}.media-face .sp-media-controls{width:100%;height:100%;pointer-events:auto}.rich-flow{display:block;white-space:pre-wrap}.slide-object .obj-table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed;white-space:pre-wrap;word-break:break-word;line-height:1.3;pointer-events:none}.slide-object .obj-table td{border:1px solid #cecec6;padding:5px 10px;overflow:hidden;white-space:pre-wrap;word-break:break-word;vertical-align:middle}.reveal .fragment.custom.sp-fade:not(.visible){opacity:0!important}.reveal .fragment.custom.sp-float:not(.visible){opacity:0!important;translate:0 12px}.reveal .fragment.custom.sp-zoom:not(.visible){opacity:0!important;scale:.96}.reveal .fragment.custom.sp-left:not(.visible){opacity:0!important;translate:14px 0}.reveal .fragment.custom.sp-right:not(.visible){opacity:0!important;translate:-14px 0}.reveal .fragment.custom.sp-highlight-red:not(.current-fragment){filter:none}.reveal .fragment.custom.sp-highlight-red.current-fragment .obj-text{color:#d75c3c!important}.reveal .fragment.custom{transition:opacity var(--sp-duration,350ms) cubic-bezier(.2,.8,.2,1),translate var(--sp-duration,350ms) cubic-bezier(.2,.8,.2,1),scale var(--sp-duration,350ms) cubic-bezier(.2,.8,.2,1),color var(--sp-duration,350ms) ease}.reveal .fragment.custom.visible{transition-delay:var(--sp-delay,0ms)}.reveal .fragment.custom.visible{opacity:var(--sp-opacity,1)!important;translate:0 0;scale:1}.reveal .slides section .slide-object .obj-text{margin:0}.sp-object-link{position:absolute;inset:0;z-index:9;pointer-events:auto!important;cursor:pointer}.reveal .slides section .obj-image{pointer-events:none}@media(prefers-reduced-motion:reduce){.reveal .fragment.custom{transition:none!important}}` + v15ExportCSS();
+    }
+    function v15ExportCSS() {
+      return `.reveal .slides section .v15-motion-marker{position:absolute!important;left:-9999px!important;top:-9999px!important;width:0!important;height:0!important;overflow:hidden!important;pointer-events:none!important;visibility:hidden!important}.reveal .slides section .v15-initially-hidden:not(.v15-revealed){opacity:0!important}.reveal .slides section .v15-exited{opacity:0!important;visibility:hidden!important}@media(prefers-reduced-motion:reduce){.reveal .v15-motion-marker{transition:none!important}}`;
+    }
+    function v24OfflineExportCSS() {
+      return `body.sp-offline-deck{background:#111!important}body.sp-offline-deck .reveal{position:fixed;inset:0;overflow:hidden;width:100vw;height:100vh}body.sp-offline-deck .reveal .slides{position:absolute;left:50%;top:50%;width:${deck.width}px;height:${deck.height}px;transform-origin:center center}body.sp-offline-deck .reveal .slides>section{position:absolute;inset:0;width:100%;height:100%;transform:none!important;visibility:visible!important}body.sp-offline-deck .sp-offline-controls{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;background:#222d;color:#f2f1ec;border:1px solid #ffffff35;display:flex;align-items:center;gap:15px;padding:9px 16px;border-radius:4px;font:12px Arial,sans-serif;box-shadow:0 3px 24px #0008}body.sp-offline-deck .sp-offline-controls>span{letter-spacing:.06em;font-size:10px;color:#c8cac1}body.sp-offline-deck .sp-offline-controls button{background:none;border:1px solid #fff5;color:#fff;border-radius:2px;padding:5px 12px;cursor:pointer}body.sp-offline-deck .sp-offline-controls output{font:12px monospace;white-space:nowrap}body.sp-offline-deck .reveal .slides section .v15-revealed{opacity:1}body.sp-offline-deck .reveal .slides section .v15-exited{opacity:0!important;visibility:hidden!important}@media(max-width:720px){body.sp-offline-deck .sp-offline-controls>span{display:none}body.sp-offline-deck .sp-offline-controls{bottom:12px}}`;
+    }
+    return revealStyleSheet() + v24OfflineExportCSS();
+  }
   var legacyPlaybackBootstrap;
   var init_editor_integrated_playback = __esm({
     "vendor/editor-integrated-playback.js"() {
@@ -1464,13 +1477,26 @@ function v24OfflineExportBootstrap(width,height){
     const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
     return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes))) + "'";
   }
-  async function exportEditorHTML(input, renderedHTML, { domDocument = globalThis.document } = {}) {
+  async function exportEditorHTML(input, renderedHTML, { domDocument = globalThis.document, audience = false } = {}) {
     const doc = importDocument(input);
     await exportHTML(doc);
     if (typeof renderedHTML !== "string" || renderedHTML.length > 50 * 1024 * 1024) throw new Error("\u5019\u9009\u6E32\u67D3\u8F93\u51FA\u65E0\u6548\u6216\u8FC7\u5927");
     if (!domDocument?.createElement) throw new Error("\u5019\u9009\u7F16\u8F91\u5668\u5BFC\u51FA\u9700\u8981\u6D4F\u89C8\u5668DOM");
     const template = domDocument.createElement("template");
     template.innerHTML = renderedHTML;
+    if (audience) {
+      const reveal2 = template.content.querySelector(".reveal");
+      if (!reveal2) throw new Error("\u5019\u9009\u6E32\u67D3\u5668\u6CA1\u6709\u751F\u6210\u53EF\u653E\u6620\u9875\u9762");
+      const slides = reveal2.querySelector(".slides");
+      if (!slides) throw new Error("\u5019\u9009\u6E32\u67D3\u5668\u6CA1\u6709\u751F\u6210\u53EF\u653E\u6620\u9875\u9762");
+      reveal2.replaceChildren(slides);
+      for (const node of [...slides.childNodes]) if (node.nodeType !== 1 || node.localName !== "section") node.remove();
+      const visible = new Set(doc.slides.filter((slide) => !slide.hidden).map((slide) => slide.id));
+      for (const section of slides.children) if (!visible.has(section.dataset.slideId)) section.remove();
+      reveal2.querySelectorAll("aside.notes,[data-v18-marker],style,script").forEach((node) => node.remove());
+      template.content.replaceChildren(reveal2);
+    }
+    const playbackAttributes = new Set("data-slide-id data-transition data-transition-speed data-background-transition data-background-color data-click-advance data-autoslide data-auto-animate data-auto-animate-duration data-auto-animate-easing data-auto-animate-id data-auto-animate-restart data-auto-animate-target data-fragment-index data-id data-v15-object-id data-v15-fx data-v15-kind data-v15-effect data-v15-trigger data-v15-delay data-v15-duration data-v15-easing".split(" "));
     const allowed = new Set("style div section article span p br b strong i em u s small h1 h2 h3 h4 h5 h6 ul ol li table thead tbody tr th td img svg g defs path rect circle ellipse line polyline polygon text tspan marker clippath lineargradient radialgradient stop pattern use a video audio source".split(" "));
     for (const el of [...template.content.querySelectorAll("*")]) {
       if (!allowed.has(el.localName.toLowerCase())) {
@@ -1479,14 +1505,18 @@ function v24OfflineExportBootstrap(width,height){
       }
       for (const attr of [...el.attributes]) {
         const name = attr.name.toLowerCase(), value = attr.value;
-        if (name.startsWith("on") || ["srcdoc", "formaction", "action", "target", "download", "ping", "srcset", "nonce"].includes(name)) el.removeAttribute(attr.name);
+        if (audience && name === "style") {
+          for (const property of [...el.style]) if (property.startsWith("--") && !["--sp-duration", "--sp-delay", "--sp-opacity"].includes(property)) el.style.removeProperty(property);
+        }
+        if (audience && (name.startsWith("data-") && !playbackAttributes.has(name) || ["title", "aria-description"].includes(name))) el.removeAttribute(attr.name);
+        else if (name.startsWith("on") || ["srcdoc", "formaction", "action", "target", "download", "ping", "srcset", "nonce"].includes(name)) el.removeAttribute(attr.name);
         else if (["src", "href", "xlink:href", "poster"].includes(name) && !/^#[a-zA-Z0-9_-]+$/.test(value) && !/^data:image\/(png|jpeg|jpg|gif|webp);base64,[a-zA-Z0-9+/]+={0,2}$/.test(value)) el.removeAttribute(attr.name);
       }
     }
     if (!template.content.querySelector(".reveal .slides section")) throw new Error("\u5019\u9009\u6E32\u67D3\u5668\u6CA1\u6709\u751F\u6210\u53EF\u653E\u6620\u9875\u9762");
     const bootstrap = script(legacyPlaybackBootstrap + `;v15PlaybackBootstrap();Reveal.initialize({width:${doc.canvas.width},height:${doc.canvas.height},margin:.04,hash:false,center:false,controls:true,progress:true,slideNumber:'c/t',transition:'fade',backgroundTransition:'fade',autoAnimate:true,autoAnimateEasing:'cubic-bezier(.2,.8,.2,1)',autoAnimateDuration:.7,autoSlide:0}).then(()=>{window.SuperiorPointMotion?.attach(Reveal);document.documentElement.dataset.spReady='true';}).catch(()=>v24OfflineExportBootstrap(${doc.canvas.width},${doc.canvas.height}));`);
     const reveal = script(revealJS), csp = `default-src 'none'; script-src ${await scriptHash(reveal)} ${await scriptHash(bootstrap)}; style-src 'unsafe-inline'; img-src data:; media-src data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`;
-    return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${escape(csp)}"><title>${escape(doc.title)}</title><style>${revealCSS}</style></head><body>${template.innerHTML}<script id="sp-document" type="application/json">${inert(doc)}<\/script><script>${reveal}<\/script><script>${bootstrap}<\/script></body></html>`;
+    return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${escape(csp)}"><title>${escape(doc.title)}</title><style>${revealCSS}${audience ? legacyPresentationCSS(doc.canvas.width, doc.canvas.height) : ""}</style></head><body>${template.innerHTML}${audience ? "" : `<script id="sp-document" type="application/json">${inert(doc)}<\/script>`}<script>${reveal}<\/script><script>${bootstrap}<\/script></body></html>`;
   }
   var escape, inert, script;
   var init_editor_export = __esm({
@@ -1912,17 +1942,17 @@ function v24OfflineExportBootstrap(width,height){
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
   }
-  async function exportProject(id) {
+  async function exportProject(id, { audience = false } = {}) {
     if (!id) await flushEditor();
     const doc = id ? (await store.get(id)).document : core.getDocument();
     if (!id && editor?.renderLegacyHTML) {
-      download(await exportEditorHTML(doc, await editor.renderLegacyHTML()), doc.title);
-      notify("\u5DF2\u5BFC\u51FA\u53EF\u91CD\u65B0\u7F16\u8F91\u7248\uFF0C\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248\u3002\u6D4F\u89C8\u5668\u4E0E\u590D\u6742\u52A8\u6548\u4ECD\u9700\u9A8C\u6536\u3002");
+      download(await exportEditorHTML(doc, await editor.renderLegacyHTML(), { audience }), doc.title + (audience ? "-\u5206\u4EAB" : ""));
+      notify(audience ? "\u5DF2\u5BFC\u51FA\u89C2\u4F17\u5206\u4EAB HTML\uFF0C\u4EC5\u542B\u53EF\u89C1\u9875\u9762\u4E0E\u653E\u6620\u5185\u5BB9\uFF0C\u4E0D\u542B\u7F16\u8F91\u9879\u76EE\u6570\u636E\u3002" : "\u5DF2\u5BFC\u51FA\u53EF\u91CD\u65B0\u7F16\u8F91\u7248\uFF0C\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248\u3002\u6D4F\u89C8\u5668\u4E0E\u590D\u6742\u52A8\u6548\u4ECD\u9700\u9A8C\u6536\u3002");
       return;
     }
     const report = inspectRenderCompatibility(doc);
-    download(await exportHTML(doc), doc.title);
-    notify(!report.hasKnownGaps ? "\u5DF2\u751F\u6210\u53EF\u91CD\u65B0\u7F16\u8F91\u7248HTML\uFF0C\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248\u3002" : `\u5DF2\u5BFC\u51FA\u53EF\u91CD\u65B0\u7F16\u8F91\u7248\uFF0C\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248\u3002\u57FA\u7840\u6E32\u67D3\u53E6\u6709 ${report.warnings.length} \u9879\u6837\u5F0F\u4EC5\u4FDD\u7559\u6570\u636E\u3002`);
+    download(await exportHTML(doc, { audience }), doc.title + (audience ? "-\u5206\u4EAB" : ""));
+    notify(audience ? `\u5DF2\u5BFC\u51FA\u89C2\u4F17\u5206\u4EAB HTML\uFF08\u57FA\u7840\u6E32\u67D3\uFF09\uFF0C\u4E0D\u542B\u7F16\u8F91\u9879\u76EE\u6570\u636E\u3002${report.hasKnownGaps ? "\u5B58\u5728\u6837\u5F0F\u6216\u52A8\u6548\u517C\u5BB9\u9650\u5236\uFF0C\u8BF7\u6253\u5F00\u9879\u76EE\u540E\u4F7F\u7528\u539F\u6E32\u67D3\u5668\u5206\u4EAB\u3002" : ""}` : !report.hasKnownGaps ? "\u5DF2\u751F\u6210\u53EF\u91CD\u65B0\u7F16\u8F91\u7248HTML\uFF0C\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248\u3002" : `\u5DF2\u5BFC\u51FA\u53EF\u91CD\u65B0\u7F16\u8F91\u7248\uFF0C\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248\u3002\u57FA\u7840\u6E32\u67D3\u53E6\u6709 ${report.warnings.length} \u9879\u6837\u5F0F\u4EC5\u4FDD\u7559\u6570\u636E\u3002`);
   }
   async function newProject(title, ratio = "16:9") {
     const doc = createDocument({ title, slides: [{ id: crypto.randomUUID(), elements: [], animations: [] }], canvas: ratio === "4:3" ? { width: 960, height: 720 } : { width: 1280, height: 720 } });
@@ -2013,6 +2043,7 @@ function v24OfflineExportBootstrap(width,height){
     if (!rec) throw new Error("\u9879\u76EE\u5DF2\u4E0D\u5B58\u5728");
     if (action === "open") return openProject(id);
     if (action === "export") return exportProject(id);
+    if (action === "share") return exportProject(id, { audience: true });
     if (action === "copy") {
       const doc = structuredClone(rec.document);
       doc.id = crypto.randomUUID();
@@ -2087,7 +2118,7 @@ function v24OfflineExportBootstrap(width,height){
       info.append(meta);
       const actions = document.createElement("div");
       actions.className = "project-actions";
-      for (const [label, action] of trash ? [["\u6062\u590D", "restore"]] : [["\u91CD\u547D\u540D", "rename"], ["\u590D\u5236", "copy"], ["\u5BFC\u51FA", "export"], ["\u5220\u9664", "delete"]]) {
+      for (const [label, action] of trash ? [["\u6062\u590D", "restore"]] : [["\u91CD\u547D\u540D", "rename"], ["\u590D\u5236", "copy"], ["\u5907\u4EFD HTML", "export"], ["\u5206\u4EAB HTML", "share"], ["\u5220\u9664", "delete"]]) {
         const b = document.createElement("button");
         b.textContent = label;
         if (action === "export") b.title = "\u53EF\u91CD\u65B0\u7F16\u8F91\u7248\uFF1A\u5305\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8\uFF0C\u8BF7\u52FF\u76F4\u63A5\u4F5C\u4E3A\u516C\u5F00\u5206\u4EAB\u7248";
@@ -2205,6 +2236,7 @@ function v24OfflineExportBootstrap(width,height){
       $("back-home").onclick = guard(() => home());
       $("project-title").onchange = guard((e) => edit([{ type: "updateProject", properties: { title: e.target.value.trim() || "\u672A\u547D\u540D\u6F14\u793A\u6587\u7A3F" } }]));
       $("export-project").onclick = guard(() => exportProject());
+      $("share-project").onclick = guard(() => exportProject(void 0, { audience: true }));
       $("retry-save").onclick = guard(() => autosave?.flush());
       $("backup-json").onclick = guard(exportJSONBackup);
       $("recover-project").onclick = guard(recoverProject);
@@ -10268,7 +10300,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     const c=frame('03','MOTION  /  \u4E3A\u53D9\u4E8B\u5B89\u6392\u8282\u594F');c.transition='morph';c.notes='\u672C\u793A\u4F8B\u5305\u542B\u5206\u6B65\u8FDB\u5165\u52A8\u753B\u3002\u9AD8\u7EA7 Auto-Animate \u9700\u8981\u6210\u529F\u52A0\u8F7D Reveal.js\u3002\u65AD\u7F51\u964D\u7EA7\u4E0D\u662F\u540C\u7B49\u6548\u679C\u3002';
     c.objects.push(makeText('\u8BA9\u53D8\u5316\u6709\u7406\u7531\u3002',74,165,1100,92,60,ink,true,{name:'\u52A8\u6548\u6807\u9898'}));
     for(let i=0;i<3;i++){const o=makeText(['\u5148\u7ED9\u51FA\u95EE\u9898\u3002','\u518D\u5C55\u5F00\u8BC1\u636E\u3002','\u6700\u540E\u7559\u4E0B\u7ED3\u8BBA\u3002'][i],80,315+i*85,1080,65,36,i===2?accent:ink,false,{name:'\u5206\u6B65 '+(i+1)});o.motionEffects=[v15ValidateEffect({kind:'entrance',effect:'fade',trigger:'click',step:i,duration:500,delay:0,easing:'ease-out'},0)];c.objects.push(o);}
-    const d=frame('04','DELIVER  /  \u4FDD\u7559\u7EE7\u7EED\u521B\u4F5C\u7684\u53EF\u80FD');d.notes='\u5F53\u524D\u6240\u6709 HTML \u5BFC\u51FA\u5747\u4FDD\u7559\u5B8C\u6574\u9879\u76EE\uFF0C\u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u53EF\u91CD\u65B0\u5BFC\u5165\u7F16\u8F91\u3002\u5206\u4EAB\u524D\u8BF7\u68C0\u67E5\u79C1\u5BC6\u5185\u5BB9\u3002';d.objects.push(makeText('\u6F14\u793A\u662F\u7ED3\u679C\uFF0C\\n\u9879\u76EE\u662F\u8D77\u70B9\u3002',74,178,1080,186,63,ink,true,{name:'\u4EA4\u4ED8\u6807\u9898'}),makeText('JSON  \xB7  \u5B8C\u6574\u7F16\u8F91\u5907\u4EFD\\n\u5B8C\u6574 HTML  \xB7  \u53EF\u91CD\u65B0\u5BFC\u5165\u7F16\u8F91\\n\u5206\u4EAB\u524D\u68C0\u67E5  \xB7  \u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2',78,426,1080,160,28,muted,false,{name:'\u4EA4\u4ED8\u8BF4\u660E'}));
+    const d=frame('04','DELIVER  /  \u4FDD\u7559\u7EE7\u7EED\u521B\u4F5C\u7684\u53EF\u80FD');d.notes='\u5907\u4EFD HTML \u542B\u5B8C\u6574\u9879\u76EE\u3001\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u89C2\u4F17\u5206\u4EAB\u7248\u5728\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u53E6\u884C\u5BFC\u51FA\uFF0C\u4EC5\u4F9B\u653E\u6620\u3002';d.objects.push(makeText('\u6F14\u793A\u662F\u7ED3\u679C\uFF0C\\n\u9879\u76EE\u662F\u8D77\u70B9\u3002',74,178,1080,186,63,ink,true,{name:'\u4EA4\u4ED8\u6807\u9898'}),makeText('JSON  \xB7  \u5B8C\u6574\u7F16\u8F91\u5907\u4EFD\\n\u5907\u4EFD HTML  \xB7  \u5B8C\u6574\u6570\u636E\u53EF\u91CD\u65B0\u7F16\u8F91\\n\u89C2\u4F17\u5206\u4EAB\u7248  \xB7  \u4E0A\u65B9\u5DE5\u4F5C\u53F0\u53E6\u884C\u5BFC\u51FA',78,426,1080,160,28,muted,false,{name:'\u4EA4\u4ED8\u8BF4\u660E'}));
     fresh.slides=[a,b,c,d];return fresh;
   }
   function sp39ExportEditable(){return spBridgeExportHTML();
@@ -11284,7 +11316,7 @@ return {inspectRasterDataURL,IMAGE_LIMITS};})();
 <div class="sp39-step"><b><span>01</span>\u5EFA\u7ACB\u5185\u5BB9</b><p>\u4ECE\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u521B\u5EFA\u7A7A\u767D\u6587\u7A3F\u3002\u63D2\u5165\u6587\u5B57\u3001\u5F62\u72B6\u6216\u62D6\u5165\u672C\u5730\u56FE\u7247\uFF1B\u53CC\u51FB\u6587\u5B57\u76F4\u63A5\u4FEE\u6539\u3002</p></div>
 <div class="sp39-step"><b><span>02</span>\u6574\u7406\u9875\u9762</b><p>\u62D6\u52A8\u5BF9\u8C61\uFF0C\u8FB9\u89D2\u8C03\u6574\u5927\u5C0F\u3002Shift \u70B9\u51FB\u591A\u9009\uFF1B\u4F7F\u7528\u300C\u6392\u5217\u300D\u5BF9\u9F50\u3001\u5206\u5E03\u6216\u7EC4\u5408\u3002</p></div>
 <div class="sp39-step"><b><span>03</span>\u68C0\u67E5\u6F14\u793A</b><p>\u5207\u6362\u63A7\u5236\u9875\u95F4\u53D8\u5316\uFF0C\u52A8\u753B\u63A7\u5236\u9875\u5185\u5BF9\u8C61\u3002F5 \u4ECE\u5934\u653E\u6620\uFF0CShift+F5 \u4ECE\u5F53\u524D\u9875\u5F00\u59CB\uFF1BEsc \u8FD4\u56DE\u3002</p></div>
-<div class="sp39-step"><b><span>04</span>\u5E26\u8D70\u6210\u679C</b><p>Ctrl / \u2318+S \u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0\uFF1B\u8BF7\u7528\u4E0A\u65B9\u6309\u94AE\u4E0B\u8F7D JSON \u5907\u4EFD\u6216\u5B8C\u6574\u53EF\u91CD\u7F16\u8F91 HTML\u3002\u5F53\u524D HTML \u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF0C\u4E0D\u662F\u89C2\u4F17\u8131\u654F\u7248\u3002</p></div>
+<div class="sp39-step"><b><span>04</span>\u5E26\u8D70\u6210\u679C</b><p>Ctrl / \u2318+S \u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0\uFF1B\u8BF7\u7528\u4E0A\u65B9\u6309\u94AE\u4E0B\u8F7D JSON \u5907\u4EFD\u6216\u5B8C\u6574\u53EF\u91CD\u7F16\u8F91 HTML\u3002\u5907\u4EFD HTML \u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u89C2\u4F17\u5206\u4EAB\u7248\u8BF7\u5728\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u53E6\u884C\u5BFC\u51FA\u3002</p></div>
 </div><p>\u672C\u5DE5\u5177\u4E0D\u8054\u7F51\u540C\u6B65\u6587\u7A3F\u3002\u4FDD\u5B58\u72B6\u6001\u4EE5\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u4E3A\u51C6\uFF0C\u91CD\u8981\u5185\u5BB9\u8BF7\u4E0B\u8F7D JSON \u5907\u4EFD\u3002PPTX \u662F\u6709\u9650\u8F6C\u6362\u683C\u5F0F\uFF1BReveal \u5F15\u64CE\u5DF2\u5185\u5D4C\u79BB\u7EBF\u5305\u3002</p>
 <footer><span>\u754C\u9762\u914D\u8272\u5207\u6362\u4E0D\u4F1A\u6539\u53D8\u6587\u7A3F\u4E3B\u9898\u3002</span><button class="sp39-primary" data-action="sp39-guide-close">\u5F00\u59CB\u7F16\u8F91 \u2192</button></footer></section></div>
 

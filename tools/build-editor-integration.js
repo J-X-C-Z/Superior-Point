@@ -13,7 +13,14 @@ const trustedSource=html;
 function sourceBetween(start,end){const a=trustedSource.indexOf(start),b=trustedSource.indexOf(end,a+start.length);if(a<0||b<0)throw Error('Trusted playback boundary missing');return trustedSource.slice(a,b).trim();}
 const legacyPlaybackBootstrap=sourceBetween('  function v15PlaybackBootstrap(){','  v15PlaybackBootstrap();')+'\n'+sourceBetween('  function v24OfflineExportBootstrap(width,height){','  function v24OfflineExportCSS()');
 new Script(legacyPlaybackBootstrap,{filename:'trusted-v039-playback.js'});
-await writeFile(new URL('vendor/editor-integrated-playback.js',root),'// Generated from SHA-256 '+sourceHash+'; trusted source, not iframe output.\nexport const legacyPlaybackBootstrap='+JSON.stringify(legacyPlaybackBootstrap)+';\n');
+const trustedStyleFunctions=['revealStyleSheet','v15ExportCSS','v24OfflineExportCSS'].map(name=>{
+ const line=trustedSource.split('\n').find(line=>line.startsWith('  function '+name+'(){'));
+ if(!line)throw Error('Trusted stylesheet boundary missing: '+name);
+ return line.trim();
+}).join('\n');
+const legacyPresentationCSS='export function legacyPresentationCSS(width,height){const deck={width,height};\n'+trustedStyleFunctions+'\nreturn revealStyleSheet()+v24OfflineExportCSS();}';
+new Script(legacyPresentationCSS.replace('export function','function'),{filename:'trusted-v039-styles.js'});
+await writeFile(new URL('vendor/editor-integrated-playback.js',root),'// Generated from SHA-256 '+sourceHash+'; trusted source, not iframe output.\nexport const legacyPlaybackBootstrap='+JSON.stringify(legacyPlaybackBootstrap)+';\n'+legacyPresentationCSS+'\n');
 const patches=[];
 function replace(label,needle,replacement){
  const hits=html.split(needle).length-1;if(hits!==1)throw new Error(`${label}: expected one exact source match, got ${hits}`);
@@ -51,10 +58,10 @@ replace('parent-owned quick-access history',"b.disabled=b.dataset.action==='undo
 replace('visibility flush uses parent bridge',"document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){sp39MirrorEditor();v24Stop();if(deck)v10StoreCurrent(false);}});","document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){v24Stop();if(deck)spBridgeFlush().catch(error=>toast(error.message,true));}});");
 replace('bundled Reveal only',sourceBetween('  async function ensureReveal(){','  function activeRevealIndex()'),"  async function ensureReveal(){if(typeof window.Reveal==='function')return window.Reveal;throw Error('内嵌 Reveal 引擎不可用；请重新打开完整集成文件');}\n");
 replace('new-project guide uses workspace','从「新建」创建空白文稿。插入文字、形状或拖入本地图片；双击文字直接修改。','从上方工作台创建空白文稿。插入文字、形状或拖入本地图片；双击文字直接修改。');
-replace('guide describes complete export privacy','Ctrl / ⌘+S 下载完整 JSON；「更多」可导出带编辑器的 HTML。演示 HTML 默认剔除备注、批注及历史。','Ctrl / ⌘+S 保存到工作台；请用上方按钮下载 JSON 备份或完整可重编辑 HTML。当前 HTML 含备注、批注及历史，不是观众脱敏版。');
+replace('guide describes complete export privacy','Ctrl / ⌘+S 下载完整 JSON；「更多」可导出带编辑器的 HTML。演示 HTML 默认剔除备注、批注及历史。','Ctrl / ⌘+S 保存到工作台；请用上方按钮下载 JSON 备份或完整可重编辑 HTML。备份 HTML 含备注、批注及历史；观众分享版请在上方工作台另行导出。');
 replace('guide persistence and offline engine truth','本工具不联网同步文稿。浏览器缓存可能受权限与清理影响，重要内容请下载 JSON。PPTX 是有限转换格式；高级 Reveal 动效依赖可用的引擎资源。','本工具不联网同步文稿。保存状态以上方工作台为准，重要内容请下载 JSON 备份。PPTX 是有限转换格式；Reveal 引擎已内嵌离线包。');
-replace('built-in demo export privacy note','演示 HTML 默认不含备注、批注和历史；可编辑 HTML 含完整项目。','当前所有 HTML 导出均保留完整项目，含备注、批注及历史；可重新导入编辑。分享前请检查私密内容。');
-replace('built-in demo export explanation','可编辑 HTML  ·  编辑器与文稿一起带走\\n演示 HTML  ·  给观众的干净版本','完整 HTML  ·  可重新导入编辑\\n分享前检查  ·  含备注、批注及历史');
+replace('built-in demo export privacy note','演示 HTML 默认不含备注、批注和历史；可编辑 HTML 含完整项目。','备份 HTML 含完整项目、备注、批注及历史；观众分享版在上方工作台另行导出，仅供放映。');
+replace('built-in demo export explanation','可编辑 HTML  ·  编辑器与文稿一起带走\\n演示 HTML  ·  给观众的干净版本','备份 HTML  ·  完整数据可重新编辑\\n观众分享版  ·  上方工作台另行导出');
 replace('editable HTML menu label','可编辑 HTML <small>含完整项目与备注</small>','完整可重编辑 HTML <small>含备注、批注及历史</small>');
 replace('HTML export tooltip states privacy','title="导出基于 reveal.js 的 HTML"','title="导出完整可重编辑 HTML；包含备注、批注及历史，不是观众脱敏版"');
 replace('block old Hub action paths','  function performAction(action,value){',`  function performAction(action,value){\n    if(spBridgeAction(action,value))return;`);
