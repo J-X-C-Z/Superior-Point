@@ -15,6 +15,12 @@ let view='home',core=null,lock=null,autosave=null,editor=null,persistedRevision=
 const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('sp-framework-changes'):null;
 function notify(text,error=false){$('notification').textContent=text;$('notification').classList.toggle('error',error);$('notification').hidden=false;clearTimeout(notifyTimer);notifyTimer=setTimeout(()=>$('notification').hidden=true,6500);}
 const guard=fn=>(...args)=>{try{return Promise.resolve(fn(...args)).catch(e=>{console.error(e);notify(e.message,true);});}catch(e){console.error(e);notify(e.message,true);}};
+function syncWorkspaceChrome(failed=false){
+ const attention=!!core&&(!lock||failed||!!autosave?.lastError||!!recoveryError||recovering);
+ document.body.classList.toggle('editor-integrated',!!editor?.setWorkspaceState);
+ document.body.classList.toggle('editor-attention',attention);
+ editor?.setWorkspaceState?.({text:$('save-state').textContent,failed:attention,revision:core?.getDocument().revision,details:[$('recovery-note').textContent,$('import-note').textContent].filter(Boolean).join(' ')});
+}
 function refreshRecoveryControls(failed=false){
  $('backup-json').hidden=false;
  $('recover-project').hidden=!core||(!failed&&!!lock&&!autosave?.lastError&&!recoveryError);
@@ -22,6 +28,7 @@ function refreshRecoveryControls(failed=false){
  $('recover-project').textContent=recovering?'正在保存恢复副本…':'恢复为独立项目';
  $('retry-save').disabled=recovering||!lock;
  $('takeover').disabled=recovering;
+ syncWorkspaceChrome(failed);
 }
 function setState(state,revision,error){
  const latest=core?.getDocument().revision;
@@ -73,7 +80,7 @@ function retryWaitingLease(waiting){
    if(!acquired){scheduleLeaseWait(waiting);return;}
    const record=await store.get(waiting.id);
    if(!current()||await preserveDraft()||!current()){stopLeaseWait(waiting);return;}
-   if(!record||record.deletedAt){stopLeaseWait(waiting);$('save-state').textContent='只读 · 项目已不存在或已移入回收站，当前内容仍可导出备份。';return;}
+   if(!record||record.deletedAt){stopLeaseWait(waiting);$('save-state').textContent='只读 · 项目已不存在或已移入回收站，当前内容仍可导出备份。';syncWorkspaceChrome();return;}
    new DocumentCore(record.document); // Validate before retiring the visible snapshot.
    stopLeaseWait(waiting);clearCurrent();
    const lease=acquired;acquired=null;activating=true; // activateProject owns the new lease from here.
@@ -81,7 +88,7 @@ function retryWaitingLease(waiting){
    notify('写入权已恢复，已读取最新保存的内容。');
   }catch(error){
    if(activating)notify('写入权已取得，但重新打开项目失败，请返回工作台重试：'+error.message,true);
-   else if(current()){$('save-state').textContent='只读 · 暂时无法检查写入权，稍后重试；可主动接管。';scheduleLeaseWait(waiting);}
+   else if(current()){$('save-state').textContent='只读 · 暂时无法检查写入权，稍后重试；可主动接管。';syncWorkspaceChrome();scheduleLeaseWait(waiting);}
    else if(leaseWait===waiting)stopLeaseWait(waiting);
   }finally{if(acquired)await store.release(acquired).catch(()=>{});}
  });
@@ -104,10 +111,11 @@ async function renewCurrentLock(){
  }
 }
 function startHeartbeat(){clearInterval(heartbeat);if(lock)heartbeat=setInterval(renewCurrentLock,5000);}
-function repaint(){const doc=core.getDocument();$('project-title').value=doc.title;$('revision').textContent=`r${doc.revision} / ${doc.slides.length} 页`;try{editor?.update?.(doc);}catch(error){notify('编辑器预览更新失败，文档仍保留：'+error.message,true);}}
+function repaint(){const doc=core.getDocument();$('project-title').value=doc.title;$('revision').textContent=`r${doc.revision} / ${doc.slides.length} 页`;try{editor?.update?.(doc);syncWorkspaceChrome();}catch(error){notify('编辑器预览更新失败，文档仍保留：'+error.message,true);}}
 function edit(operations,expectedRevision=core?.getDocument().revision){if(closing&&!drainingEditor)throw new Error('项目正在切换，当前编辑已停止');if(!core||!lock)throw new Error('当前项目只读，请先获取写入权');const result=core.edit(operations,{expectedRevision});autosave.schedule(core.getDocument());repaint();return result;}
 function clearCurrent(){
  stopLeaseWait();
+ document.body.classList.remove('editor-integrated','editor-attention');
  clearInterval(heartbeat);
  // Invalidate callbacks before calling a potentially re-entrant adapter destroy().
  session++;
@@ -152,7 +160,7 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
  refreshRecoveryControls();
  let editorValid=true;
  const scoped=fn=>(...args)=>{if(!editorValid||!active()||(closing&&!drainingEditor))throw new Error('编辑器会话已失效');return fn(...args);};
- try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:()=>exportProject(),onHome:()=>home(),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
+ try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:format=>format==='json'?exportJSONBackup():exportProject(undefined,{audience:format==='audience'}),onHome:()=>home(),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
  catch(error){editorValid=false;$('editor-mount').textContent='编辑器加载失败，项目仍保留，可导出备份。'+error.message;editor=null;notify('编辑器加载失败：'+error.message,true);}
  repaint();startHeartbeat();if(waitForLease&&!lock)startLeaseWait();return core.getDocument();
 }

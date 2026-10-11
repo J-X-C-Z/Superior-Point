@@ -1,6 +1,7 @@
   // Integration-only bridge. This code lives inside the preserved editor closure.
   // Data enters only as structured-cloned JSON; imported HTML is never evaluated.
   const spBridgeChannel='__SP_BRIDGE_CHANNEL__';
+  let spBridgeWorkspaceState=null;
   let spBridgeHistory={canUndo:false,canRedo:false};
   let spBridgeStarted=false,spBridgeReadOnly=true,spBridgeRevision=0,spBridgeEpoch=0;
   let spBridgeBaseline=null,spBridgeLatest='',spBridgeSending=null,spBridgeQueue=[],spBridgeSequence=0;
@@ -14,8 +15,10 @@
     // A pending commit is already isolated in the snapshot queue. Blocking input
     // here would silently swallow real keystrokes between postMessage and ack.
     window.__SPEmbeddedGate.locked=!spBridgeStarted||spBridgeReadOnly||!!spBridgeFailure;
-    const status=$('#save-status');if(status)status.textContent=spBridgeFailure?'修改未提交 · 已保留恢复数据':spBridgeReadOnly?'只读 · 写入权由工作台管理':pending?'正在提交修改…':'修改已交给工作台 · 保存状态见上方';
-    $('#save-indicator')?.classList.toggle('unsaved',pending);
+    const status=$('#save-status');if(status)status.textContent=spBridgeFailure?'修改未提交 · 已保留恢复数据':spBridgeReadOnly?'只读 · 写入权由工作台管理':pending?'正在提交修改…':spBridgeWorkspaceState?.text||'正在读取保存状态…';
+    if(status){status.dataset.failed=String(!!spBridgeFailure||!!spBridgeWorkspaceState?.failed);status.title=status.textContent;}
+    $('#save-indicator')?.classList.toggle('unsaved',pending||!!spBridgeWorkspaceState?.failed);
+    const details=document.querySelector('.sp-workspace-details');if(details){details.textContent=spBridgeWorkspaceState?.details||'';details.hidden=!details.textContent;}
     const blocker=$('#sp-candidate-lock');
     if(blocker){blocker.hidden=!spBridgeReadOnly;blocker.textContent=spBridgeFailure?'修改未提交，已保留恢复数据。请用上方恢复或备份。':'当前项目只读。请在上方工作台获取写入权。';}
     document.documentElement.dataset.spCandidatePending=String(pending);
@@ -23,6 +26,8 @@
   function spBridgeUnavailable(){toast('请使用上方项目工作台管理、导入或备份项目。候选编辑器不单独保存项目。',true);return true;}
   function spBridgeAction(action){
     if(!spBridgeStarted||spBridgeReadOnly)return true;
+    if(action==='sp-workspace-home'){spBridgeCommand('home');return true;}
+    if(action==='sp-workspace-json'||action==='sp-workspace-audience'){spBridgeCommand('export',{format:action==='sp-workspace-json'?'json':'audience'});return true;}
     if(action==='v10-export-package'){toast('ZIP 项目包尚未接入候选工作台。请先使用上方 HTML 导出或 JSON 备份。',true);return true;}
     if(action==='export-pptx')toast('将沿用原编辑器的 PPTX 导出；本轮尚未完成其格式兼容验收。');
     if(['v10-file-hub','v10-recent','v10-create-open','new-deck','sp39-new'].includes(action)){spBridgeCommand('home');return true;}
@@ -158,6 +163,8 @@
     const banner=document.createElement('div');banner.id='sp-candidate-lock';banner.hidden=true;
     Object.assign(banner.style,{position:'fixed',bottom:'36px',left:'50%',transform:'translateX(-50%)',zIndex:99999,padding:'12px 18px',background:'#fff3cd',border:'1px solid #d9aa32',borderRadius:'8px',fontSize:'12px',pointerEvents:'none'});document.body.append(banner);
     window.SPEditorCandidate=Object.freeze({getSnapshot:()=>spBridgeClone(deck),flush:spBridgeFlush,renderLegacyHTML:spBridgeRenderLegacyHTML,getState:()=>({revision:spBridgeRevision,readOnly:spBridgeReadOnly,pending:!!spBridgeSending||!!spBridgeQueue.length,epoch:spBridgeEpoch})});
+    document.addEventListener('click',event=>{const menu=document.querySelector('.sp-workspace-share');if(menu&&(!menu.contains(event.target)||event.target.closest('[data-action]')))menu.open=false;});
+    document.addEventListener('keydown',event=>{const menu=document.querySelector('.sp-workspace-share');if(event.key==='Escape'&&menu?.open){menu.open=false;menu.querySelector('summary').focus();}});
     document.addEventListener('compositionstart',()=>{spBridgeComposing=true;clearTimeout(autosaveTimer);},true);
     document.addEventListener('compositionend',()=>{spBridgeComposing=false;spBridgeScheduleAutosave();},true);
     spBridgePost('ready',{version:'v0.39-integrated-mimo'});
@@ -172,11 +179,13 @@
         deck=spBridgeValidate(message.project);spBridgeReadOnly=!!message.readOnly;spBridgeRevision=message.revision;spBridgeEpoch=message.epoch;
         sp39Bind();
         v9LoadPrefs();v19RestorePrefs();v9ApplyLayout();v7SetUIMotion(!matchMedia('(prefers-reduced-motion: reduce)').matches);renderStaticIcons();
+        OPTIONS.showNotes=false;
         bindEvents();v17BindEvents();v18BindEvents();v19Bind();spBridgeStarted=true;
         spBridgeApply(deck,message);v8OnViewportChange();sp39UIState();
         if(!window.JSZip||!window.PptxGenJS)warn('基础编辑可用；部分 PPTX 导入/导出依赖未加载。项目导入和保存请使用上方工作台。');
         if(requestId)spBridgePost('response',{requestId,value:true});return;
       }
+      if(type==='workspaceState'){spBridgeWorkspaceState=message.state;spBridgeStatus();return;}
       if(!spBridgeStarted)throw Error('候选编辑器尚未初始化');
       if(type==='ack'){
         if(message.epoch!==spBridgeEpoch||message.sequence!==spBridgeSending?.sequence)return;

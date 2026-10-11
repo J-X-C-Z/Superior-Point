@@ -73,6 +73,18 @@ patches.push('parent undo controls');
 replace('guard async picture insertion',sourceBetween('  async function addPicture(file,at=null,options={}){','  // Export editable PowerPoint.'),'async function addPicture(file,at=null,options={}){return spBridgeInsertPicture(file,at,options); }');
 replace('guard async picture replacement',sourceBetween('  async function replacePicture(file){','  async function addPicture(file,at=null,options={}){'),'async function replacePicture(file){return spBridgeReplacePicture(file); }');
 replace('stage picture batch before one commit',sourceBetween("    $('#picture-upload').addEventListener('change',async e=>{","    $('#media-upload').addEventListener('change',"),"$('#picture-upload').addEventListener('change',e=>{const files=[...(e.target.files||[])].slice(0,6);e.target.value='';spBridgeInsertPictures(files);});");
+// Compact workspace chrome reuses the editor's file commands and responsive toolbar.
+replace('workspace home', '<div class="brandmark" aria-label="Superior Point">', '<button class="tool-compact sp-workspace-home" data-action="sp-workspace-home" title="返回工作台" aria-label="返回工作台">←</button><div class="brandmark" aria-label="Superior Point">');
+replace('workspace share menu', '<div class="sp-header-actions" aria-label="文件和演示快捷操作">', `<details class="sp-workspace-share"><summary>分享 ↗</summary><div><button data-action="sp-workspace-audience">观众 HTML <small>仅放映，不含备注与批注</small></button><button data-action="export-reveal">备份 HTML <small>含完整项目、备注与批注</small></button><button data-action="sp-workspace-json">备份 JSON <small>完整项目数据</small></button><p class="sp-workspace-details" hidden></p></div></details><div class="sp-header-actions" aria-label="文件和演示快捷操作">`);
+const patchedFileRibbon=html.slice(html.indexOf("    if(tab==='文件')html=["),html.indexOf("    if(tab==='开始' && v8IsMobile())")).trim();
+replace('workspace file commands',patchedFileRibbon,`    if(tab==='文件')html=[
+      group('项目',tool('工作台','folder-open','sp-workspace-home')+tool('新建','new-file','v10-create-open')+tool('打开','folder-open','open')+tool('保存','save','save-json')),
+      group('备份与分享',tool('备份 HTML','download','export-reveal')+tool('备份 JSON','download','sp-workspace-json')+tool('观众 HTML','play','sp-workspace-audience')),
+      group('其他格式',tool('PPTX','film','export-pptx')+tool('当前页 PNG','image','export-png')+tool('当前页 SVG','image','export-svg')+tool('打印 / PDF','film','export-print')),
+      group('帮助',tool('上手指南','info','sp39-guide')+tool('完整 HTML','download','sp39-export-editable')+\`<span class="ribbon-hint">备份含备注、批注及历史；分享版仅供观众放映。</span>\`)
+    ].join('');`);
+replace('compact workspace styles','\n</body>',`<style id="sp-workspace-css">${await read('tools/editor-workspace.css')}</style>\n</body>`);
+html=html.replaceAll('保存状态以上方工作台为准','保存状态见文稿标题下方').replaceAll('观众分享版请在上方工作台另行导出','观众分享版请在分享菜单导出').replaceAll('观众分享版在上方工作台另行导出','观众分享版在分享菜单导出').replaceAll('上方工作台另行导出','分享菜单导出').replaceAll('上方工作台','工作台').replaceAll('上方按钮','文件选项卡').replaceAll('请以上方状态为准','请以文稿标题下方状态为准');
 const bridge=await read('tools/editor-bridge.inc.js');
 const pictures=await read('tools/editor-v038-image.inc.js');
 // Reuse the canonical raster byte inspector rather than a divergent iframe copy.

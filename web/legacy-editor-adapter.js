@@ -16,7 +16,7 @@ export function createLegacyEditorAdapter({toLegacyDocument=canonicalToEditor,co
   iframe.className='sp-legacy-editor-frame';iframe.title='SuperiorPoint v0.39 集成编辑器';
   iframe.setAttribute('sandbox','allow-scripts allow-downloads');
   iframe.setAttribute('referrerpolicy','no-referrer');
-  Object.assign(iframe.style,{width:'100%',height:'100%',minHeight:'680px',display:'block',border:'0',background:'#f7f8fb'});
+  Object.assign(iframe.style,{width:'100%',height:'100%',minHeight:'0',display:'block',border:'0',background:'#f7f8fb'});
   const send=(type,data={})=>{
    if(destroyed)throw new Error('编辑器会话已关闭');
    iframe.contentWindow.postMessage({spCandidate:1,channel,type,...data},'*');
@@ -81,7 +81,7 @@ export function createLegacyEditorAdapter({toLegacyDocument=canonicalToEditor,co
     }
     if(message.type==='home'){await context.onHome?.();return;}
     if(message.type==='save'){
-     await context.onSave?.();notice('保存请求已交给工作台，请以上方状态为准。',false);return;
+     await context.onSave?.();notice('已保存到本地。',false);return;
     }
     if(message.type==='import'){
      const callback=context.onImportFile||onImportFile;
@@ -109,6 +109,7 @@ export function createLegacyEditorAdapter({toLegacyDocument=canonicalToEditor,co
     if(handling||!initialized||rejectedSnapshot)return;
     epoch++;send('update',projectState());
    },
+   setWorkspaceState(state){if(initialized&&!destroyed)send('workspaceState',{state});},
    setReadOnly(value){readOnly=rejectedSnapshot?true:!!value;if(initialized&&!destroyed)send('readOnly',{value:readOnly});},
    flush(){return ready.then(()=>{if(recoveryError)throw recoveryError;return rpc('flush');});},
    getRecoveryDocument(){return rejectedSnapshot?editorToCanonical(detached(rejectedSnapshot),{baseDocument:latest}):null;},

@@ -14,3 +14,16 @@ body.editor-open .sp-legacy-editor-frame{min-height:540px!important}
 body.editor-open .recovery-note,body.editor-open .import-status{margin:4px 0;padding:6px 10px;font-size:11px}
 
 .export-privacy-note{margin:4px 0 7px;font-size:11px;color:#795a30}
+
+/* Normal editing uses one native header. Recovery controls remain outside the read-only frame. */
+body.editor-open.editor-integrated{height:100dvh;min-height:0;overflow:hidden}
+body.editor-open.editor-integrated main{display:flex;flex-direction:column;padding:0;min-height:0}
+body.editor-integrated #workspace-view{display:flex;flex-direction:column;flex:1;min-height:0}
+body.editor-integrated #editor-mount{flex:1;height:auto;min-height:0}
+body.editor-integrated .sp-legacy-editor-frame{min-height:0!important}
+body.editor-integrated .document-toolbar,body.editor-integrated .export-privacy-note,
+body.editor-integrated .recovery-note,body.editor-integrated:not(.editor-attention) .save-row{display:none}
+body.editor-integrated.editor-attention .save-row{padding:7px 12px;background:#ECD9CA;color:#703717;border-bottom:1px solid #D0D5CC}
+body.editor-integrated.editor-attention .document-toolbar{display:flex;padding:5px 12px 0;background:#ECD9CA}
+body.editor-integrated.editor-attention .document-toolbar>:not(#back-home){display:none}
+body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11px}

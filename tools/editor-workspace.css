@@ -1,0 +1,23 @@
+/* MiMo-inspired 2.0 Workspace: light chrome, semantic accents, content first. */
+:root{--rth-canvas:#f6f5f1;--rth-surface:#fff;--rth-raised:#ebede7;--rth-ink:#17201b;--rth-muted:#5b675f;--rth-rule:#d0d5cc;--rth-accent:#96512f;--rth-action:#1d2a23;--rth-action-ink:#fff;--rth-focus:#315c9c}
+:root[data-rth-mode=dark]{--rth-canvas:#111814;--rth-surface:#18221c;--rth-raised:#233129;--rth-ink:#f0f3ec;--rth-muted:#b0bdaf;--rth-rule:#3c5143;--rth-accent:#e3af86;--rth-action:#edf1e8;--rth-action-ink:#152019;--rth-focus:#a7c6ff}
+body[data-sp-design=mimo] .app-header{height:48px;min-height:48px;padding:0 12px;gap:9px}
+body[data-sp-design=mimo] .brandmark,body[data-sp-design=mimo] .header-divider,body[data-sp-design=mimo] .sp-header-actions>[data-action=sp39-new],body[data-sp-design=mimo] .sp-header-actions>[data-action=open],body[data-sp-design=mimo] .sp-header-actions>.sp-header-save,body[data-sp-design=mimo] .sp-header-actions>.export-button,body[data-sp-design=mimo] .sp-header-more-wrap,body[data-sp-design=mimo] .sp-header-actions-divider{display:none}
+body[data-sp-design=mimo] .document-area{flex:1;min-width:80px;max-width:none}
+body[data-sp-design=mimo] .document-area input{width:100%;font-size:12px}
+body[data-sp-design=mimo] .document-sub{font-size:9px}
+body[data-sp-design=mimo] .sp-command-caption{display:none}
+body[data-sp-design=mimo] #ribbon{height:76px;padding-top:4px;padding-bottom:5px}
+body[data-sp-design=mimo] .tab-strip{height:32px}
+body[data-sp-design=mimo] .canvas-zone{padding:16px 20px}
+body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)}
+.sp-workspace-share{position:relative;order:5;flex:none;font-size:11px}
+.sp-workspace-share summary{cursor:pointer;padding:7px 10px;border:1px solid var(--rth-rule);border-radius:5px;list-style:none;color:var(--rth-ink)}
+.sp-workspace-share summary::-webkit-details-marker{display:none}
+.sp-workspace-share>div{position:absolute;top:36px;right:0;width:245px;padding:6px;z-index:900;background:var(--rth-surface);border:1px solid var(--rth-rule);border-radius:7px;box-shadow:0 8px 24px #0002}
+.sp-workspace-share button{display:block;width:100%;text-align:left;padding:10px;border:0;border-radius:4px;background:transparent;color:var(--rth-ink);font-size:12px}
+.sp-workspace-share button:hover{background:var(--rth-raised)}
+.sp-workspace-share small{display:block;margin-top:4px;color:var(--rth-muted);font-size:10px}
+@media(max-width:820px){body[data-sp-design=mimo] .app-header{height:48px;min-height:48px}.sp-workspace-share{order:0}.sp-workspace-share>div{right:-35px}.sp-workspace-home{flex:none}}
+
+.sp-workspace-details{margin:5px 10px;padding-top:9px;border-top:1px solid var(--rth-rule);color:var(--rth-muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere}

@@ -35,6 +35,19 @@ body.editor-open .sp-legacy-editor-frame{min-height:540px!important}
 body.editor-open .recovery-note,body.editor-open .import-status{margin:4px 0;padding:6px 10px;font-size:11px}
 
 .export-privacy-note{margin:4px 0 7px;font-size:11px;color:#795a30}
+
+/* Normal editing uses one native header. Recovery controls remain outside the read-only frame. */
+body.editor-open.editor-integrated{height:100dvh;min-height:0;overflow:hidden}
+body.editor-open.editor-integrated main{display:flex;flex-direction:column;padding:0;min-height:0}
+body.editor-integrated #workspace-view{display:flex;flex-direction:column;flex:1;min-height:0}
+body.editor-integrated #editor-mount{flex:1;height:auto;min-height:0}
+body.editor-integrated .sp-legacy-editor-frame{min-height:0!important}
+body.editor-integrated .document-toolbar,body.editor-integrated .export-privacy-note,
+body.editor-integrated .recovery-note,body.editor-integrated:not(.editor-attention) .save-row{display:none}
+body.editor-integrated.editor-attention .save-row{padding:7px 12px;background:#ECD9CA;color:#703717;border-bottom:1px solid #D0D5CC}
+body.editor-integrated.editor-attention .document-toolbar{display:flex;padding:5px 12px 0;background:#ECD9CA}
+body.editor-integrated.editor-attention .document-toolbar>:not(#back-home){display:none}
+body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11px}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
 <main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
@@ -1540,6 +1553,12 @@ function v24OfflineExportBootstrap(width,height){
     clearTimeout(notifyTimer);
     notifyTimer = setTimeout(() => $("notification").hidden = true, 6500);
   }
+  function syncWorkspaceChrome(failed = false) {
+    const attention = !!core && (!lock || failed || !!autosave?.lastError || !!recoveryError || recovering);
+    document.body.classList.toggle("editor-integrated", !!editor?.setWorkspaceState);
+    document.body.classList.toggle("editor-attention", attention);
+    editor?.setWorkspaceState?.({ text: $("save-state").textContent, failed: attention, revision: core?.getDocument().revision, details: [$("recovery-note").textContent, $("import-note").textContent].filter(Boolean).join(" ") });
+  }
   function refreshRecoveryControls(failed = false) {
     $("backup-json").hidden = false;
     $("recover-project").hidden = !core || !failed && !!lock && !autosave?.lastError && !recoveryError;
@@ -1547,6 +1566,7 @@ function v24OfflineExportBootstrap(width,height){
     $("recover-project").textContent = recovering ? "\u6B63\u5728\u4FDD\u5B58\u6062\u590D\u526F\u672C\u2026" : "\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE";
     $("retry-save").disabled = recovering || !lock;
     $("takeover").disabled = recovering;
+    syncWorkspaceChrome(failed);
   }
   function setState(state, revision, error) {
     const latest = core?.getDocument().revision;
@@ -1627,6 +1647,7 @@ function v24OfflineExportBootstrap(width,height){
         if (!record || record.deletedAt) {
           stopLeaseWait(waiting);
           $("save-state").textContent = "\u53EA\u8BFB \xB7 \u9879\u76EE\u5DF2\u4E0D\u5B58\u5728\u6216\u5DF2\u79FB\u5165\u56DE\u6536\u7AD9\uFF0C\u5F53\u524D\u5185\u5BB9\u4ECD\u53EF\u5BFC\u51FA\u5907\u4EFD\u3002";
+          syncWorkspaceChrome();
           return;
         }
         new DocumentCore(record.document);
@@ -1641,6 +1662,7 @@ function v24OfflineExportBootstrap(width,height){
         if (activating) notify("\u5199\u5165\u6743\u5DF2\u53D6\u5F97\uFF0C\u4F46\u91CD\u65B0\u6253\u5F00\u9879\u76EE\u5931\u8D25\uFF0C\u8BF7\u8FD4\u56DE\u5DE5\u4F5C\u53F0\u91CD\u8BD5\uFF1A" + error.message, true);
         else if (current()) {
           $("save-state").textContent = "\u53EA\u8BFB \xB7 \u6682\u65F6\u65E0\u6CD5\u68C0\u67E5\u5199\u5165\u6743\uFF0C\u7A0D\u540E\u91CD\u8BD5\uFF1B\u53EF\u4E3B\u52A8\u63A5\u7BA1\u3002";
+          syncWorkspaceChrome();
           scheduleLeaseWait(waiting);
         } else if (leaseWait === waiting) stopLeaseWait(waiting);
       } finally {
@@ -1679,6 +1701,7 @@ function v24OfflineExportBootstrap(width,height){
     $("revision").textContent = `r${doc.revision} / ${doc.slides.length} \u9875`;
     try {
       editor?.update?.(doc);
+      syncWorkspaceChrome();
     } catch (error) {
       notify("\u7F16\u8F91\u5668\u9884\u89C8\u66F4\u65B0\u5931\u8D25\uFF0C\u6587\u6863\u4ECD\u4FDD\u7559\uFF1A" + error.message, true);
     }
@@ -1693,6 +1716,7 @@ function v24OfflineExportBootstrap(width,height){
   }
   function clearCurrent() {
     stopLeaseWait();
+    document.body.classList.remove("editor-integrated", "editor-attention");
     clearInterval(heartbeat);
     session++;
     const previousEditor = editor;
@@ -1788,7 +1812,7 @@ function v24OfflineExportBootstrap(width,height){
       return fn(...args);
     };
     try {
-      editor = await mountEditor({ container: $("editor-mount"), document: core.getDocument(), readOnly: !lock || closing, onEdit: scoped(edit), onUndo: scoped(undo), onRedo: scoped(redo), onSave: scoped(() => autosave.flush()), getHistoryState: () => ({ canUndo: core?.canUndo ?? false, canRedo: core?.canRedo ?? false }), onImportFile: importFile, onExport: () => exportProject(), onHome: () => home(), onCommitRejected: (error) => {
+      editor = await mountEditor({ container: $("editor-mount"), document: core.getDocument(), readOnly: !lock || closing, onEdit: scoped(edit), onUndo: scoped(undo), onRedo: scoped(redo), onSave: scoped(() => autosave.flush()), getHistoryState: () => ({ canUndo: core?.canUndo ?? false, canRedo: core?.canRedo ?? false }), onImportFile: importFile, onExport: (format) => format === "json" ? exportJSONBackup() : exportProject(void 0, { audience: format === "audience" }), onHome: () => home(), onCommitRejected: (error) => {
         if (!active()) return;
         stopLeaseWait();
         recoveryError = error;
@@ -2425,16 +2449,16 @@ function v24OfflineExportBootstrap(width,height){
 <body data-sp-design="mimo">
 <div class="app-shell" id="app">
   <header class="app-header">
-    <div class="brandmark" aria-label="Superior Point"><div class="brand-icon"><span>SP</span></div><div class="brand-wordmark"><b>Superior<span>Point</span></b><small>MIMO / WORKSPACE \xB7 V0.39</small></div></div>
+    <button class="tool-compact sp-workspace-home" data-action="sp-workspace-home" title="\u8FD4\u56DE\u5DE5\u4F5C\u53F0" aria-label="\u8FD4\u56DE\u5DE5\u4F5C\u53F0">\u2190</button><div class="brandmark" aria-label="Superior Point"><div class="brand-icon"><span>SP</span></div><div class="brand-wordmark"><b>Superior<span>Point</span></b><small>MIMO / WORKSPACE \xB7 V0.39</small></div></div>
     <div class="header-divider"></div>
     <div class="document-area"><input id="document-title" value="\u672A\u547D\u540D\u6F14\u793A\u6587\u7A3F" aria-label="\u6F14\u793A\u6587\u7A3F\u540D\u79F0" spellcheck="false"><div class="document-sub"><span id="save-indicator" class="status-dot"></span><span id="save-status">\u5DF2\u51C6\u5907\u5C31\u7EEA</span><span class="middle-dot">\xB7</span><span>\u5B58\u50A8\u5728\u672C\u5730</span></div></div>
     <span class="engine-chip" title="\u4F7F\u7528 reveal.js 6 \u7684\u6F14\u793A\u80FD\u529B">ENGINE / REVEAL.JS <b>6</b></span>
     <div class="header-spacer"></div><button id="sp39-mode" data-action="sp39-mode" title="\u5207\u6362\u754C\u9762\u660E\u6697\u6A21\u5F0F" aria-label="\u5207\u6362\u754C\u9762\u660E\u6697\u6A21\u5F0F" aria-pressed="false">\u25D0</button>
-    <div class="sp-header-actions" aria-label="\u6587\u4EF6\u548C\u6F14\u793A\u5FEB\u6377\u64CD\u4F5C"><button class="header-button secondary" data-action="sp39-new" title="\u65B0\u5EFA\u7A7A\u767D\u6F14\u793A\u6587\u7A3F">\uFF0B \u65B0\u5EFA</button>
+    <details class="sp-workspace-share"><summary>\u5206\u4EAB \u2197</summary><div><button data-action="sp-workspace-audience">\u89C2\u4F17 HTML <small>\u4EC5\u653E\u6620\uFF0C\u4E0D\u542B\u5907\u6CE8\u4E0E\u6279\u6CE8</small></button><button data-action="export-reveal">\u5907\u4EFD HTML <small>\u542B\u5B8C\u6574\u9879\u76EE\u3001\u5907\u6CE8\u4E0E\u6279\u6CE8</small></button><button data-action="sp-workspace-json">\u5907\u4EFD JSON <small>\u5B8C\u6574\u9879\u76EE\u6570\u636E</small></button><p class="sp-workspace-details" hidden></p></div></details><div class="sp-header-actions" aria-label="\u6587\u4EF6\u548C\u6F14\u793A\u5FEB\u6377\u64CD\u4F5C"><button class="header-button secondary" data-action="sp39-new" title="\u65B0\u5EFA\u7A7A\u767D\u6F14\u793A\u6587\u7A3F">\uFF0B \u65B0\u5EFA</button>
       <button class="header-button secondary sp-command-button" data-action="v7-command" title="\u641C\u7D22\u5168\u90E8\u529F\u80FD (Ctrl / \u2318 + K)" aria-label="\u641C\u7D22\u529F\u80FD"><span class="sp-search-symbol" aria-hidden="true">\u2315</span><span class="sp-command-caption">\u641C\u7D22</span></button>
       <span class="sp-header-actions-divider" aria-hidden="true"></span>
       <button class="header-button secondary" data-action="open" title="\u6253\u5F00 PPTX / \u9879\u76EE JSON / \u672C\u5E94\u7528\u5BFC\u51FA\u7684 Reveal HTML"><span data-icon="folder-open"></span>\u6253\u5F00</button>
-      <button class="header-button secondary sp-header-save" data-action="save-json" title="\u4FDD\u5B58\u5230\u4E0A\u65B9\u5DE5\u4F5C\u53F0 (Ctrl / \u2318 + S)\uFF1B\u4E0B\u8F7D JSON \u5907\u4EFD\u8BF7\u7528\u4E0A\u65B9\u6309\u94AE"><span data-icon="save"></span>\u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0</button>
+      <button class="header-button secondary sp-header-save" data-action="save-json" title="\u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0 (Ctrl / \u2318 + S)\uFF1B\u4E0B\u8F7D JSON \u5907\u4EFD\u8BF7\u7528\u6587\u4EF6\u9009\u9879\u5361"><span data-icon="save"></span>\u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0</button>
       <button class="header-button secondary export-button" data-action="export-reveal" title="\u5BFC\u51FA\u5B8C\u6574\u53EF\u91CD\u7F16\u8F91 HTML\uFF1B\u5305\u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF0C\u4E0D\u662F\u89C2\u4F17\u8131\u654F\u7248"><span data-icon="download"></span>\u5BFC\u51FA HTML</button>
       <div class="sp-header-more-wrap">
         <button class="header-button secondary sp-more-trigger" data-sp-ui="header-more" aria-haspopup="menu" aria-expanded="false" aria-controls="sp-header-menu" title="\u66F4\u591A\u6587\u4EF6\u64CD\u4F5C">\xB7\xB7\xB7 <span class="sp-caret" aria-hidden="true">\u25BE</span></button>
@@ -6255,12 +6279,11 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     if(tab==='\u8868\u683C\u8BBE\u8BA1'||tab==='\u8868\u683C\u5E03\u5C40')html=sp34TableRibbon(tab);
     if(tab==='\u56FE\u8868\u8BBE\u8BA1')html=sp34ChartRibbon();
     if(tab==='\u56FE\u7247\u683C\u5F0F'&&obj?.type==='image')html=sp33PictureRibbon();
-    if(tab==='\u6587\u4EF6')html=[
-      group('\u672C\u5730\u6587\u4EF6',tool('\u6587\u4EF6\u4E2D\u5FC3','folder-open','v10-file-hub')+tool('\u65B0\u5EFA','new-file','v10-create-open')+tool('\u6253\u5F00\u6587\u4EF6','folder-open','open')+tool('\u9879\u76EE\u5E93','layers','v10-recent')),
-      group('\u4FDD\u5B58\u4E0E\u7248\u672C',tool('\u4FDD\u5B58\u5230\u672C\u5730','save','v10-save-local')+tool('\u4FDD\u5B58\u5230\u78C1\u76D8','download','v10-save-disk')+tool('\u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0','save','save-json')+tool('\u521B\u5EFA\u526F\u672C','copy','v10-save-copy')+tool('\u5B58\u50A8\u7248\u672C','clock','v10-snapshot')),
-      group('\u5BFC\u5165',tool('\u4ECE\u5927\u7EB2\u751F\u6210','type','import-outline')+tool('\u9879\u76EE\u5305 ZIP','folder-open','v10-import-package')),
-      group('\u5BFC\u51FA',tool('\u9879\u76EE\u5305 ZIP','download','v10-export-package')+tool('\u5BFC\u51FA Reveal HTML','download','export-reveal')+tool('\u5BFC\u51FA PPTX','film','export-pptx')+tool('\u5F53\u524D\u9875 PNG','image','export-png')+tool('\u5F53\u524D\u9875 SVG','image','export-svg')+tool('\u6253\u5370 / PDF','film','export-print')),
-      group('\u6587\u4EF6\u4FE1\u606F',tool('\u5C5E\u6027\u4E0E\u7EDF\u8BA1','info','v10-info')+tool('\u6062\u590D\u7248\u672C','clock','v10-versions')+\`<span class="ribbon-hint">\u81EA\u52A8\u4FDD\u5B58\u662F\u6D4F\u89C8\u5668\u672C\u5730\u7F13\u5B58\uFF0C\u4E0D\u7B49\u4E8E\u4E0B\u8F7D\u5230\u78C1\u76D8\u3002\u8BF7\u5B9A\u671F\u5BFC\u51FA JSON \u6216\u9879\u76EE\u5305\u3002</span>\`)
+        if(tab==='\u6587\u4EF6')html=[
+      group('\u9879\u76EE',tool('\u5DE5\u4F5C\u53F0','folder-open','sp-workspace-home')+tool('\u65B0\u5EFA','new-file','v10-create-open')+tool('\u6253\u5F00','folder-open','open')+tool('\u4FDD\u5B58','save','save-json')),
+      group('\u5907\u4EFD\u4E0E\u5206\u4EAB',tool('\u5907\u4EFD HTML','download','export-reveal')+tool('\u5907\u4EFD JSON','download','sp-workspace-json')+tool('\u89C2\u4F17 HTML','play','sp-workspace-audience')),
+      group('\u5176\u4ED6\u683C\u5F0F',tool('PPTX','film','export-pptx')+tool('\u5F53\u524D\u9875 PNG','image','export-png')+tool('\u5F53\u524D\u9875 SVG','image','export-svg')+tool('\u6253\u5370 / PDF','film','export-print')),
+      group('\u5E2E\u52A9',tool('\u4E0A\u624B\u6307\u5357','info','sp39-guide')+tool('\u5B8C\u6574 HTML','download','sp39-export-editable')+\`<span class="ribbon-hint">\u5907\u4EFD\u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u5206\u4EAB\u7248\u4EC5\u4F9B\u89C2\u4F17\u653E\u6620\u3002</span>\`)
     ].join('');
     if(tab==='\u5F00\u59CB' && v8IsMobile())html=[
       group('\u9875\u9762',tool('\u65B0\u5EFA','plus','add-slide')+tool('\u590D\u5236\u9875\u9762','copy','v11-slide-duplicate')+tool('\u5168\u9009\u9875\u9762','layers','v11-slide-all')+tool('\u5220\u9664\u9875\u9762','trash','v11-slide-delete',{danger:true})+tool('\u65B0\u5EFA\u7AE0\u8282','layout','set-section')),
@@ -9854,7 +9877,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
       <button data-action="v10-new-noema" class="v10-template"><div class="v10-template-preview editorial"><span>TYPE<br>FIRST.</span><i></i></div><b>Noema \u793A\u4F8B</b><small>5 \u9875 \xB7 \u5B57\u4F53\u4E0E\u8282\u594F</small></button>
       <button data-action="v10-new-current" class="v10-template"><div class="v10-template-preview duplicate"><span>\uFF0B</span><i></i></div><b>\u4ECE\u5F53\u524D\u6587\u7A3F\u521B\u5EFA</b><small>\u5185\u5BB9\u526F\u672C \xB7 \u72EC\u7ACB\u4FDD\u5B58</small></button></div><p class="v10-smallprint">\u65B0\u5EFA\u524D\u4F1A\u5C1D\u8BD5\u4FDD\u5B58\u5F53\u524D\u9879\u76EE\u81F3\u672C\u5730\u9879\u76EE\u5E93\u3002\u6D4F\u89C8\u5668\u5B58\u50A8\u4E0D\u53EF\u7528\u65F6\uFF0C\u8BF7\u5148\u4E0B\u8F7D JSON\u3002</p>\`;
     }else if(v10View==='export'){
-      html=\`<div class="v10-section-lead"><div><span class="v10-eyebrow">SAVE / EXPORT</span><h3>\u8BA9\u9879\u76EE\u4FDD\u6301\u53EF\u7528<span class="v10-accent">.</span></h3><p>\u6D4F\u89C8\u5668\u672C\u5730\u4FDD\u5B58\u7528\u4E8E\u7EED\u4F5C\uFF1B\u4E0B\u8F7D\u6587\u4EF6\u7528\u4E8E\u957F\u671F\u4FDD\u5B58\u3001\u8FC1\u79FB\u548C\u5206\u4EAB\u3002</p></div></div><div class="v10-export-grid"><section class="v10-export-panel"><h4>01 / \u53EF\u7F16\u8F91\u6E90\u6587\u4EF6</h4><p>\u5B8C\u6574\u4FDD\u7559\u9879\u76EE\u6570\u636E\u3001\u5BF9\u8C61\u3001\u5907\u6CE8\u548C\u7F16\u8F91\u53C2\u6570\uFF0C\u9002\u5408\u540E\u7EED\u91CD\u65B0\u6253\u5F00\u3002</p>\${v10Action('\u4FDD\u5B58\u5230\u6D4F\u89C8\u5668','v10-save-local',false,'\u66F4\u65B0\u672C\u5730\u9879\u76EE\u7F13\u5B58')}\${v10Action('\u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0','save-json',true,'JSON \u5907\u4EFD\u8BF7\u4F7F\u7528\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u6309\u94AE')}\${v10Action('\u4FDD\u5B58\u5230\u6307\u5B9A\u78C1\u76D8\u6587\u4EF6','v10-save-disk',false,'\u4EC5\u9650\u652F\u6301\u6587\u4EF6\u8BBF\u95EE API \u7684\u6D4F\u89C8\u5668\uFF1B\u5426\u5219\u4E0B\u8F7D JSON')}\${v10Action('\u4E0B\u8F7D\u9879\u76EE\u5305 ZIP','v10-export-package',false,'JSON + \u6E05\u5355 + \u64CD\u4F5C\u8BF4\u660E')}\${v10Action('\u53E6\u5B58\u4E3A\u672C\u5730\u526F\u672C','v10-save-copy',false,'\u5F53\u524D\u7248\u672C\u590D\u5236\u6210\u65B0\u9879\u76EE')}</section><section class="v10-export-panel"><h4>02 / \u6F14\u793A\u4E0E\u4EA4\u4ED8</h4><p>\u5BFC\u51FA\u4E3A PowerPoint \u6216 Reveal HTML\uFF1B\u590D\u6742\u5BF9\u8C61\u7684\u517C\u5BB9\u6027\u4ECD\u9700\u68C0\u67E5\u3002</p>\${v10Action('PowerPoint .pptx','export-pptx',true,'\u57FA\u7840\u53EF\u7F16\u8F91 Office \u5BF9\u8C61')}\${v10Action('Reveal HTML','export-reveal',false,'\u8054\u7F51\u4F18\u5148 \xB7 \u65AD\u7F51\u57FA\u7840\u64AD\u653E')}\${v10Action('\u6253\u5370 HTML / PDF','export-print',false,'\u9759\u6001\u9875\u9762\u540E\u7EED\u7531\u6D4F\u89C8\u5668\u6253\u5370')}\${v10Action('\u5F53\u524D\u9875 PNG','export-png',false,'\u9002\u5408\u5206\u4EAB\u622A\u56FE')}\${v10Action('\u5F53\u524D\u9875 SVG','export-svg',false,'\u77E2\u91CF\u9759\u6001\u9875\u9762')}</section></div><p class="v10-smallprint">\u6CE8\u610F\uFF1A\u8F93\u51FA PPTX \u65F6\u4F1A\u53D1\u751F\u683C\u5F0F\u8F6C\u6362\uFF0C\u590D\u6742\u6BCD\u7248\u3001\u7279\u6548\u3001\u539F\u751F\u5F55\u5236\u7B49\u80FD\u529B\u76EE\u524D\u65E0\u6CD5\u65E0\u635F\u8FD8\u539F\u3002</p>\`;
+      html=\`<div class="v10-section-lead"><div><span class="v10-eyebrow">SAVE / EXPORT</span><h3>\u8BA9\u9879\u76EE\u4FDD\u6301\u53EF\u7528<span class="v10-accent">.</span></h3><p>\u6D4F\u89C8\u5668\u672C\u5730\u4FDD\u5B58\u7528\u4E8E\u7EED\u4F5C\uFF1B\u4E0B\u8F7D\u6587\u4EF6\u7528\u4E8E\u957F\u671F\u4FDD\u5B58\u3001\u8FC1\u79FB\u548C\u5206\u4EAB\u3002</p></div></div><div class="v10-export-grid"><section class="v10-export-panel"><h4>01 / \u53EF\u7F16\u8F91\u6E90\u6587\u4EF6</h4><p>\u5B8C\u6574\u4FDD\u7559\u9879\u76EE\u6570\u636E\u3001\u5BF9\u8C61\u3001\u5907\u6CE8\u548C\u7F16\u8F91\u53C2\u6570\uFF0C\u9002\u5408\u540E\u7EED\u91CD\u65B0\u6253\u5F00\u3002</p>\${v10Action('\u4FDD\u5B58\u5230\u6D4F\u89C8\u5668','v10-save-local',false,'\u66F4\u65B0\u672C\u5730\u9879\u76EE\u7F13\u5B58')}\${v10Action('\u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0','save-json',true,'JSON \u5907\u4EFD\u8BF7\u4F7F\u7528\u5DE5\u4F5C\u53F0\u6309\u94AE')}\${v10Action('\u4FDD\u5B58\u5230\u6307\u5B9A\u78C1\u76D8\u6587\u4EF6','v10-save-disk',false,'\u4EC5\u9650\u652F\u6301\u6587\u4EF6\u8BBF\u95EE API \u7684\u6D4F\u89C8\u5668\uFF1B\u5426\u5219\u4E0B\u8F7D JSON')}\${v10Action('\u4E0B\u8F7D\u9879\u76EE\u5305 ZIP','v10-export-package',false,'JSON + \u6E05\u5355 + \u64CD\u4F5C\u8BF4\u660E')}\${v10Action('\u53E6\u5B58\u4E3A\u672C\u5730\u526F\u672C','v10-save-copy',false,'\u5F53\u524D\u7248\u672C\u590D\u5236\u6210\u65B0\u9879\u76EE')}</section><section class="v10-export-panel"><h4>02 / \u6F14\u793A\u4E0E\u4EA4\u4ED8</h4><p>\u5BFC\u51FA\u4E3A PowerPoint \u6216 Reveal HTML\uFF1B\u590D\u6742\u5BF9\u8C61\u7684\u517C\u5BB9\u6027\u4ECD\u9700\u68C0\u67E5\u3002</p>\${v10Action('PowerPoint .pptx','export-pptx',true,'\u57FA\u7840\u53EF\u7F16\u8F91 Office \u5BF9\u8C61')}\${v10Action('Reveal HTML','export-reveal',false,'\u8054\u7F51\u4F18\u5148 \xB7 \u65AD\u7F51\u57FA\u7840\u64AD\u653E')}\${v10Action('\u6253\u5370 HTML / PDF','export-print',false,'\u9759\u6001\u9875\u9762\u540E\u7EED\u7531\u6D4F\u89C8\u5668\u6253\u5370')}\${v10Action('\u5F53\u524D\u9875 PNG','export-png',false,'\u9002\u5408\u5206\u4EAB\u622A\u56FE')}\${v10Action('\u5F53\u524D\u9875 SVG','export-svg',false,'\u77E2\u91CF\u9759\u6001\u9875\u9762')}</section></div><p class="v10-smallprint">\u6CE8\u610F\uFF1A\u8F93\u51FA PPTX \u65F6\u4F1A\u53D1\u751F\u683C\u5F0F\u8F6C\u6362\uFF0C\u590D\u6742\u6BCD\u7248\u3001\u7279\u6548\u3001\u539F\u751F\u5F55\u5236\u7B49\u80FD\u529B\u76EE\u524D\u65E0\u6CD5\u65E0\u635F\u8FD8\u539F\u3002</p>\`;
     }else if(v10View==='info'){
       const m=deck.metadata||{};
       html=\`<div class="v10-section-lead"><div><span class="v10-eyebrow">DOCUMENT / PROPERTIES</span><h3>\u5173\u4E8E\u8FD9\u4EFD\u6F14\u793A\u6587\u7A3F<span class="v10-accent">.</span></h3><p>\u540D\u79F0\u3001\u4F5C\u8005\u548C\u8BF4\u660E\u4F1A\u4FDD\u5B58\u5728\u9879\u76EE JSON \u4E2D\u3002</p></div></div><div class="v10-info-panel"><div class="v10-info-fields"><label>\u6F14\u793A\u6587\u7A3F\u540D\u79F0<input data-v10-name type="text" maxlength="160" value="\${safe(deck.name||'')}" placeholder="\u6F14\u793A\u6587\u7A3F\u540D\u79F0"></label><label>\u4F5C\u8005<input data-v10-meta="author" type="text" maxlength="100" value="\${safe(m.author||'')}" placeholder="\u8F93\u5165\u4F5C\u8005"></label><label>\u5173\u952E\u8BCD<input data-v10-meta="keywords" type="text" maxlength="200" value="\${safe(m.keywords||'')}" placeholder="\u591A\u4E2A\u5173\u952E\u8BCD\u7528\u9017\u53F7\u9694\u5F00"></label><label>\u5185\u5BB9\u7B80\u4ECB<textarea data-v10-meta="description" maxlength="1000" rows="4" placeholder="\u5199\u4E0B\u672C\u4EFD\u6F14\u793A\u6587\u7A3F\u7684\u4ECB\u7ECD\u2026">\${safe(m.description||'')}</textarea></label><small>\u9879\u76EE\u521B\u5EFA\u65F6\u95F4\uFF1A\${safe(String(m.createdAt||'\u672A\u8BB0\u5F55').replace('T',' ').slice(0,19))}</small></div><div class="v10-info-summary"><div class="v10-info-badge">\${safe(deck.name?.slice(0,2)||'SP')}</div><strong>\${safe(deck.name)}</strong><p>\u753B\u5E03\uFF1A\${Math.round(deck.width)} \xD7 \${Math.round(deck.height)}</p>\${v10StatsMarkup()}</div></div>\`;
@@ -10301,7 +10324,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     const c=frame('03','MOTION  /  \u4E3A\u53D9\u4E8B\u5B89\u6392\u8282\u594F');c.transition='morph';c.notes='\u672C\u793A\u4F8B\u5305\u542B\u5206\u6B65\u8FDB\u5165\u52A8\u753B\u3002\u9AD8\u7EA7 Auto-Animate \u9700\u8981\u6210\u529F\u52A0\u8F7D Reveal.js\u3002\u65AD\u7F51\u964D\u7EA7\u4E0D\u662F\u540C\u7B49\u6548\u679C\u3002';
     c.objects.push(makeText('\u8BA9\u53D8\u5316\u6709\u7406\u7531\u3002',74,165,1100,92,60,ink,true,{name:'\u52A8\u6548\u6807\u9898'}));
     for(let i=0;i<3;i++){const o=makeText(['\u5148\u7ED9\u51FA\u95EE\u9898\u3002','\u518D\u5C55\u5F00\u8BC1\u636E\u3002','\u6700\u540E\u7559\u4E0B\u7ED3\u8BBA\u3002'][i],80,315+i*85,1080,65,36,i===2?accent:ink,false,{name:'\u5206\u6B65 '+(i+1)});o.motionEffects=[v15ValidateEffect({kind:'entrance',effect:'fade',trigger:'click',step:i,duration:500,delay:0,easing:'ease-out'},0)];c.objects.push(o);}
-    const d=frame('04','DELIVER  /  \u4FDD\u7559\u7EE7\u7EED\u521B\u4F5C\u7684\u53EF\u80FD');d.notes='\u5907\u4EFD HTML \u542B\u5B8C\u6574\u9879\u76EE\u3001\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u89C2\u4F17\u5206\u4EAB\u7248\u5728\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u53E6\u884C\u5BFC\u51FA\uFF0C\u4EC5\u4F9B\u653E\u6620\u3002';d.objects.push(makeText('\u6F14\u793A\u662F\u7ED3\u679C\uFF0C\\n\u9879\u76EE\u662F\u8D77\u70B9\u3002',74,178,1080,186,63,ink,true,{name:'\u4EA4\u4ED8\u6807\u9898'}),makeText('JSON  \xB7  \u5B8C\u6574\u7F16\u8F91\u5907\u4EFD\\n\u5907\u4EFD HTML  \xB7  \u5B8C\u6574\u6570\u636E\u53EF\u91CD\u65B0\u7F16\u8F91\\n\u89C2\u4F17\u5206\u4EAB\u7248  \xB7  \u4E0A\u65B9\u5DE5\u4F5C\u53F0\u53E6\u884C\u5BFC\u51FA',78,426,1080,160,28,muted,false,{name:'\u4EA4\u4ED8\u8BF4\u660E'}));
+    const d=frame('04','DELIVER  /  \u4FDD\u7559\u7EE7\u7EED\u521B\u4F5C\u7684\u53EF\u80FD');d.notes='\u5907\u4EFD HTML \u542B\u5B8C\u6574\u9879\u76EE\u3001\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u89C2\u4F17\u5206\u4EAB\u7248\u5728\u5206\u4EAB\u83DC\u5355\u5BFC\u51FA\uFF0C\u4EC5\u4F9B\u653E\u6620\u3002';d.objects.push(makeText('\u6F14\u793A\u662F\u7ED3\u679C\uFF0C\\n\u9879\u76EE\u662F\u8D77\u70B9\u3002',74,178,1080,186,63,ink,true,{name:'\u4EA4\u4ED8\u6807\u9898'}),makeText('JSON  \xB7  \u5B8C\u6574\u7F16\u8F91\u5907\u4EFD\\n\u5907\u4EFD HTML  \xB7  \u5B8C\u6574\u6570\u636E\u53EF\u91CD\u65B0\u7F16\u8F91\\n\u89C2\u4F17\u5206\u4EAB\u7248  \xB7  \u5206\u4EAB\u83DC\u5355\u5BFC\u51FA',78,426,1080,160,28,muted,false,{name:'\u4EA4\u4ED8\u8BF4\u660E'}));
     fresh.slides=[a,b,c,d];return fresh;
   }
   function sp39ExportEditable(){return spBridgeExportHTML();
@@ -10358,6 +10381,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
   // Integration-only bridge. This code lives inside the preserved editor closure.
   // Data enters only as structured-cloned JSON; imported HTML is never evaluated.
   const spBridgeChannel='__SP_BRIDGE_CHANNEL__';
+  let spBridgeWorkspaceState=null;
   let spBridgeHistory={canUndo:false,canRedo:false};
   let spBridgeStarted=false,spBridgeReadOnly=true,spBridgeRevision=0,spBridgeEpoch=0;
   let spBridgeBaseline=null,spBridgeLatest='',spBridgeSending=null,spBridgeQueue=[],spBridgeSequence=0;
@@ -10371,8 +10395,10 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     // A pending commit is already isolated in the snapshot queue. Blocking input
     // here would silently swallow real keystrokes between postMessage and ack.
     window.__SPEmbeddedGate.locked=!spBridgeStarted||spBridgeReadOnly||!!spBridgeFailure;
-    const status=$('#save-status');if(status)status.textContent=spBridgeFailure?'\u4FEE\u6539\u672A\u63D0\u4EA4 \xB7 \u5DF2\u4FDD\u7559\u6062\u590D\u6570\u636E':spBridgeReadOnly?'\u53EA\u8BFB \xB7 \u5199\u5165\u6743\u7531\u5DE5\u4F5C\u53F0\u7BA1\u7406':pending?'\u6B63\u5728\u63D0\u4EA4\u4FEE\u6539\u2026':'\u4FEE\u6539\u5DF2\u4EA4\u7ED9\u5DE5\u4F5C\u53F0 \xB7 \u4FDD\u5B58\u72B6\u6001\u89C1\u4E0A\u65B9';
-    $('#save-indicator')?.classList.toggle('unsaved',pending);
+    const status=$('#save-status');if(status)status.textContent=spBridgeFailure?'\u4FEE\u6539\u672A\u63D0\u4EA4 \xB7 \u5DF2\u4FDD\u7559\u6062\u590D\u6570\u636E':spBridgeReadOnly?'\u53EA\u8BFB \xB7 \u5199\u5165\u6743\u7531\u5DE5\u4F5C\u53F0\u7BA1\u7406':pending?'\u6B63\u5728\u63D0\u4EA4\u4FEE\u6539\u2026':spBridgeWorkspaceState?.text||'\u6B63\u5728\u8BFB\u53D6\u4FDD\u5B58\u72B6\u6001\u2026';
+    if(status){status.dataset.failed=String(!!spBridgeFailure||!!spBridgeWorkspaceState?.failed);status.title=status.textContent;}
+    $('#save-indicator')?.classList.toggle('unsaved',pending||!!spBridgeWorkspaceState?.failed);
+    const details=document.querySelector('.sp-workspace-details');if(details){details.textContent=spBridgeWorkspaceState?.details||'';details.hidden=!details.textContent;}
     const blocker=$('#sp-candidate-lock');
     if(blocker){blocker.hidden=!spBridgeReadOnly;blocker.textContent=spBridgeFailure?'\u4FEE\u6539\u672A\u63D0\u4EA4\uFF0C\u5DF2\u4FDD\u7559\u6062\u590D\u6570\u636E\u3002\u8BF7\u7528\u4E0A\u65B9\u6062\u590D\u6216\u5907\u4EFD\u3002':'\u5F53\u524D\u9879\u76EE\u53EA\u8BFB\u3002\u8BF7\u5728\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u83B7\u53D6\u5199\u5165\u6743\u3002';}
     document.documentElement.dataset.spCandidatePending=String(pending);
@@ -10380,6 +10406,8 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
   function spBridgeUnavailable(){toast('\u8BF7\u4F7F\u7528\u4E0A\u65B9\u9879\u76EE\u5DE5\u4F5C\u53F0\u7BA1\u7406\u3001\u5BFC\u5165\u6216\u5907\u4EFD\u9879\u76EE\u3002\u5019\u9009\u7F16\u8F91\u5668\u4E0D\u5355\u72EC\u4FDD\u5B58\u9879\u76EE\u3002',true);return true;}
   function spBridgeAction(action){
     if(!spBridgeStarted||spBridgeReadOnly)return true;
+    if(action==='sp-workspace-home'){spBridgeCommand('home');return true;}
+    if(action==='sp-workspace-json'||action==='sp-workspace-audience'){spBridgeCommand('export',{format:action==='sp-workspace-json'?'json':'audience'});return true;}
     if(action==='v10-export-package'){toast('ZIP \u9879\u76EE\u5305\u5C1A\u672A\u63A5\u5165\u5019\u9009\u5DE5\u4F5C\u53F0\u3002\u8BF7\u5148\u4F7F\u7528\u4E0A\u65B9 HTML \u5BFC\u51FA\u6216 JSON \u5907\u4EFD\u3002',true);return true;}
     if(action==='export-pptx')toast('\u5C06\u6CBF\u7528\u539F\u7F16\u8F91\u5668\u7684 PPTX \u5BFC\u51FA\uFF1B\u672C\u8F6E\u5C1A\u672A\u5B8C\u6210\u5176\u683C\u5F0F\u517C\u5BB9\u9A8C\u6536\u3002');
     if(['v10-file-hub','v10-recent','v10-create-open','new-deck','sp39-new'].includes(action)){spBridgeCommand('home');return true;}
@@ -10515,6 +10543,8 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     const banner=document.createElement('div');banner.id='sp-candidate-lock';banner.hidden=true;
     Object.assign(banner.style,{position:'fixed',bottom:'36px',left:'50%',transform:'translateX(-50%)',zIndex:99999,padding:'12px 18px',background:'#fff3cd',border:'1px solid #d9aa32',borderRadius:'8px',fontSize:'12px',pointerEvents:'none'});document.body.append(banner);
     window.SPEditorCandidate=Object.freeze({getSnapshot:()=>spBridgeClone(deck),flush:spBridgeFlush,renderLegacyHTML:spBridgeRenderLegacyHTML,getState:()=>({revision:spBridgeRevision,readOnly:spBridgeReadOnly,pending:!!spBridgeSending||!!spBridgeQueue.length,epoch:spBridgeEpoch})});
+    document.addEventListener('click',event=>{const menu=document.querySelector('.sp-workspace-share');if(menu&&(!menu.contains(event.target)||event.target.closest('[data-action]')))menu.open=false;});
+    document.addEventListener('keydown',event=>{const menu=document.querySelector('.sp-workspace-share');if(event.key==='Escape'&&menu?.open){menu.open=false;menu.querySelector('summary').focus();}});
     document.addEventListener('compositionstart',()=>{spBridgeComposing=true;clearTimeout(autosaveTimer);},true);
     document.addEventListener('compositionend',()=>{spBridgeComposing=false;spBridgeScheduleAutosave();},true);
     spBridgePost('ready',{version:'v0.39-integrated-mimo'});
@@ -10529,11 +10559,13 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
         deck=spBridgeValidate(message.project);spBridgeReadOnly=!!message.readOnly;spBridgeRevision=message.revision;spBridgeEpoch=message.epoch;
         sp39Bind();
         v9LoadPrefs();v19RestorePrefs();v9ApplyLayout();v7SetUIMotion(!matchMedia('(prefers-reduced-motion: reduce)').matches);renderStaticIcons();
+        OPTIONS.showNotes=false;
         bindEvents();v17BindEvents();v18BindEvents();v19Bind();spBridgeStarted=true;
         spBridgeApply(deck,message);v8OnViewportChange();sp39UIState();
         if(!window.JSZip||!window.PptxGenJS)warn('\u57FA\u7840\u7F16\u8F91\u53EF\u7528\uFF1B\u90E8\u5206 PPTX \u5BFC\u5165/\u5BFC\u51FA\u4F9D\u8D56\u672A\u52A0\u8F7D\u3002\u9879\u76EE\u5BFC\u5165\u548C\u4FDD\u5B58\u8BF7\u4F7F\u7528\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u3002');
         if(requestId)spBridgePost('response',{requestId,value:true});return;
       }
+      if(type==='workspaceState'){spBridgeWorkspaceState=message.state;spBridgeStatus();return;}
       if(!spBridgeStarted)throw Error('\u5019\u9009\u7F16\u8F91\u5668\u5C1A\u672A\u521D\u59CB\u5316');
       if(type==='ack'){
         if(message.epoch!==spBridgeEpoch||message.sequence!==spBridgeSending?.sequence)return;
@@ -11314,11 +11346,11 @@ return {inspectRasterDataURL,IMAGE_LIMITS};})();
 <div id="sp39-guide-shade" hidden><section class="sp39-guide" role="dialog" aria-modal="true" aria-labelledby="sp39-guide-title">
 <header><div><small>SUPERIOR POINT / QUICK START \xB7 V0.39</small><h2 id="sp39-guide-title">\u628A\u60F3\u6CD5\u653E\u5230\u753B\u5E03\u4E0A\u3002</h2></div><button data-action="sp39-guide-close" aria-label="\u5173\u95ED\u4E0A\u624B\u6307\u5357">\xD7</button></header>
 <div class="sp39-steps">
-<div class="sp39-step"><b><span>01</span>\u5EFA\u7ACB\u5185\u5BB9</b><p>\u4ECE\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u521B\u5EFA\u7A7A\u767D\u6587\u7A3F\u3002\u63D2\u5165\u6587\u5B57\u3001\u5F62\u72B6\u6216\u62D6\u5165\u672C\u5730\u56FE\u7247\uFF1B\u53CC\u51FB\u6587\u5B57\u76F4\u63A5\u4FEE\u6539\u3002</p></div>
+<div class="sp39-step"><b><span>01</span>\u5EFA\u7ACB\u5185\u5BB9</b><p>\u4ECE\u5DE5\u4F5C\u53F0\u521B\u5EFA\u7A7A\u767D\u6587\u7A3F\u3002\u63D2\u5165\u6587\u5B57\u3001\u5F62\u72B6\u6216\u62D6\u5165\u672C\u5730\u56FE\u7247\uFF1B\u53CC\u51FB\u6587\u5B57\u76F4\u63A5\u4FEE\u6539\u3002</p></div>
 <div class="sp39-step"><b><span>02</span>\u6574\u7406\u9875\u9762</b><p>\u62D6\u52A8\u5BF9\u8C61\uFF0C\u8FB9\u89D2\u8C03\u6574\u5927\u5C0F\u3002Shift \u70B9\u51FB\u591A\u9009\uFF1B\u4F7F\u7528\u300C\u6392\u5217\u300D\u5BF9\u9F50\u3001\u5206\u5E03\u6216\u7EC4\u5408\u3002</p></div>
 <div class="sp39-step"><b><span>03</span>\u68C0\u67E5\u6F14\u793A</b><p>\u5207\u6362\u63A7\u5236\u9875\u95F4\u53D8\u5316\uFF0C\u52A8\u753B\u63A7\u5236\u9875\u5185\u5BF9\u8C61\u3002F5 \u4ECE\u5934\u653E\u6620\uFF0CShift+F5 \u4ECE\u5F53\u524D\u9875\u5F00\u59CB\uFF1BEsc \u8FD4\u56DE\u3002</p></div>
-<div class="sp39-step"><b><span>04</span>\u5E26\u8D70\u6210\u679C</b><p>Ctrl / \u2318+S \u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0\uFF1B\u8BF7\u7528\u4E0A\u65B9\u6309\u94AE\u4E0B\u8F7D JSON \u5907\u4EFD\u6216\u5B8C\u6574\u53EF\u91CD\u7F16\u8F91 HTML\u3002\u5907\u4EFD HTML \u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u89C2\u4F17\u5206\u4EAB\u7248\u8BF7\u5728\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u53E6\u884C\u5BFC\u51FA\u3002</p></div>
-</div><p>\u672C\u5DE5\u5177\u4E0D\u8054\u7F51\u540C\u6B65\u6587\u7A3F\u3002\u4FDD\u5B58\u72B6\u6001\u4EE5\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u4E3A\u51C6\uFF0C\u91CD\u8981\u5185\u5BB9\u8BF7\u4E0B\u8F7D JSON \u5907\u4EFD\u3002PPTX \u662F\u6709\u9650\u8F6C\u6362\u683C\u5F0F\uFF1BReveal \u5F15\u64CE\u5DF2\u5185\u5D4C\u79BB\u7EBF\u5305\u3002</p>
+<div class="sp39-step"><b><span>04</span>\u5E26\u8D70\u6210\u679C</b><p>Ctrl / \u2318+S \u4FDD\u5B58\u5230\u5DE5\u4F5C\u53F0\uFF1B\u8BF7\u7528\u6587\u4EF6\u9009\u9879\u5361\u4E0B\u8F7D JSON \u5907\u4EFD\u6216\u5B8C\u6574\u53EF\u91CD\u7F16\u8F91 HTML\u3002\u5907\u4EFD HTML \u542B\u5907\u6CE8\u3001\u6279\u6CE8\u53CA\u5386\u53F2\uFF1B\u89C2\u4F17\u5206\u4EAB\u7248\u8BF7\u5728\u5206\u4EAB\u83DC\u5355\u5BFC\u51FA\u3002</p></div>
+</div><p>\u672C\u5DE5\u5177\u4E0D\u8054\u7F51\u540C\u6B65\u6587\u7A3F\u3002\u4FDD\u5B58\u72B6\u6001\u89C1\u6587\u7A3F\u6807\u9898\u4E0B\u65B9\uFF0C\u91CD\u8981\u5185\u5BB9\u8BF7\u4E0B\u8F7D JSON \u5907\u4EFD\u3002PPTX \u662F\u6709\u9650\u8F6C\u6362\u683C\u5F0F\uFF1BReveal \u5F15\u64CE\u5DF2\u5185\u5D4C\u79BB\u7EBF\u5305\u3002</p>
 <footer><span>\u754C\u9762\u914D\u8272\u5207\u6362\u4E0D\u4F1A\u6539\u53D8\u6587\u7A3F\u4E3B\u9898\u3002</span><button class="sp39-primary" data-action="sp39-guide-close">\u5F00\u59CB\u7F16\u8F91 \u2192</button></footer></section></div>
 
 <style id="sp39-mimo-workspace">
@@ -11425,6 +11457,29 @@ body[data-sp-design=mimo] :is(.sp-flyout,.editor-context-menu,.sp30-more-panel,.
 @media(max-width:820px){body[data-sp-design=mimo] .app-header{height:49px;min-height:49px;padding:0 10px;gap:8px}body[data-sp-design=mimo] .brandmark{min-width:30px}body[data-sp-design=mimo] .brand-wordmark,body[data-sp-design=mimo] .sp39-quick-access{display:none}body[data-sp-design=mimo] .document-area{min-width:90px;max-width:none}body[data-sp-design=mimo] .tab-strip{padding-inline:6px}body[data-sp-design=mimo] .canvas-zone{padding:14px}body[data-sp-design=mimo] .notes-panel{height:66px}body[data-sp-design=mimo] .notes-panel.collapsed{height:0}body[data-sp-design=mimo] #sp39-object-context{display:none}.sp39-guide{padding:20px}.sp39-guide .sp39-steps{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){body[data-sp-design=mimo] *,body[data-sp-design=mimo] *:before,body[data-sp-design=mimo] *:after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 
+</style><style id="sp-workspace-css">/* MiMo-inspired 2.0 Workspace: light chrome, semantic accents, content first. */
+:root{--rth-canvas:#f6f5f1;--rth-surface:#fff;--rth-raised:#ebede7;--rth-ink:#17201b;--rth-muted:#5b675f;--rth-rule:#d0d5cc;--rth-accent:#96512f;--rth-action:#1d2a23;--rth-action-ink:#fff;--rth-focus:#315c9c}
+:root[data-rth-mode=dark]{--rth-canvas:#111814;--rth-surface:#18221c;--rth-raised:#233129;--rth-ink:#f0f3ec;--rth-muted:#b0bdaf;--rth-rule:#3c5143;--rth-accent:#e3af86;--rth-action:#edf1e8;--rth-action-ink:#152019;--rth-focus:#a7c6ff}
+body[data-sp-design=mimo] .app-header{height:48px;min-height:48px;padding:0 12px;gap:9px}
+body[data-sp-design=mimo] .brandmark,body[data-sp-design=mimo] .header-divider,body[data-sp-design=mimo] .sp-header-actions>[data-action=sp39-new],body[data-sp-design=mimo] .sp-header-actions>[data-action=open],body[data-sp-design=mimo] .sp-header-actions>.sp-header-save,body[data-sp-design=mimo] .sp-header-actions>.export-button,body[data-sp-design=mimo] .sp-header-more-wrap,body[data-sp-design=mimo] .sp-header-actions-divider{display:none}
+body[data-sp-design=mimo] .document-area{flex:1;min-width:80px;max-width:none}
+body[data-sp-design=mimo] .document-area input{width:100%;font-size:12px}
+body[data-sp-design=mimo] .document-sub{font-size:9px}
+body[data-sp-design=mimo] .sp-command-caption{display:none}
+body[data-sp-design=mimo] #ribbon{height:76px;padding-top:4px;padding-bottom:5px}
+body[data-sp-design=mimo] .tab-strip{height:32px}
+body[data-sp-design=mimo] .canvas-zone{padding:16px 20px}
+body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)}
+.sp-workspace-share{position:relative;order:5;flex:none;font-size:11px}
+.sp-workspace-share summary{cursor:pointer;padding:7px 10px;border:1px solid var(--rth-rule);border-radius:5px;list-style:none;color:var(--rth-ink)}
+.sp-workspace-share summary::-webkit-details-marker{display:none}
+.sp-workspace-share>div{position:absolute;top:36px;right:0;width:245px;padding:6px;z-index:900;background:var(--rth-surface);border:1px solid var(--rth-rule);border-radius:7px;box-shadow:0 8px 24px #0002}
+.sp-workspace-share button{display:block;width:100%;text-align:left;padding:10px;border:0;border-radius:4px;background:transparent;color:var(--rth-ink);font-size:12px}
+.sp-workspace-share button:hover{background:var(--rth-raised)}
+.sp-workspace-share small{display:block;margin-top:4px;color:var(--rth-muted);font-size:10px}
+@media(max-width:820px){body[data-sp-design=mimo] .app-header{height:48px;min-height:48px}.sp-workspace-share{order:0}.sp-workspace-share>div{right:-35px}.sp-workspace-home{flex:none}}
+
+.sp-workspace-details{margin:5px 10px;padding-top:9px;border-top:1px solid var(--rth-rule);color:var(--rth-muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
 </style>
 </body>
 </html>
@@ -11448,7 +11503,7 @@ body[data-sp-design=mimo] :is(.sp-flyout,.editor-context-menu,.sp30-more-panel,.
       iframe.title = "SuperiorPoint v0.39 \u96C6\u6210\u7F16\u8F91\u5668";
       iframe.setAttribute("sandbox", "allow-scripts allow-downloads");
       iframe.setAttribute("referrerpolicy", "no-referrer");
-      Object.assign(iframe.style, { width: "100%", height: "100%", minHeight: "680px", display: "block", border: "0", background: "#f7f8fb" });
+      Object.assign(iframe.style, { width: "100%", height: "100%", minHeight: "0", display: "block", border: "0", background: "#f7f8fb" });
       const send = (type, data = {}) => {
         if (destroyed) throw new Error("\u7F16\u8F91\u5668\u4F1A\u8BDD\u5DF2\u5173\u95ED");
         iframe.contentWindow.postMessage({ spCandidate: 1, channel: channel2, type, ...data }, "*");
@@ -11563,7 +11618,7 @@ body[data-sp-design=mimo] :is(.sp-flyout,.editor-context-menu,.sp30-more-panel,.
           }
           if (message.type === "save") {
             await context.onSave?.();
-            notice("\u4FDD\u5B58\u8BF7\u6C42\u5DF2\u4EA4\u7ED9\u5DE5\u4F5C\u53F0\uFF0C\u8BF7\u4EE5\u4E0A\u65B9\u72B6\u6001\u4E3A\u51C6\u3002", false);
+            notice("\u5DF2\u4FDD\u5B58\u5230\u672C\u5730\u3002", false);
             return;
           }
           if (message.type === "import") {
@@ -11600,6 +11655,9 @@ body[data-sp-design=mimo] :is(.sp-flyout,.editor-context-menu,.sp30-more-panel,.
           if (handling || !initialized || rejectedSnapshot) return;
           epoch++;
           send("update", projectState());
+        },
+        setWorkspaceState(state) {
+          if (initialized && !destroyed) send("workspaceState", { state });
         },
         setReadOnly(value) {
           readOnly = rejectedSnapshot ? true : !!value;

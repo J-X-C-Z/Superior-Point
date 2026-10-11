@@ -1,7 +1,7 @@
 {
   "source": "editor-v039.source.html",
   "sourceSHA256": "74ae7d23c75e294d0821a2a89de1ee9068395f3dd050c27e1621c2ec62e76a6b",
-  "candidateSHA256": "aa91a97d5a7ef368ae441465f14a72943f7539c4d6b1fe888385fd68315cde71",
+  "candidateSHA256": "dd536d9770f2f81c963f8777d859f93c56246002d9adbd3be2659f2d533482cb",
   "patches": [
     "embedded CSP + early interaction gate",
     "isolated preference storage",
@@ -42,6 +42,10 @@
     "guard async picture insertion",
     "guard async picture replacement",
     "stage picture batch before one commit",
+    "workspace home",
+    "workspace share menu",
+    "workspace file commands",
+    "compact workspace styles",
     "explicit parent initialization",
     "candidate visible identity"
   ],
