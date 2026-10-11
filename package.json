@@ -1,6 +1,6 @@
 {
   "name": "superior-point-framework",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha",
   "private": true,
   "type": "module",
   "engines": {
