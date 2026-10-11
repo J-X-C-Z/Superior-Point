@@ -7,7 +7,7 @@ body[data-sp-design=mimo] .document-area{flex:1;min-width:80px;max-width:none}
 body[data-sp-design=mimo] .document-area input{width:100%;font-size:12px}
 body[data-sp-design=mimo] .document-sub{font-size:9px}
 body[data-sp-design=mimo] .sp-command-caption{display:none}
-body[data-sp-design=mimo] #ribbon{height:76px;padding-top:4px;padding-bottom:5px}
+body[data-sp-design=mimo] #ribbon{height:96px;padding-top:7px;padding-bottom:9px}
 body[data-sp-design=mimo] .tab-strip{height:32px}
 body[data-sp-design=mimo] .canvas-zone{padding:16px 20px}
 body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)}
@@ -21,3 +21,37 @@ body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)
 @media(max-width:820px){body[data-sp-design=mimo] .app-header{height:48px;min-height:48px}.sp-workspace-share{order:0}.sp-workspace-share>div{right:-35px}.sp-workspace-home{flex:none}}
 
 .sp-workspace-details{margin:5px 10px;padding-top:9px;border-top:1px solid var(--rth-rule);color:var(--rth-muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+
+/* Leave label space, including the native feature galleries' fixed-height groups. */
+@media(min-width:821px){
+ body[data-sp-design=mimo] #app:not(.v9-ribbon-collapsed) #ribbon{height:var(--sp-ribbon-height,96px)!important;min-height:96px!important;max-height:var(--sp-ribbon-height,96px)!important;box-sizing:border-box;overflow-y:hidden;padding-top:7px!important;padding-bottom:9px!important;transition:none}
+ body[data-sp-design=mimo] #ribbon .ribbon-label{bottom:0!important;line-height:13px}
+ body[data-sp-design=mimo] #ribbon>.ribbon-group{max-height:calc(100% - 2px)}
+ #app .workspace{position:relative;grid-template-columns:var(--v9-left,214px) minmax(280px,1fr) var(--v9-right,286px)}
+ #app:not(.show-inspector) .workspace{grid-template-columns:var(--v9-left,214px) minmax(280px,1fr)}
+ #app.show-inspector .inspector{position:static;width:auto;display:flex;box-shadow:none}
+ #app .v9-sash{position:absolute;display:block!important;z-index:90;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none}
+ #app .v9-sash-left{left:var(--v9-left,214px);transform:translateX(-50%)}
+ #app .v9-sash-right{right:var(--v9-right,286px);transform:translateX(50%)}
+ #app:not(.show-inspector) .v9-sash-right,#app.v9-focus .v9-sash{display:none!important}
+ #timeline-panel{height:var(--v15-height,194px);flex:0 0 var(--v15-height,194px);max-height:57vh}
+ #v15-timeline-grip{display:block;height:8px;flex:0 0 8px}
+ #notes-panel:not(.collapsed){height:var(--sp-notes-height,113px);position:relative;padding-top:6px}
+ .sp-panel-sash{display:block;position:relative;height:6px;flex:0 0 6px;touch-action:none;cursor:row-resize;background:var(--rth-surface)}
+ .sp-panel-sash::after{content:"";position:absolute;left:calc(50% - 22px);top:2px;width:44px;height:2px;background:var(--rth-rule);border-radius:2px}
+ #sp-panel-notes-sash{position:absolute;top:0;left:0;right:0}
+ #app.v9-ribbon-collapsed #sp-panel-ribbon-sash,#app.v9-focus #sp-panel-ribbon-sash{display:none}
+ .sp-panel-sash:hover::after,.sp-panel-sash:focus-visible::after,.sp-panel-sash.dragging::after,.v9-sash.dragging::after{background:var(--rth-accent)}
+ .sp-panel-sash:focus-visible{outline:2px solid var(--rth-focus);outline-offset:-2px}
+ body.sp-panel-resizing{user-select:none;cursor:row-resize}
+}
+@media(max-width:820px){.sp-panel-sash{display:none}}
+@media(hover:hover) and (pointer:fine){
+ body[data-sp-design=mimo] :is(.tool-compact,.tool-button,.tab-button,.inspector-action,.sp31-big,.sp31-tiny,.sp33-command){transition:background-color 160ms ease,border-color 160ms ease,color 160ms ease}
+ body[data-sp-design=mimo] :is(.tool-compact,.tool-button,.inspector-action,.sp31-big,.sp31-tiny,.sp33-command):not(:disabled):hover{background:var(--rth-raised);border-color:var(--rth-rule);color:var(--rth-ink)}
+}
+@media(prefers-reduced-motion:reduce){body[data-sp-design=mimo] button{transition:none!important}}
+@media(min-width:821px){
+ #app .sp-ribbon-shell{height:auto;display:flex;flex-direction:column}
+ #sp-panel-notes-sash{z-index:3}
+}

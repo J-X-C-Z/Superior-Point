@@ -4623,6 +4623,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
   function v9SavePrefs(){try{localStorage.setItem(V9_PREFS_KEY,JSON.stringify({left:v9Left,right:v9Right,ribbon:v9RibbonCollapsed,nudge:v9Nudge}));}catch(e){}}
   function v9ApplyLayout(){
     const el=$('#app');if(!el)return;
+    if(innerWidth>=821){const width=$('.workspace')?.getBoundingClientRect().width||innerWidth;v9Right=clamp(v9Right,230,Math.max(230,Math.min(430,width-435)));v9Left=clamp(v9Left,155,Math.max(155,Math.min(390,width-280-(el.classList.contains('show-inspector')?v9Right:0))));}
     el.style.setProperty('--v9-left',\`\${v9Left}px\`);el.style.setProperty('--v9-right',\`\${v9Right}px\`);
     el.classList.toggle('v9-ribbon-collapsed',v9RibbonCollapsed);
     el.classList.toggle('v9-focus',v9Focus);
@@ -4699,13 +4700,13 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     const root=$('.workspace');if(!root)return;
     for(const sash of $$('[data-v9-sash]')){
       const side=sash.dataset.v9Sash;let active=false;
-      sash.addEventListener('pointerdown',e=>{if(e.button!==0||v8IsMobile()||window.innerWidth<1181||v9Focus||side==='right'&&!$('#app').classList.contains('show-inspector'))return;
+      sash.addEventListener('pointerdown',e=>{if(e.button!==0||v8IsMobile()||v9Focus||side==='right'&&!$('#app').classList.contains('show-inspector'))return;
         active=true;sash.classList.add('dragging');sash.setPointerCapture(e.pointerId);document.body.classList.add('v9-resizing');e.preventDefault();});
-      sash.addEventListener('pointermove',e=>{if(!active)return;const rect=root.getBoundingClientRect();if(side==='left')v9Left=clamp(Math.round(e.clientX-rect.left),155,Math.min(390,rect.width-650));else v9Right=clamp(Math.round(rect.right-e.clientX),230,Math.min(430,rect.width-650));v9ApplyLayout();renderThumbScales();});
+      sash.addEventListener('pointermove',e=>{if(!active)return;const rect=root.getBoundingClientRect();if(side==='left')v9Left=clamp(Math.round(e.clientX-rect.left),155,Math.max(155,Math.min(390,rect.width-280-($('#app').classList.contains('show-inspector')?v9Right:0))));else v9Right=clamp(Math.round(rect.right-e.clientX),230,Math.max(230,Math.min(430,rect.width-280-v9Left)));v9ApplyLayout();renderThumbScales();});
       function stop(){if(!active)return;active=false;sash.classList.remove('dragging');document.body.classList.remove('v9-resizing');v9SavePrefs();requestAnimationFrame(fitCanvas);}
       sash.addEventListener('pointerup',stop);sash.addEventListener('pointercancel',stop);
       sash.addEventListener('dblclick',()=>{if(side==='left')v9Left=214;else v9Right=286;v9SavePrefs();v9ApplyLayout();renderThumbScales();});
-      sash.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home'].includes(e.key))return;e.preventDefault();const delta=e.key==='Home'?0:(e.key==='ArrowRight'?10:-10);
+      sash.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home'].includes(e.key))return;e.preventDefault();e.stopPropagation();const delta=e.key==='Home'?0:(e.key==='ArrowRight'?10:-10);
         if(side==='left')v9Left=e.key==='Home'?214:clamp(v9Left+delta,155,390);else v9Right=e.key==='Home'?286:clamp(v9Right-delta,230,430);
         v9SavePrefs();v9ApplyLayout();renderThumbScales();});
     }
@@ -10051,12 +10052,12 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     v15Grip.addEventListener('pointerdown',e=>{if(e.button!==0||v8IsMobile())return;
       v15Size={start:e.clientY,height:v15Panel.getBoundingClientRect().height};v15Grip.setPointerCapture(e.pointerId);e.preventDefault();});
     v15Grip.addEventListener('pointermove',e=>{if(!v15Size)return;
-      const n=clamp(Math.round(v15Size.height+v15Size.start-e.clientY),135,Math.min(450,Math.floor(innerHeight*.57)));
+      const n=clamp(Math.round(v15Size.height+v15Size.start-e.clientY),135,Math.max(135,Math.min(450,Math.floor(innerHeight*.57),v15Panel.getBoundingClientRect().height+$('.canvas-zone').getBoundingClientRect().height-180)));
       v15Panel.style.setProperty('--v15-height',n+'px');if(!v15SizeRAF)v15SizeRAF=requestAnimationFrame(()=>{v15SizeRAF=0;fitCanvas();});});
     function v15StopResize(){if(!v15Size)return;v15Size=null;try{localStorage.setItem('superiorpoint.motion.timeline.height',String(Math.round(v15Panel.getBoundingClientRect().height)));}catch(err){}}
     v15Grip.addEventListener('pointerup',v15StopResize);v15Grip.addEventListener('pointercancel',v15StopResize);
-    v15Grip.addEventListener('dblclick',()=>{const h=v15Panel.getBoundingClientRect().height;v15Panel.style.setProperty('--v15-height',(h>260?194:Math.min(390,innerHeight*.52))+'px');fitCanvas();});
-    v15Grip.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();const h=v15Panel.getBoundingClientRect().height;v15Panel.style.setProperty('--v15-height',clamp(h+(e.key==='ArrowUp'?22:-22),135,450)+'px');fitCanvas();});
+    v15Grip.addEventListener('dblclick',()=>{const h=v15Panel.getBoundingClientRect().height;v15Panel.style.setProperty('--v15-height',Math.min(h>260?194:Math.min(390,innerHeight*.52),Math.max(135,h+$('.canvas-zone').getBoundingClientRect().height-180))+'px');fitCanvas();});
+    v15Grip.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();e.stopPropagation();const h=v15Panel.getBoundingClientRect().height;v15Panel.style.setProperty('--v15-height',clamp(h+(e.key==='ArrowUp'?22:-22),135,Math.max(135,Math.min(450,h+$('.canvas-zone').getBoundingClientRect().height-180)))+'px');fitCanvas();});
     $('#v24-zoom')?.addEventListener('change',e=>v24ChangeZoom(e.target.value));
     $('#v24-snap')?.addEventListener('change',e=>v24ChangeSnap(e.target.value));
     $('#v24-preview')?.addEventListener('click',v15PreviewPage);
@@ -10458,6 +10459,60 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
     // Browser supports only a subset of PowerPoint; state this plainly.
     if(!window.JSZip||!window.PptxGenJS)warn('\u57FA\u7840\u7F16\u8F91\u53EF\u7528\uFF0C\u4F46\u5BFC\u5165/\u5BFC\u51FA\u4F9D\u8D56\u7EC4\u4EF6\u6CA1\u6709\u6210\u529F\u52A0\u8F7D\u3002\u8BF7\u4F7F\u7528\u5B8C\u6574\u79BB\u7EBF\u5305\u3002');
   }
+// Workspace dimensions stay outside the presentation and its undo history.
+function spPanelLayoutBoot(){
+  for(const config of [
+    {name:'ribbon',label:'\u8C03\u6574\u529F\u80FD\u533A\u9AD8\u5EA6',value:96,min:96,max:220,direction:1,property:'--sp-ribbon-height'},
+    {name:'notes',label:'\u8C03\u6574\u5907\u6CE8\u9762\u677F\u9AD8\u5EA6',value:113,min:76,max:360,direction:-1,property:'--sp-notes-height'}
+  ]){
+    const panel=document.getElementById(config.name==='notes'?'notes-panel':'ribbon');
+    const id='sp-panel-'+config.name+'-sash';
+    if(!panel||document.getElementById(id))continue;
+    const handle=document.createElement('div');
+    handle.id=id;handle.className='sp-panel-sash';handle.tabIndex=0;
+    handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','horizontal');
+    handle.setAttribute('aria-label',config.label);handle.title='\u62D6\u52A8\u8C03\u6574\u5927\u5C0F \xB7 \u65B9\u5411\u952E\u5FAE\u8C03 \xB7 \u53CC\u51FB\u6062\u590D';
+    if(config.name==='ribbon')panel.after(handle);else panel.prepend(handle);
+    let drag=null,frame=0;
+    const height=()=>panel.getBoundingClientRect().height||config.value;
+    function maximum(){
+      const canvas=document.querySelector('.canvas-zone')?.getBoundingClientRect().height||0;
+      return Math.max(config.min,Math.min(config.max,canvas?height()+canvas-180:config.max));
+    }
+    function set(value){
+      const max=maximum(),size=Math.round(Math.max(config.min,Math.min(max,value)));
+      panel.style.setProperty(config.property,size+'px');
+      handle.setAttribute('aria-valuemin',String(config.min));handle.setAttribute('aria-valuemax',String(Math.round(max)));
+      handle.setAttribute('aria-valuenow',String(size));handle.setAttribute('aria-valuetext',size+' \u50CF\u7D20');
+      if(!frame)frame=requestAnimationFrame(()=>{frame=0;fitCanvas();});
+    }
+    handle.setAttribute('aria-valuemin',String(config.min));handle.setAttribute('aria-valuemax',String(config.max));
+    handle.setAttribute('aria-valuenow',String(Math.round(height())));
+    handle.addEventListener('pointerdown',event=>{
+      if(event.button!==0||panel.hidden||panel.classList.contains('collapsed'))return;
+      drag={id:event.pointerId,y:event.clientY,height:height()};
+      handle.setPointerCapture(event.pointerId);handle.classList.add('dragging');document.body.classList.add('sp-panel-resizing');
+      event.preventDefault();
+    });
+    handle.addEventListener('pointermove',event=>{
+      if(drag&&event.pointerId===drag.id)set(drag.height+(event.clientY-drag.y)*config.direction);
+    });
+    function stop(event){
+      if(!drag||event.pointerId!==drag.id)return;
+      const pointer=drag.id;drag=null;
+      handle.classList.remove('dragging');document.body.classList.remove('sp-panel-resizing');
+      if(handle.hasPointerCapture(pointer))handle.releasePointerCapture(pointer);
+    }
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(type,stop);
+    handle.addEventListener('dblclick',()=>set(config.value));
+    handle.addEventListener('keydown',event=>{
+      if(!['ArrowUp','ArrowDown','Home'].includes(event.key))return;
+      event.preventDefault();event.stopPropagation();
+      set(event.key==='Home'?config.value:height()+(event.key==='ArrowDown'?10:-10)*config.direction);
+    });
+  }
+}
+
   // Integration-only bridge. This code lives inside the preserved editor closure.
   // Data enters only as structured-cloned JSON; imported HTML is never evaluated.
   const spBridgeChannel='__SP_BRIDGE_CHANNEL__';
@@ -10640,7 +10695,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
         sp39Bind();
         v9LoadPrefs();v19RestorePrefs();v9ApplyLayout();v7SetUIMotion(!matchMedia('(prefers-reduced-motion: reduce)').matches);renderStaticIcons();
         OPTIONS.showNotes=false;
-        bindEvents();v17BindEvents();v18BindEvents();v19Bind();spBridgeStarted=true;
+        bindEvents();spPanelLayoutBoot();v17BindEvents();v18BindEvents();v19Bind();spBridgeStarted=true;
         spBridgeApply(deck,message);v8OnViewportChange();sp39UIState();
         if(!window.JSZip||!window.PptxGenJS)warn('\u57FA\u7840\u7F16\u8F91\u53EF\u7528\uFF1B\u90E8\u5206 PPTX \u5BFC\u5165/\u5BFC\u51FA\u4F9D\u8D56\u672A\u52A0\u8F7D\u3002\u9879\u76EE\u5BFC\u5165\u548C\u4FDD\u5B58\u8BF7\u4F7F\u7528\u4E0A\u65B9\u5DE5\u4F5C\u53F0\u3002');
         if(requestId)spBridgePost('response',{requestId,value:true});return;
@@ -11546,7 +11601,7 @@ body[data-sp-design=mimo] .document-area{flex:1;min-width:80px;max-width:none}
 body[data-sp-design=mimo] .document-area input{width:100%;font-size:12px}
 body[data-sp-design=mimo] .document-sub{font-size:9px}
 body[data-sp-design=mimo] .sp-command-caption{display:none}
-body[data-sp-design=mimo] #ribbon{height:76px;padding-top:4px;padding-bottom:5px}
+body[data-sp-design=mimo] #ribbon{height:96px;padding-top:7px;padding-bottom:9px}
 body[data-sp-design=mimo] .tab-strip{height:32px}
 body[data-sp-design=mimo] .canvas-zone{padding:16px 20px}
 body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)}
@@ -11560,6 +11615,40 @@ body[data-sp-design=mimo] #save-status[data-failed=true]{color:var(--rth-accent)
 @media(max-width:820px){body[data-sp-design=mimo] .app-header{height:48px;min-height:48px}.sp-workspace-share{order:0}.sp-workspace-share>div{right:-35px}.sp-workspace-home{flex:none}}
 
 .sp-workspace-details{margin:5px 10px;padding-top:9px;border-top:1px solid var(--rth-rule);color:var(--rth-muted);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+
+/* Leave label space, including the native feature galleries' fixed-height groups. */
+@media(min-width:821px){
+ body[data-sp-design=mimo] #app:not(.v9-ribbon-collapsed) #ribbon{height:var(--sp-ribbon-height,96px)!important;min-height:96px!important;max-height:var(--sp-ribbon-height,96px)!important;box-sizing:border-box;overflow-y:hidden;padding-top:7px!important;padding-bottom:9px!important;transition:none}
+ body[data-sp-design=mimo] #ribbon .ribbon-label{bottom:0!important;line-height:13px}
+ body[data-sp-design=mimo] #ribbon>.ribbon-group{max-height:calc(100% - 2px)}
+ #app .workspace{position:relative;grid-template-columns:var(--v9-left,214px) minmax(280px,1fr) var(--v9-right,286px)}
+ #app:not(.show-inspector) .workspace{grid-template-columns:var(--v9-left,214px) minmax(280px,1fr)}
+ #app.show-inspector .inspector{position:static;width:auto;display:flex;box-shadow:none}
+ #app .v9-sash{position:absolute;display:block!important;z-index:90;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none}
+ #app .v9-sash-left{left:var(--v9-left,214px);transform:translateX(-50%)}
+ #app .v9-sash-right{right:var(--v9-right,286px);transform:translateX(50%)}
+ #app:not(.show-inspector) .v9-sash-right,#app.v9-focus .v9-sash{display:none!important}
+ #timeline-panel{height:var(--v15-height,194px);flex:0 0 var(--v15-height,194px);max-height:57vh}
+ #v15-timeline-grip{display:block;height:8px;flex:0 0 8px}
+ #notes-panel:not(.collapsed){height:var(--sp-notes-height,113px);position:relative;padding-top:6px}
+ .sp-panel-sash{display:block;position:relative;height:6px;flex:0 0 6px;touch-action:none;cursor:row-resize;background:var(--rth-surface)}
+ .sp-panel-sash::after{content:"";position:absolute;left:calc(50% - 22px);top:2px;width:44px;height:2px;background:var(--rth-rule);border-radius:2px}
+ #sp-panel-notes-sash{position:absolute;top:0;left:0;right:0}
+ #app.v9-ribbon-collapsed #sp-panel-ribbon-sash,#app.v9-focus #sp-panel-ribbon-sash{display:none}
+ .sp-panel-sash:hover::after,.sp-panel-sash:focus-visible::after,.sp-panel-sash.dragging::after,.v9-sash.dragging::after{background:var(--rth-accent)}
+ .sp-panel-sash:focus-visible{outline:2px solid var(--rth-focus);outline-offset:-2px}
+ body.sp-panel-resizing{user-select:none;cursor:row-resize}
+}
+@media(max-width:820px){.sp-panel-sash{display:none}}
+@media(hover:hover) and (pointer:fine){
+ body[data-sp-design=mimo] :is(.tool-compact,.tool-button,.tab-button,.inspector-action,.sp31-big,.sp31-tiny,.sp33-command){transition:background-color 160ms ease,border-color 160ms ease,color 160ms ease}
+ body[data-sp-design=mimo] :is(.tool-compact,.tool-button,.inspector-action,.sp31-big,.sp31-tiny,.sp33-command):not(:disabled):hover{background:var(--rth-raised);border-color:var(--rth-rule);color:var(--rth-ink)}
+}
+@media(prefers-reduced-motion:reduce){body[data-sp-design=mimo] button{transition:none!important}}
+@media(min-width:821px){
+ #app .sp-ribbon-shell{height:auto;display:flex;flex-direction:column}
+ #sp-panel-notes-sash{z-index:3}
+}
 </style>
 </body>
 </html>

@@ -83,15 +83,28 @@ replace('workspace file commands',patchedFileRibbon,`    if(tab==='文件')html=
       group('其他格式',tool('PPTX','film','export-pptx')+tool('当前页 PNG','image','export-png')+tool('当前页 SVG','image','export-svg')+tool('打印 / PDF','film','export-print')),
       group('帮助',tool('上手指南','info','sp39-guide')+tool('完整 HTML','download','sp39-export-editable')+\`<span class="ribbon-hint">备份含备注、批注及历史；分享版仅供观众放映。</span>\`)
     ].join('');`);
+// Preserve the native pane controls at normal laptop widths.
+replace('laptop pane drag',"v8IsMobile()||window.innerWidth<1181||v9Focus","v8IsMobile()||v9Focus");
+replace('left pane canvas bound',"Math.min(390,rect.width-650)","Math.max(155,Math.min(390,rect.width-280-($('#app').classList.contains('show-inspector')?v9Right:0)))");
+replace('right pane canvas bound',"Math.min(430,rect.width-650)","Math.max(230,Math.min(430,rect.width-280-v9Left))");
+replace('pane viewport bounds',"    el.style.setProperty('--v9-left',", "    if(innerWidth>=821){const width=$('.workspace')?.getBoundingClientRect().width||innerWidth;v9Right=clamp(v9Right,230,Math.max(230,Math.min(430,width-435)));v9Left=clamp(v9Left,155,Math.max(155,Math.min(390,width-280-(el.classList.contains('show-inspector')?v9Right:0))));}\n    el.style.setProperty('--v9-left',");
+
+replace('timeline canvas bound',"Math.min(450,Math.floor(innerHeight*.57))","Math.max(135,Math.min(450,Math.floor(innerHeight*.57),v15Panel.getBoundingClientRect().height+$('.canvas-zone').getBoundingClientRect().height-180))");
+replace('timeline keyboard canvas bound',"clamp(h+(e.key==='ArrowUp'?22:-22),135,450)","clamp(h+(e.key==='ArrowUp'?22:-22),135,Math.max(135,Math.min(450,h+$('.canvas-zone').getBoundingClientRect().height-180)))");
+replace('pane keyboard isolation',"e.preventDefault();const delta=e.key==='Home'","e.preventDefault();e.stopPropagation();const delta=e.key==='Home'");
+replace('timeline reset canvas bound',"(h>260?194:Math.min(390,innerHeight*.52))","Math.min(h>260?194:Math.min(390,innerHeight*.52),Math.max(135,h+$('.canvas-zone').getBoundingClientRect().height-180))");
+replace('timeline keyboard isolation',"e.preventDefault();const h=v15Panel.getBoundingClientRect().height","e.preventDefault();e.stopPropagation();const h=v15Panel.getBoundingClientRect().height");
 replace('compact workspace styles','\n</body>',`<style id="sp-workspace-css">${await read('tools/editor-workspace.css')}</style>\n</body>`);
 html=html.replaceAll('保存状态以上方工作台为准','保存状态见文稿标题下方').replaceAll('观众分享版请在上方工作台另行导出','观众分享版请在分享菜单导出').replaceAll('观众分享版在上方工作台另行导出','观众分享版在分享菜单导出').replaceAll('上方工作台另行导出','分享菜单导出').replaceAll('上方工作台','工作台').replaceAll('上方按钮','文件选项卡').replaceAll('请以上方状态为准','请以文稿标题下方状态为准');
-const bridge=await read('tools/editor-bridge.inc.js');
+const panels=await read('tools/editor-panel-layout.inc.js');
+new Script(panels,{filename:'editor-panel-layout.js'});
+const bridge=(await read('tools/editor-bridge.inc.js')).replace('bindEvents();v17BindEvents();', 'bindEvents();spPanelLayoutBoot();v17BindEvents();');
 const pictures=await read('tools/editor-v038-image.inc.js');
 // Reuse the canonical raster byte inspector rather than a divergent iframe copy.
 const rasterChecks=`const spBridgeRasterAssets=(()=>{${(await read('io/image-assets.js')).replace(/^export /gm,'')}\nreturn {inspectRasterDataURL,IMAGE_LIMITS};})();`;
 new Script(rasterChecks,{filename:'candidate-raster-checks.js'});
 new Script(pictures,{filename:'candidate-picture-bridge.js'});
-replace('explicit parent initialization',"  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();",`${bridge}\n${rasterChecks}\n${pictures}\n  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',spBridgeBoot,{once:true});else spBridgeBoot();`);
+replace('explicit parent initialization',"  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();",`${panels}\n${bridge}\n${rasterChecks}\n${pictures}\n  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',spBridgeBoot,{once:true});else spBridgeBoot();`);
 html=html.replaceAll('REVEAL.JS 6','REVEAL.JS · OFFLINE').replaceAll('Reveal.js 6 演示引擎','Reveal.js 离线候选演示引擎');
 replace('candidate visible identity','<title>SuperiorPoint v0.39 — MiMo Workspace</title>','<title>SuperiorPoint v0.39 — MiMo Workspace · 集成版</title>');
 html=html.replace(/<script\b[^>]*\bsrc\s*=\s*["'][^"']+["'][^>]*>\s*<\/script>/gi,'');

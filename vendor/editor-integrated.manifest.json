@@ -1,7 +1,7 @@
 {
   "source": "editor-v039.source.html",
   "sourceSHA256": "74ae7d23c75e294d0821a2a89de1ee9068395f3dd050c27e1621c2ec62e76a6b",
-  "candidateSHA256": "dd536d9770f2f81c963f8777d859f93c56246002d9adbd3be2659f2d533482cb",
+  "candidateSHA256": "4e0d5e5559926fe66e59f813b270a4904008f560a7cbc3247c975b46fc222d6a",
   "patches": [
     "embedded CSP + early interaction gate",
     "isolated preference storage",
@@ -45,6 +45,15 @@
     "workspace home",
     "workspace share menu",
     "workspace file commands",
+    "laptop pane drag",
+    "left pane canvas bound",
+    "right pane canvas bound",
+    "pane viewport bounds",
+    "timeline canvas bound",
+    "timeline keyboard canvas bound",
+    "pane keyboard isolation",
+    "timeline reset canvas bound",
+    "timeline keyboard isolation",
     "compact workspace styles",
     "explicit parent initialization",
     "candidate visible identity"
