@@ -1,0 +1,363 @@
+{
+  "format": "superior-point",
+  "schemaVersion": 1,
+  "id": "sp-framework-demo",
+  "title": "Superior Point — framework acceptance",
+  "revision": 0,
+  "canvas": {
+    "width": 1280,
+    "height": 720
+  },
+  "metadata": {
+    "createdAt": "2026-10-10T00:00:00.000Z",
+    "updatedAt": "2026-10-10T00:00:00.000Z"
+  },
+  "extensions": {
+    "editorIntegration": {
+      "sourceVersion": "0.39",
+      "handoffAccepted": true
+    },
+    "roundTripSentinel": {
+      "array": [
+        1,
+        "二",
+        true
+      ],
+      "nested": {
+        "preserved": true
+      }
+    }
+  },
+  "assets": [
+    {
+      "id": "demo-image",
+      "mimeType": "image/png",
+      "dataUrl": "data:image/png;base64,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"
+    }
+  ],
+  "slides": [
+    {
+      "id": "slide-1",
+      "title": "Cover",
+      "background": "#eef3fc",
+      "elements": [
+        {
+          "id": "cover-accent",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 100,
+          "w": 16,
+          "h": 430,
+          "fill": "#537bda",
+          "stroke": "#537bda"
+        },
+        {
+          "id": "cover-title",
+          "type": "text",
+          "text": "Superior Point",
+          "x": 135,
+          "y": 180,
+          "w": 1000,
+          "h": 110,
+          "fontSize": 68,
+          "color": "#24324b"
+        },
+        {
+          "id": "cover-subtitle",
+          "type": "text",
+          "text": "Document → storage → HTML → MCP",
+          "x": 140,
+          "y": 320,
+          "w": 1000,
+          "h": 65,
+          "fontSize": 32,
+          "color": "#24324b"
+        },
+        {
+          "id": "cover-note",
+          "type": "text",
+          "text": "Integration candidate • Editor v0.38 + shared document core",
+          "x": 140,
+          "y": 470,
+          "w": 1000,
+          "h": 50,
+          "fontSize": 23,
+          "color": "#24324b"
+        }
+      ],
+      "animations": [],
+      "notes": "Five-page integration candidate. Real browser acceptance remains pending."
+    },
+    {
+      "id": "slide-2",
+      "title": "Embedded image",
+      "elements": [
+        {
+          "id": "image-title",
+          "type": "text",
+          "text": "Embedded raster, portable document",
+          "x": 80,
+          "y": 65,
+          "w": 850,
+          "h": 70,
+          "fontSize": 32,
+          "color": "#24324b"
+        },
+        {
+          "id": "image-frame",
+          "type": "shape",
+          "shape": "rect",
+          "x": 80,
+          "y": 200,
+          "w": 490,
+          "h": 320,
+          "fill": "#7a9fe8"
+        },
+        {
+          "id": "image",
+          "type": "image",
+          "assetId": "demo-image",
+          "x": 120,
+          "y": 240,
+          "w": 410,
+          "h": 240
+        },
+        {
+          "id": "image-caption",
+          "type": "text",
+          "text": "PNG is embedded as a data URL.\nNo external image request.\nAll element IDs survive re-import.",
+          "x": 630,
+          "y": 245,
+          "w": 550,
+          "h": 220,
+          "fontSize": 28,
+          "color": "#24324b"
+        }
+      ],
+      "animations": []
+    },
+    {
+      "id": "slide-3",
+      "title": "Workflow",
+      "elements": [
+        {
+          "id": "flow-title",
+          "type": "text",
+          "text": "A shared document for every entry point",
+          "x": 80,
+          "y": 65,
+          "w": 850,
+          "h": 70,
+          "fontSize": 32,
+          "color": "#24324b"
+        },
+        {
+          "id": "step-1",
+          "type": "shape",
+          "shape": "rect",
+          "text": "Create",
+          "x": 95,
+          "y": 270,
+          "w": 255,
+          "h": 120,
+          "fill": "#dce7fc"
+        },
+        {
+          "id": "link-1",
+          "type": "connector",
+          "x": 365,
+          "y": 330,
+          "w": 75,
+          "h": 0
+        },
+        {
+          "id": "step-2",
+          "type": "shape",
+          "shape": "rect",
+          "text": "Edit via MCP",
+          "x": 455,
+          "y": 270,
+          "w": 290,
+          "h": 120,
+          "fill": "#dce7fc",
+          "fragment": true,
+          "fragmentIndex": 0
+        },
+        {
+          "id": "link-2",
+          "type": "connector",
+          "x": 765,
+          "y": 330,
+          "w": 70,
+          "h": 0,
+          "fragment": true,
+          "fragmentIndex": 0
+        },
+        {
+          "id": "step-3",
+          "type": "shape",
+          "shape": "rect",
+          "text": "Export / re-import",
+          "x": 850,
+          "y": 270,
+          "w": 330,
+          "h": 120,
+          "fill": "#dce7fc",
+          "fragment": true,
+          "fragmentIndex": 1
+        },
+        {
+          "id": "flow-note",
+          "type": "text",
+          "text": "Press → to reveal the next step, then advance.",
+          "x": 95,
+          "y": 520,
+          "w": 1050,
+          "h": 65,
+          "fontSize": 26,
+          "color": "#24324b"
+        }
+      ],
+      "animations": [
+        {
+          "id": "anim-step-2",
+          "targetId": "step-2",
+          "type": "appear",
+          "trigger": "click",
+          "duration": 0.3,
+          "delay": 0,
+          "easing": "ease",
+          "order": 0
+        },
+        {
+          "id": "anim-step-3",
+          "targetId": "step-3",
+          "type": "appear",
+          "trigger": "click",
+          "duration": 0.3,
+          "delay": 0,
+          "easing": "ease",
+          "order": 1
+        }
+      ]
+    },
+    {
+      "id": "slide-4",
+      "title": "Basic data views",
+      "elements": [
+        {
+          "id": "data-title",
+          "type": "text",
+          "text": "Plain table and simple bar chart",
+          "x": 80,
+          "y": 65,
+          "w": 850,
+          "h": 70,
+          "fontSize": 32,
+          "color": "#24324b"
+        },
+        {
+          "id": "table",
+          "type": "table",
+          "x": 80,
+          "y": 225,
+          "w": 510,
+          "h": 280,
+          "rows": [
+            [
+              "Stage",
+              "Checks"
+            ],
+            [
+              "Core",
+              12
+            ],
+            [
+              "HTML",
+              9
+            ],
+            [
+              "Storage",
+              7
+            ]
+          ]
+        },
+        {
+          "id": "chart",
+          "type": "chart",
+          "chartType": "bar",
+          "x": 675,
+          "y": 210,
+          "w": 500,
+          "h": 295,
+          "values": [
+            12,
+            9,
+            7
+          ],
+          "labels": [
+            "Core",
+            "HTML",
+            "Storage"
+          ],
+          "fill": "#638bd6"
+        },
+        {
+          "id": "data-note",
+          "type": "text",
+          "text": "Illustrative values; not a live test-count report.",
+          "x": 80,
+          "y": 590,
+          "w": 1000,
+          "h": 60,
+          "fontSize": 23,
+          "color": "#24324b"
+        }
+      ],
+      "animations": []
+    },
+    {
+      "id": "slide-5",
+      "title": "End",
+      "background": "#e8effb",
+      "transition": "fade",
+      "elements": [
+        {
+          "id": "end-title",
+          "type": "text",
+          "text": "Keep the data. Continue editing.",
+          "x": 100,
+          "y": 230,
+          "w": 1120,
+          "h": 110,
+          "fontSize": 52,
+          "color": "#24324b"
+        },
+        {
+          "id": "end-detail",
+          "type": "text",
+          "text": "Standalone HTML • Offline Reveal • Structured re-import",
+          "x": 105,
+          "y": 360,
+          "w": 1080,
+          "h": 70,
+          "fontSize": 30,
+          "color": "#24324b"
+        },
+        {
+          "id": "end-limit",
+          "type": "text",
+          "text": "Open in the candidate editor for native presentation export.",
+          "x": 105,
+          "y": 490,
+          "w": 1100,
+          "h": 60,
+          "fontSize": 24,
+          "color": "#24324b"
+        }
+      ],
+      "animations": []
+    }
+  ]
+}

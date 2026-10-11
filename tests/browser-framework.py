@@ -1,0 +1,57 @@
+import json, tempfile, pathlib, time
+from playwright.sync_api import sync_playwright
+ROOT=pathlib.Path(__file__).resolve().parents[1]
+ART=ROOT/'tests'/'evidence';ART.mkdir(exist_ok=True)
+report=[]
+def check(name,value):
+ assert value,name
+ report.append({'test':name,'passed':True})
+with sync_playwright() as p:
+ profile=tempfile.mkdtemp(prefix='sp-profile-')
+ c=p.chromium.launch_persistent_context(profile,executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'],viewport={'width':1440,'height':1000})
+ page=c.pages[0];errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ page.goto('http://127.0.0.1:8768/web/');page.wait_for_function('window.SPFramework?.ready')
+ page.screenshot(path=str(ART/'home-empty.png'),full_page=True)
+ page.click('#new-project');page.fill('#new-title','保存恢复验证');page.select_option('#new-ratio','4:3');page.click('#new-form button[type=submit]')
+ page.wait_for_function('window.SPFramework.getDocument()?.title === "保存恢复验证"')
+ check('UI creates 4:3 project',page.evaluate('SPFramework.getDocument().canvas.width===960'))
+ ident=page.evaluate('SPFramework.getDocument().id')
+ page.evaluate('''() => SPFramework.edit([{type:'createSlide',index:0,slide:{id:'s1',elements:[{id:'title',type:'text',x:60,y:60,w:500,h:80,text:'跨重启保留'}]}}])''')
+ page.wait_for_function('document.querySelector("#save-state").textContent.includes("已保存")')
+ check('IndexedDB persisted exact revision',page.evaluate('SPFramework.getState().persistedRevision===SPFramework.getDocument().revision'))
+ c.close()
+ c=p.chromium.launch_persistent_context(profile,executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'],viewport={'width':1440,'height':1000})
+ page=c.pages[0];page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://127.0.0.1:8768/web/');page.wait_for_function('window.SPFramework?.ready');page.evaluate('(id)=>SPFramework.openProject(id)',ident)
+ check('Browser restart retains all saved content',page.evaluate('SPFramework.getDocument().slides[0].elements[0].text==="跨重启保留"'))
+ second=c.new_page();second.goto('http://127.0.0.1:8768/web/');second.wait_for_function('window.SPFramework?.ready');second.evaluate('(id)=>SPFramework.openProject(id)',ident)
+ check('Second tab is read only',second.evaluate('SPFramework.getState().readOnly'))
+ second.click('#takeover');second.wait_for_function('!SPFramework.getState().readOnly')
+ page.wait_for_function('SPFramework.getState().readOnly')
+ check('Takeover fences old writer',page.evaluate('SPFramework.getState().readOnly'))
+ check('Read-only prevents transactions',page.evaluate('''()=>{try{SPFramework.edit([{type:'updateProject',properties:{title:'BAD'}}]);return false;}catch{return true;}}'''))
+ # Invalid operation batch leaves UI document unchanged.
+ check('Atomic rollback through framework edit API',second.evaluate('''()=>{const before=JSON.stringify(SPFramework.getDocument());try{SPFramework.edit([{type:'updateElement',slideId:'s1',elementId:'title',properties:{text:'uncommitted'}},{type:'deleteElement',slideId:'s1',elementId:'missing'}]);}catch{}return before===JSON.stringify(SPFramework.getDocument());}'''))
+ # Inject real storage write rejection, not a false-success UI.
+ second.evaluate('''()=>{window.originalSave=SPFramework.store.save.bind(SPFramework.store);SPFramework.store.save=async()=>{throw new Error('Injected quota failure')};SPFramework.edit([{type:'updateElement',slideId:'s1',elementId:'title',properties:{text:'保存失败后恢复'}}]);}''')
+ second.wait_for_function('document.querySelector("#save-state").textContent.includes("保存失败")')
+ check('Save failure visible; memory remains intact',second.evaluate('SPFramework.getDocument().slides[0].elements[0].text==="保存失败后恢复"'))
+ second.evaluate('SPFramework.store.save=window.originalSave');second.click('#retry-save');second.wait_for_function('document.querySelector("#save-state").textContent.includes("已保存")')
+ check('Retry persists failed snapshot',second.evaluate('SPFramework.getState().persistedRevision===SPFramework.getDocument().revision'))
+ second.click('#back-home');second.locator(f'[data-project-id="{ident}"] [data-action="copy"]').click();second.wait_for_function('document.querySelectorAll(".project").length===2')
+ check('Copy creates independent project',second.locator('.project').count()==2)
+ second.locator(f'[data-project-id="{ident}"] [data-action="delete"]').click();second.wait_for_function('document.querySelectorAll(".project").length===1');second.click('[data-view="trash"]');second.wait_for_function('document.querySelectorAll(".project").length===1');second.click('[data-action="restore"]');second.wait_for_function('document.querySelectorAll(".project").length===0');second.click('[data-view="all"]');second.wait_for_function('document.querySelectorAll(".project").length===2')
+ check('Trash and restore preserve projects',second.locator('.project').count()==2)
+ # Import and export sample through actual browser UI.
+ second.set_input_files('#file-input',str(ROOT/'examples'/'five-slides.json'))
+ second.wait_for_function('SPFramework.getDocument()?.slides.length===5')
+ second.screenshot(path=str(ART/'five-page-preview.png'),full_page=True)
+ with second.expect_download() as d:second.click('#export-project')
+ d.value.save_as(str(ART/'browser-export.html'))
+ check('Browser generates standalone export', (ART/'browser-export.html').stat().st_size>100000)
+ second.click('#back-home');second.screenshot(path=str(ART/'home-projects.png'),full_page=True)
+ second.set_viewport_size({'width':390,'height':844});second.screenshot(path=str(ART/'home-mobile.png'),full_page=True)
+ check('Mobile home avoids horizontal overflow',second.evaluate('document.documentElement.scrollWidth<=innerWidth'))
+ check('No browser JavaScript errors',not errors)
+ c.close()
+(ART/'browser-results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+print(json.dumps(report,ensure_ascii=False,indent=2))

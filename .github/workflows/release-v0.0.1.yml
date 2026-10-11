@@ -1,0 +1,26 @@
+name: Publish v0.0.1 preview
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/release-v0.0.1.yml]
+permissions:
+  contents: write
+jobs:
+  release:
+    if: github.event.head_commit.message == 'Release Superior Point v0.0.1 preview'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: node tools/build-editor-integration.js && npm run build && node examples/generate.js
+      - run: npm test
+      - name: Package verified assets
+        run: python3 tools/package-release.py
+      - name: Publish the requested preview version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create v0.0.1 release-assets/* --target "$GITHUB_SHA" --title 'Superior Point v0.0.1 — Preview' --notes-file RELEASE_NOTES.md --prerelease --latest=false

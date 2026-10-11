@@ -1,0 +1,57 @@
+{
+  "format": "superior-point",
+  "schemaVersion": 1,
+  "id": "candidate-render-evidence",
+  "title": "v0.38 candidate native render",
+  "revision": 0,
+  "canvas": {
+    "width": 1280,
+    "height": 720
+  },
+  "slides": [
+    {
+      "id": "s1",
+      "elements": [
+        {
+          "id": "t1",
+          "type": "text",
+          "x": 90,
+          "y": 120,
+          "w": 900,
+          "h": 120,
+          "text": "SuperiorPoint candidate",
+          "motionEffects": [
+            {
+              "id": "fx1",
+              "kind": "entrance",
+              "effect": "fade",
+              "trigger": "click",
+              "step": 0,
+              "delay": 0,
+              "duration": 400,
+              "easing": "ease-out"
+            }
+          ]
+        },
+        {
+          "id": "shape1",
+          "type": "shape",
+          "shape": "roundRect",
+          "x": 90,
+          "y": 350,
+          "w": 500,
+          "h": 120,
+          "fill": "#7656e5",
+          "text": "Preserved original renderer"
+        }
+      ],
+      "animations": []
+    }
+  ],
+  "assets": [],
+  "metadata": {
+    "createdAt": "2026-10-10T12:48:15.701Z",
+    "updatedAt": "2026-10-10T12:48:15.701Z"
+  },
+  "extensions": {}
+}

@@ -1,0 +1,6 @@
+node_modules/
+.sp-projects/
+__pycache__/
+.DS_Store
+
+release-assets/
