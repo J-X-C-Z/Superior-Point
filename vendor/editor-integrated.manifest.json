@@ -1,7 +1,7 @@
 {
   "source": "editor-v039.source.html",
   "sourceSHA256": "74ae7d23c75e294d0821a2a89de1ee9068395f3dd050c27e1621c2ec62e76a6b",
-  "candidateSHA256": "1c9bc9812d1f99da9e402863ef5108744ff277ef67fcfaa7c7e53c5d7af99f1f",
+  "candidateSHA256": "c8b3bec43b6035ad9bfd83dcb84b37ec2a5d513e3bba253edb45fa50e56396e1",
   "patches": [
     "shared object animation library",
     "directional page transition library",
@@ -57,6 +57,7 @@
     "timeline reset canvas bound",
     "timeline keyboard isolation",
     "compact workspace styles",
+    "visual effects gallery and isolated hover previews",
     "explicit parent initialization",
     "candidate visible identity"
   ],
