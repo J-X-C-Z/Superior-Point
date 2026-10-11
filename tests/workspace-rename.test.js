@@ -16,7 +16,7 @@ test('inline local/cloud rename commits, cancels, rejects and preserves titles o
   const response=(result,status=200)=>({ok:status<400,status,json:async()=>structuredClone(result)});
   if(path==='/auth/login'||path==='/auth/me')return response({user,csrfToken:'csrf'});
   if(path==='/me/tokens')return response([]);
-  if(path==='/projects'||path==='/projects?trash=true')return response([...docs.values()].map(doc=>({id:doc.id,updatedAt:doc.metadata.updatedAt})));
+  if(path==='/projects'||path==='/projects?trash=true')return response([...docs.values()].map(doc=>({id:doc.id,title:doc.title,revision:doc.revision,canvas:doc.canvas,slideCount:doc.slides.length,updatedAt:doc.metadata.updatedAt})));
   const id=path.split('/')[2],doc=docs.get(id);assert.ok(doc,'known cloud project '+path);
   if(path.includes('/document'))return response(doc);
   if(path.endsWith('/lease')){

@@ -1,3 +1,4 @@
+import {quotaBefore,enforceStorageQuota} from './quota-service.js';
 import {createHash,randomUUID} from 'node:crypto';
 import {createThemeRef} from '../../core/theme-schema.js';
 import type {ThemeRef} from '../../core/theme-schema.js';
@@ -50,22 +51,22 @@ export class ThemeService{
  }
  async importTheme(a:Actor,{theme,clientMutationId}:{theme:unknown;clientMutationId:string}){
   requireScope(a,'themes:write');mutationId(clientMutationId);const original=await validated(theme);const hash=digest({action:'import',ref:original});
-  return transaction(this.db,async c=>{await this.active(c,a);await c.query('SELECT pg_advisory_xact_lock(hashtext($1))',['sp-theme:'+a.id+':'+clientMutationId]);
+  return transaction(this.db,async c=>{await this.active(c,a);const quota=await quotaBefore(c,a.id);await c.query('SELECT pg_advisory_xact_lock(hashtext($1))',['sp-theme:'+a.id+':'+clientMutationId]);
    const receipt=(await c.query('SELECT request_hash,theme_id,result_jsonb FROM theme_receipts WHERE actor_id=$1 AND client_mutation_id=$2',[a.id,clientMutationId])).rows[0];
    if(receipt){if(receipt.request_hash!==hash)throw conflict('MUTATION_ID_REUSED','变更 ID 已用于其他请求');await this.owned(c,a,receipt.theme_id);return receipt.result_jsonb;}
    const id=randomUUID(),ref=await validated({...original.snapshot,id});const source={id:original.id,version:original.version,hash:original.hash};
    await c.query('INSERT INTO themes(id,owner_id,name,current_version,source_jsonb) VALUES($1,$2,$3,$4,$5)',[id,a.id,ref.snapshot.name,ref.version,JSON.stringify(source)]);
    await c.query('INSERT INTO theme_versions(theme_id,version,hash,snapshot_jsonb) VALUES($1,$2,$3,$4)',[id,ref.version,ref.hash,JSON.stringify(ref.snapshot)]);
-   await this.audit(c,a,id,'theme.import');const result=detail(await this.owned(c,a,id));await c.query('INSERT INTO theme_receipts(actor_id,client_mutation_id,request_hash,theme_id,result_jsonb) VALUES($1,$2,$3,$4,$5)',[a.id,clientMutationId,hash,id,JSON.stringify(result)]);return result;
+   await this.audit(c,a,id,'theme.import');const result=detail(await this.owned(c,a,id));await c.query('INSERT INTO theme_receipts(actor_id,client_mutation_id,request_hash,theme_id,result_jsonb) VALUES($1,$2,$3,$4,$5)',[a.id,clientMutationId,hash,id,JSON.stringify(result)]);await enforceStorageQuota(c,a.id,quota);return result;
   });
  }
  create(a:Actor,input:{theme:unknown;clientMutationId:string}){return this.importTheme(a,input);}
  private async mutate(a:Actor,id:string,request:Mutation,action:string,payload:unknown,change:(c:Transaction,row:any)=>Promise<void>){
   requireScope(a,action==='publish'?'themes:publish':'themes:write');mutationId(request.clientMutationId);if(!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0)throw errors.invalid();const hash=digest({id,action,expectedRevision:request.expectedRevision,payload});
-  return transaction(this.db,async c=>{await this.active(c,a);await c.query('SELECT pg_advisory_xact_lock(hashtext($1))',['sp-theme:'+a.id+':'+request.clientMutationId]);const row=await this.owned(c,a,id,true);
+  return transaction(this.db,async c=>{await this.active(c,a);const quota=await quotaBefore(c,a.id);await c.query('SELECT pg_advisory_xact_lock(hashtext($1))',['sp-theme:'+a.id+':'+request.clientMutationId]);const row=await this.owned(c,a,id,true);
    const receipt=(await c.query('SELECT request_hash,result_jsonb FROM theme_receipts WHERE actor_id=$1 AND client_mutation_id=$2',[a.id,request.clientMutationId])).rows[0];if(receipt){if(receipt.request_hash!==hash)throw conflict('MUTATION_ID_REUSED','变更 ID 已用于其他请求');return receipt.result_jsonb;}
    if(row.deletedAt)throw errors.missing();if(Number(row.revision)!==request.expectedRevision)throw conflict('REVISION_CONFLICT','主题已有更新');await change(c,row);
-   await c.query('UPDATE themes SET revision=revision+1,updated_at=clock_timestamp() WHERE id=$1',[id]);await this.audit(c,a,id,'theme.'+action);const result=detail(await this.owned(c,a,id));await c.query('INSERT INTO theme_receipts(actor_id,client_mutation_id,request_hash,theme_id,result_jsonb) VALUES($1,$2,$3,$4,$5)',[a.id,request.clientMutationId,hash,id,JSON.stringify(result)]);return result;
+   await c.query('UPDATE themes SET revision=revision+1,updated_at=clock_timestamp() WHERE id=$1',[id]);await this.audit(c,a,id,'theme.'+action);const result=detail(await this.owned(c,a,id));await c.query('INSERT INTO theme_receipts(actor_id,client_mutation_id,request_hash,theme_id,result_jsonb) VALUES($1,$2,$3,$4,$5)',[a.id,request.clientMutationId,hash,id,JSON.stringify(result)]);const patch=payload as {name?:string|null;archived?:boolean|null};const shrinking=action==='patch'&&typeof patch.name==='string'&&Buffer.byteLength(patch.name.trim())<Buffer.byteLength(row.name);const archive=action==='patch'&&patch.archived===true&&(patch.name===null||patch.name===undefined||Buffer.byteLength(patch.name.trim())<=Buffer.byteLength(row.name));await enforceStorageQuota(c,a.id,quota,action==='delete'||shrinking||archive);return result;
   });
  }
  async publish(a:Actor,id:string,request:Mutation&{theme:unknown}){const ref=await validated(request.theme);if(ref.id!==id)throw errors.invalid('主题身份不一致');return this.mutate(a,id,request,'publish',ref,async c=>{if((await c.query('SELECT 1 FROM theme_versions WHERE theme_id=$1 AND version=$2',[id,ref.version])).rowCount)throw conflict('THEME_VERSION_EXISTS','版本已发布，不能覆盖');await c.query('INSERT INTO theme_versions(theme_id,version,hash,snapshot_jsonb) VALUES($1,$2,$3,$4)',[id,ref.version,ref.hash,JSON.stringify(ref.snapshot)]);await c.query('UPDATE themes SET current_version=$2,name=$3 WHERE id=$1',[id,ref.version,ref.snapshot.name]);});}

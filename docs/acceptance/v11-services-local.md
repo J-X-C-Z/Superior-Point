@@ -1,16 +1,15 @@
-# v1.1 服务能力本地验收
+# v1.1 非编辑器服务验收（本地）
 
-分支：roadmap/v1.1-services，基于 24ea406；本批尚未部署 Hakari。
+分支 roadmap/v1.1-services，基础 24ea406。以下为冻结前实测，不代表已完成 Hakari 公网验收；线上结果另存部署验收报告。
 
-- 原生 Streamable HTTP MCP：官方 SDK 真实 HTTP + PostgreSQL，同一套 16 个工具，权限、CAS、撤销和业务数据共用现有服务。无状态 JSON；SSE 通知尚未实现。
-- OAuth：授权码 + PKCE S256，独立授权界面，发现元数据、同意、项目白名单、撤销。真实 buildApp + SDK 联合测试通过；外部 REST 保持 PAT-only，OAuth 仅经 MCP 私有转发。第三方桌面客户端和真实浏览器交互尚未验收。
-- 统计：后台管理员导航已接入，记录已验证用户、工具、耗时、结果，不保存参数或文档。真实工具调用和统计表失效测试证明业务创建/编辑仍各提交一次。stdio 完整工具耗时尚未接入。
-- 资源：应用进程、可见 cgroup、应用文件系统和数据库实际探测；Hakari 整机采集器尚未部署，缺少采集文件时明确不可用。
+JavaScript 全量：270 项，269 通过，1 项既有环境跳过，0 失败。真实 PostgreSQL 服务全量：82/82 通过。TypeScript 检查、应用构建、diff 检查通过。生产依赖 npm audit --omit=dev：已知漏洞 0。
 
-验证：类型检查通过，JavaScript 261 项：260 通过、1 项既有环境跳过；服务 66 项中 64 通过，2 项因遗漏本机 pg_dump/pg_restore 路径失败，补齐路径后原备份服务和部署角色测试均通过；更新后的 SDK MCP 统计集成重跑通过。测试使用独立回环 PostgreSQL，没有开启生产备份。
+已验证：20 个 HTTP/stdio 共用 MCP 工具；OAuth 发现、DCR、PKCE S256、独立同意与权限撤销；SSE 元数据通知不会覆盖浏览器草稿；云端历史差异与幂等恢复；管理员服务器检索/状态筛选；自己的登录会话中心；存储配额；固定修订的只读分享与撤销；范围受限的工具统计和整机/三指定容器指标解析；帮助中心。
 
-证据：/private/tmp/sp-v11-m3-js.log、sp-v11-m3-service.log、sp-v11-m3-service-recheck.log、sp-v11-m3-backup-recheck.log、sp-oauth-integrated-tests.log、sp-v11-observability-integration.log。日志保留实际执行结果，不能代表公网发布验收。
+正式增强验收脚本 scripts/accept-v11-services.mjs 在 18871 隔离服务实际运行：7 阶段通过，临时 PAT/OAuth/分享撤销、测试账号停用、脚本会话退出，cleanup.failures 空。HTTP 与 stdio SDK 均发现 20 工具并读写同一 PostgreSQL。OAuth 只读指定项目，跨项目/写入被拒绝，外部 REST 不接受 OAuth。SSE 新修订只含元数据，注销会话关闭连接。本机没有整机采集文件，正确返回 unavailable。
 
-编辑器由原会话独立维护；用户要求暂不向该会话布置任务。本分支不包含之后编辑器新增改动。生产备份继续按用户决定延期。
+工作台大库 DOM 集成：1000 项只取一次元数据，分页最多 24 张卡片，翻页不取正文；重命名和打开重新读取权威全文，保留幻灯片、资源及未知字段。实际浏览器验证：头像二级登录、会话/配额面板、分享两页播放和撤销后不可访问；320/390px 工作台及390/768px主题库无页面横向溢出。此为桌面浏览器视口模拟，不能替代真实触控设备。
 
-审阅修复：工具响应不等待遥测，统计并发上限 2、锁等待 100ms、SQL 250ms；排他锁期间业务仍提交，指标会丢弃而不阻塞，解锁恢复。新增阻塞 Promise 回归 1/1 与实际数据库锁集成 4/4 通过，证据 /private/tmp/sp-v11-telemetry-bounded.log。统计总数仅表示已记录事件。
+证据日志：/private/tmp/sp-v11-final-js3.log、sp-v11-final-service2.log、sp-v11-final-types.log、sp-v11-final-build.log、sp-accept-v11-local.json、sp-library-performance-tests.log、sp-v11-container-metrics.log。截图见 docs/verification/v11/services-local-share.png 和 services-local-sse.png。
+
+限制：个人素材服务及资源 MCP 工具依赖编辑器阶段；完整 Owner/Editor/Viewer 协作 ACL 仅完成评估；stdio 的完整调用耗时未接入统计。Firefox/PPTX完整保真、真实移动设备和大型PPT压力依赖后续编辑器范围。备份和整机恢复继续延期；不宣称 Stable 或全54项完成。

@@ -1,4 +1,6 @@
 FROM node:22-bookworm-slim
+ARG SP_RELEASE_REVISION=unknown
+LABEL org.opencontainers.image.revision=$SP_RELEASE_REVISION
 
 ENV NODE_ENV=production \
     SP_BIND=0.0.0.0 \

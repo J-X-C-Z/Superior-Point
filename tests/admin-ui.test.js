@@ -28,19 +28,56 @@ function submit(window, values = {}) {
  form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
 }
 
-test('admin renders safe metadata, current-page filtering and actual server pagination', async () => {
+test('admin renders safe metadata, global server filtering and actual server pagination', async () => {
  const h = dom(); const records = Array.from({length: 25}, (_, index) => ({...target, id: String(index), username: index ? 'user-' + index : target.username}));
- const {api, calls} = fakeAPI(path => path.startsWith('/admin/users') ? records : undefined);
+ const {api, calls} = fakeAPI(path => path.startsWith('/admin/users') ? (path.includes('q=user-24')?[records[24]]:records) : undefined);
  const mounted = await mountAdmin({document: h.window.document, api, navigate() {assert.fail('Unexpected navigation');}});
  try {
   click(h.window.document, '用户'); await until(() => h.window.document.querySelectorAll('tbody tr').length === 25);
   assert.equal(h.window.document.querySelector('td img'), null);
   assert.match(h.window.document.querySelector('tbody').textContent, /<img src=x/);
   const filter = h.window.document.querySelector('input[type=search]'); filter.value = 'user-24'; filter.dispatchEvent(new h.window.Event('input'));
-  assert.equal(h.window.document.querySelectorAll('tbody tr').length, 1);
+  click(h.window.document,'搜索');await until(()=>calls.some(call=>call.path.includes('q=user-24'))&&h.window.document.querySelectorAll('tbody tr').length===1);
+  assert.equal(h.window.document.querySelector('tbody').textContent.includes('user-24'),true);
+  const all=h.window.document.querySelector('input[type=search]');all.value='';all.dispatchEvent(new h.window.Event('input'));click(h.window.document,'搜索');await until(()=>h.window.document.querySelectorAll('tbody tr').length===25);
   click(h.window.document, '下一页'); await until(() => calls.some(call => call.path.includes('offset=25')));
   assert.ok(!calls.some(call => /document|snapshot/.test(call.path)));
  } finally {mounted.destroy(); h.window.close();}
+});
+
+test('storage quota view searches server pages, reports total usage categories, and distinguishes warnings', async () => {
+ const h=dom(),limits={maxProjects:100,maxBytes:1000,warningPercent:80};
+ const records=Array.from({length:30},(_,index)=>({userId:`${String(index+1).padStart(8,'0')}-1111-1111-1111-111111111111`,username:`storage-user-${String(index).padStart(2,'0')}`,usage:{activeProjects:5,trashedProjects:2,projectBytes:100,historyBytes:200,themeMetadataBytes:30,themeVersionBytes:40,receiptBytes:50,shareBytes:80,totalBytes:500},limits,warning:false,overQuota:false}));
+ records[1].usage.totalBytes=800;records[1].warning=true;
+ records[2].usage.totalBytes=1200;records[2].overQuota=true;
+ const {api,calls}=fakeAPI(path=>{if(path.startsWith('/admin/storage?')){const params=new URLSearchParams(path.split('?')[1]),q=params.get('q')?.toLowerCase()||'',offset=Number(params.get('offset')||0),matched=records.filter(row=>row.username.includes(q));return {rows:matched.slice(offset,offset+25),total:matched.length,limit:25,offset};}});
+ const mounted=await mountAdmin({document:h.window.document,api});
+ try{
+  click(h.window.document,'存储配额');await until(()=>h.window.document.querySelectorAll('tbody tr').length===25);
+  const text=h.window.document.querySelector('#admin-content').textContent;
+  assert.match(text,/共 30 个账号/);assert.match(text,/项目数据/);assert.match(text,/主题版本/);assert.match(text,/正常/);assert.match(text,/接近配额/);assert.match(text,/超出配额/);
+  const filter=h.window.document.querySelector('input[type=search]');filter.value='storage-user-29';filter.dispatchEvent(new h.window.Event('input'));click(h.window.document,'搜索');
+  await until(()=>calls.some(call=>call.path.includes('q=storage-user-29'))&&h.window.document.querySelectorAll('tbody tr').length===1);
+  assert.match(h.window.document.querySelector('#admin-content').textContent,/共 1 个账号/);
+  filter.value='';filter.dispatchEvent(new h.window.Event('input'));click(h.window.document,'搜索');await until(()=>h.window.document.querySelectorAll('tbody tr').length===25&&calls.filter(call=>call.path.includes('/admin/storage?')).length>=3);
+  click(h.window.document,'下一页');await until(()=>calls.some(call=>call.path.includes('offset=25'))&&h.window.document.querySelector('#admin-content').textContent.includes('显示 26–30 条'));
+ }finally{mounted.destroy();h.window.close();}
+});
+
+test('system settings render bounded global storage quota fields and save them as one nested object', async () => {
+ const h=dom(),settings={siteName:'Superior Point',announcement:'',maxUploadBytes:33554432,maintenanceMode:false,publicRegistration:false,storageQuota:{maxProjects:100,maxBytes:1073741824,warningPercent:80}},calls=[];
+ const {api}=fakeAPI((path,options)=>{calls.push({path,...structuredClone(options)});if(path==='/admin/settings'&&options.method==='PATCH')return settings;if(path==='/admin/settings')return settings;});
+ const mounted=await mountAdmin({document:h.window.document,api});
+ try{
+  click(h.window.document,'系统设置');await until(()=>h.window.document.querySelector('input[name="storageQuota.maxBytes"]'));
+  const projects=h.window.document.querySelector('input[name="storageQuota.maxProjects"]'),amount=h.window.document.querySelector('input[name="storageQuota.maxBytes"]'),warning=h.window.document.querySelector('input[name="storageQuota.warningPercent"]');
+  assert.deepEqual([projects.min,projects.max,amount.min,amount.max,warning.min,warning.max],['1','100000','1','10995116277760','1','100']);
+  projects.value='250';amount.value='2048';warning.value='90';click(h.window.document,'保存设置');await until(()=>h.window.document.querySelector('dialog h2')?.textContent==='保存设置');submit(h.window);
+  await until(()=>calls.some(call=>call.path==='/admin/settings'&&call.method==='PATCH'));
+  const patch=calls.find(call=>call.path==='/admin/settings'&&call.method==='PATCH').body;
+  assert.deepEqual(patch.storageQuota,{maxProjects:250,maxBytes:2048,warningPercent:90});
+  assert.equal(Object.hasOwn(patch,'maxProjects'),false);assert.equal(patch.publicRegistration,false);
+ }finally{mounted.destroy();h.window.close();}
 });
 
 test('create user form gates duplicate writes and retries exactly once after password step-up', async () => {

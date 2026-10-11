@@ -1,3 +1,5 @@
+import {openStorageUsage} from './storage-usage.js';
+import {openSessionCenter} from './security-center.js';
 import {CloudAPI} from '../storage/cloud-project-store.js';
 import {formDialog} from './admin/app.js';
 
@@ -60,7 +62,7 @@ export async function mountTokenSettings({api = new CloudAPI(), container, docum
   if (!answer) return;
   try {await api.request('/auth/password', {method: 'POST', body: answer}); navigate('/login?returnTo=%2Fapp');} finally {answer.currentPassword = ''; answer.newPassword = '';}
  }
- toolbar.append(button('创建授权', create, true), button('刷新列表', reload), button('修改密码', password, true));
+ toolbar.append(button('存储用量',()=>openStorageUsage({api,document})),button('活跃登录会话',()=>openSessionCenter({api,document,navigate})),button('创建授权', create, true), button('刷新列表', reload), button('修改密码', password, true));
  async function reload() {
   list.setAttribute('aria-busy', 'true'); list.replaceChildren(); const loading = document.createElement('p'); loading.textContent = '正在读取授权…'; list.append(loading);
   try {

@@ -1,4 +1,4 @@
-const tools=['sp_create_project','sp_open_project','sp_get_document','sp_get_slide','sp_edit','sp_render_slide','sp_validate','sp_save_export','sp_list_projects','sp_project_info','sp_list_slides','sp_list_themes','sp_get_theme','sp_preview_theme','sp_apply_theme','sp_save_theme'];
+const tools=['sp_create_project','sp_open_project','sp_get_document','sp_get_slide','sp_edit','sp_render_slide','sp_validate','sp_save_export','sp_list_projects','sp_project_info','sp_list_slides','sp_list_themes','sp_get_theme','sp_preview_theme','sp_apply_theme','sp_save_theme','sp_list_revisions','sp_get_revision','sp_revision_diff','sp_restore_revision'];
 const bytes=value=>Number.isFinite(value)?(value/1048576).toFixed(1)+' MiB':'不可用';
 const time=value=>new Date(value).toLocaleString('zh-CN');
 const localDate=value=>new Date(value.getTime()-value.getTimezoneOffset()*60000).toISOString().slice(0,16);
@@ -28,7 +28,11 @@ export function mountObservability({container,api}){
    ['当前数据库',data.database.status,`连接 ${data.database.connections}，活跃 ${data.database.active}；探测 ${data.database.probeDurationMs.toFixed(1)} ms`],
   ]);
   table(resources,'Hakari 整机',['状态','采集时间','CPU','内存','磁盘'],[[host.status==='ok'?'正常':'不可用',host.status==='ok'?time(host.generatedAt):host.reason,host.status==='ok'?host.cpu.percent.toFixed(1)+'%':'—',host.status==='ok'?`可用 ${bytes(host.memory.availableBytes)} / ${bytes(host.memory.totalBytes)}`:'—',host.status==='ok'?`可用 ${bytes(host.disk.availableBytes)} / ${bytes(host.disk.totalBytes)}`:'—']]);
-  if(host.status==='ok')resources.append(node('p','整机容器状态：'+host.containers.reason));
+  if(host.status==='ok'){
+   const containers=host.containers;
+   if(containers.rows?.length){resources.append(node('p','容器来源：Hakari 固定 Docker inspect 采集 · '+time(containers.generatedAt)));table(resources,'Superior Point 指定容器',['容器','采集状态','运行状态','健康检查','重启次数','OOM'],containers.rows.map(row=>[row.name,row.status==='ok'?'可读取':row.reason,row.state,row.health,row.restartCount,row.oomKilled===undefined?'—':row.oomKilled?'是':'否']));}
+   else resources.append(node('p','整机容器状态：'+containers.reason));
+  }
  }
  async function refresh(){
   if(destroyed)return;const current=++generation;status.textContent='正在读取实际统计…';

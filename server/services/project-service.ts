@@ -1,3 +1,4 @@
+import {quotaBefore,enforceStorageQuota,lockStorageQuota,projectContentBytes} from './quota-service.js';
 import {createHash, randomUUID} from 'node:crypto';
 import {createDocument, DocumentCore, cloneJSON, CoreError, importDocument} from '../../core/document-core.js';
 import type {SPDocument, Operation} from '../../core/document-core.js';
@@ -66,9 +67,11 @@ export class ProjectService {
     const text = documentJSON(document);
     return transaction(this.db, async client => {
       await this.active(client, actor);
+      const quota=await quotaBefore(client,actor.id);
       await client.query('INSERT INTO projects(id,owner_id,title,revision,document_jsonb) VALUES($1,$2,$3,$4,$5)', [document.id, actor.id, document.title, document.revision, text]);
       await this.revision(client, actor, document);
       await this.audit(client, actor, document.id, 'project.create');
+      await enforceStorageQuota(client,actor.id,quota);
       return document;
     });
   }
@@ -77,7 +80,7 @@ export class ProjectService {
     requireScope(actor, 'projects:read');
     return transaction(this.db, async client => {
       await this.active(client, actor);
-      const result = await client.query('SELECT id,title,revision,deleted_at AS "deletedAt",updated_at AS "updatedAt" FROM projects WHERE owner_id=$1 AND (deleted_at IS NOT NULL)=$2 ORDER BY updated_at DESC,id', [actor.id, trash]);
+      const result = await client.query(`SELECT id,title,revision,document_jsonb->'canvas' AS canvas,jsonb_array_length(document_jsonb->'slides') AS "slideCount",deleted_at AS "deletedAt",updated_at AS "updatedAt" FROM projects WHERE owner_id=$1 AND (deleted_at IS NOT NULL)=$2 ORDER BY updated_at DESC,id`, [actor.id, trash]);
       return result.rows.filter(row => actor.source !== 'mcp' || !actor.projectAllowlist || actor.projectAllowlist.includes(row.id)).map(row => ({...row, revision: Number(row.revision)}));
     });
   }
@@ -154,6 +157,7 @@ export class ProjectService {
     const hash = createHash('sha256').update(stable({action, expectedRevision: request.expectedRevision, ...semanticPayload})).digest('hex');
     return transaction(this.db, async client => {
       await this.active(client, actor);
+      const quota=await quotaBefore(client,actor.id);
       const row = await this.owned(client, actor, id, true);
       const receipt = await client.query('SELECT request_hash,result_jsonb FROM mutation_receipts WHERE project_id=$1 AND actor_id=$2 AND client_mutation_id=$3', [id, actor.id, request.clientMutationId]);
       if (receipt.rowCount) {
@@ -170,6 +174,7 @@ export class ProjectService {
       await this.revision(client, actor, document);
       await this.audit(client, actor, id, action);
       await client.query('INSERT INTO mutation_receipts(project_id,actor_id,client_mutation_id,request_hash,result_jsonb) VALUES($1,$2,$3,$4,$5)', [id, actor.id, request.clientMutationId, hash, text]);
+      await enforceStorageQuota(client,actor.id,quota,remove||projectContentBytes(document)<projectContentBytes(row.document_jsonb));
       return document;
     });
   }
@@ -213,6 +218,7 @@ export class ProjectService {
     const hash=createHash('sha256').update(stable(original)).digest('hex');
     return transaction(this.db,async client=>{
       await this.active(client,actor);
+      const quota=await quotaBefore(client,actor.id);
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))",['sp-import:'+actor.id+':'+clientMutationId]);
       const old=await client.query('SELECT request_hash,project_id,result_jsonb FROM import_receipts WHERE actor_id=$1 AND client_mutation_id=$2',[actor.id,clientMutationId]);
       if(old.rowCount){if(old.rows[0].request_hash!==hash)throw conflict('MUTATION_ID_REUSED','此导入ID已用于不同请求');await this.owned(client,actor,old.rows[0].project_id);return old.rows[0].result_jsonb as SPDocument;}
@@ -222,6 +228,7 @@ export class ProjectService {
       await client.query('INSERT INTO projects(id,owner_id,title,revision,document_jsonb) VALUES($1,$2,$3,$4,$5)',[document.id,actor.id,document.title,0,text]);
       await this.revision(client,actor,document);await this.audit(client,actor,document.id,'project.import');
       await client.query('INSERT INTO import_receipts(actor_id,client_mutation_id,request_hash,project_id,result_jsonb) VALUES($1,$2,$3,$4,$5)',[actor.id,clientMutationId,hash,document.id,text]);
+      await enforceStorageQuota(client,actor.id,quota);
       return document;
     });
   }
@@ -247,6 +254,8 @@ export class ProjectService {
     if(!uuid.test(id)||!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0||typeof request.clientMutationId!=='string'||!request.clientMutationId.trim()||request.clientMutationId.length>128||(newOwnerId!==undefined&&!uuid.test(newOwnerId)))throw errors.invalid();
     return transaction(this.db,async client=>{
       await checkAdminActor(client,actor,true);
+      const ownership=(await client.query('SELECT owner_id FROM projects WHERE id=$1',[id])).rows[0];if(!ownership)throw errors.missing();
+      await lockStorageQuota(client,[ownership.owner_id,newOwnerId??ownership.owner_id]);const quota=await quotaBefore(client,newOwnerId??ownership.owner_id);
       const result=await client.query<ProjectRow>('SELECT id,owner_id,revision,document_jsonb,deleted_at FROM projects WHERE id=$1 FOR UPDATE',[id]);const row=result.rows[0];if(!row)throw errors.missing();
       const hash=createHash('sha256').update(stable({action,expectedRevision:request.expectedRevision,newOwnerId:newOwnerId??null})).digest('hex');
       const receipt=await client.query('SELECT request_hash,result_jsonb FROM mutation_receipts WHERE project_id=$1 AND actor_id=$2 AND client_mutation_id=$3',[id,actor.id,request.clientMutationId]);
@@ -259,6 +268,7 @@ export class ProjectService {
       await this.revision(client,actor,document);await this.audit(client,actor,id,action);
       const metadata={id,ownerId:newOwnerId??row.owner_id,title:document.title,revision:document.revision,deleted:action==='project.admin_trash'||(action==='project.transfer'&&!!row.deleted_at)};
       await client.query('INSERT INTO mutation_receipts(project_id,actor_id,client_mutation_id,request_hash,result_jsonb) VALUES($1,$2,$3,$4,$5)',[id,actor.id,request.clientMutationId,hash,JSON.stringify(metadata)]);
+      await enforceStorageQuota(client,newOwnerId??row.owner_id,quota,action==='project.admin_trash');
       return metadata;
     });
   }

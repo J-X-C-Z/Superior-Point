@@ -23,3 +23,5 @@
 `sp_save_theme` 输入安全 `theme` 和可选 `clientMutationId`；新建导入返回新云端 UUID。指定 `themeId` 与 `expectedRevision` 时发布不可覆盖的新版本，需对应 scope。应用/保存发生响应丢失时沿用原 mutation ID 和原 payload 重试。默认 Token scopes 不自动包含主题权限。本阶段仍是本地 stdio Bridge，不新增公网 MCP 网关或 OAuth。
 
 主题纵向验证：`TEST_DATABASE_URL=回环独立测试库 node --import tsx --test tests/service/theme-mcp.test.ts`，覆盖真实 SDK→stdio→HTTP→PAT→PostgreSQL 查询、样例预览、私人导入、版本发布、活动浏览器租约下主题应用、回执、CAS、私人 ACL、项目范围及吊销。
+
+历史工具新增 `sp_list_revisions`、`sp_get_revision`、`sp_revision_diff`、`sp_restore_revision`。前三者需要 `projects:read` 并受项目范围约束；恢复需要 `projects:write`、`expectedRevision` 和显式 `clientMutationId`。恢复先尝试取得相同请求的幂等回执；新恢复会通过现有接口获取排他租约，浏览器持有写入权时返回 PROJECT_BUSY，完成后尝试释放。恢复生成新修订，不重写历史；未确认结果仍按相同 mutation ID 与原 expectedRevision 重试。差异是保存修订的对象 ID、主题/资源变化诊断，不等于渲染预览。当前没有独立素材读写服务，不提供虚构的资源上传工具。HTTP/OAuth 的当前开发状态另见 http.md 与 oauth.md；本指南的文件根目录规则仅适用于 stdio Bridge。

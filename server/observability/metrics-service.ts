@@ -3,11 +3,26 @@ import {constants} from 'node:fs';
 import {statfs} from 'node:fs/promises';
 import {errors,transaction,type Actor,type Database} from '../contracts.js';
 import {checkAdminActor,pagination} from '../services/admin-service.js';
-export const mcpTools=['sp_create_project','sp_open_project','sp_get_document','sp_get_slide','sp_edit','sp_render_slide','sp_validate','sp_save_export','sp_list_projects','sp_project_info','sp_list_slides','sp_list_themes','sp_get_theme','sp_preview_theme','sp_apply_theme','sp_save_theme'] as const;
+export const mcpTools=['sp_create_project','sp_open_project','sp_get_document','sp_get_slide','sp_edit','sp_render_slide','sp_validate','sp_save_export','sp_list_projects','sp_project_info','sp_list_slides','sp_list_themes','sp_get_theme','sp_preview_theme','sp_apply_theme','sp_save_theme','sp_list_revisions','sp_get_revision','sp_revision_diff','sp_restore_revision'] as const;
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const finite=(value:unknown)=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
 type Call={actor:Actor;tool:string;durationMs:number;outcome:'success'|'error';errorCode?:string;transport:'streamable-http'|'stdio-bridge'};
 type Filter={from?:string;to?:string;userId?:string;tool?:string;limit?:number;offset?:number};
+const fixedContainers=['superior-point-app-1','superior-point-db-1','superior-point-caddy-1'];
+function hostContainers(data:any){
+ const unavailable={status:'unavailable',reason:'容器采集未配置、过期或无效'};
+ if(!data)return unavailable;const age=Date.now()-new Date(data.generatedAt).getTime();
+ if(data.source!=='hakari-fixed-docker-inspect'||!Number.isFinite(age)||age< -5000||age>120000||!Array.isArray(data.rows)||data.rows.length!==3||new Set(data.rows.map((row:any)=>row?.name)).size!==3)return unavailable;
+ const rows=[];
+ for(const name of fixedContainers){
+  const row=data.rows.find((value:any)=>value?.name===name);if(!row||!['ok','unavailable'].includes(row.status))return unavailable;
+  if(Object.keys(row).some(key=>!['name','status','state','health','restartCount','oomKilled'].includes(key)))return unavailable;
+  if(row.status==='unavailable'){rows.push({name,status:'unavailable',reason:'指定容器不可读取'});continue;}
+  if(!['created','running','paused','restarting','removing','exited','dead'].includes(row.state)||!['none','starting','healthy','unhealthy'].includes(row.health)||!Number.isSafeInteger(row.restartCount)||row.restartCount<0||typeof row.oomKilled!=='boolean')return unavailable;
+  rows.push({name,status:'ok',state:row.state,health:row.health,restartCount:row.restartCount,oomKilled:row.oomKilled});
+ }
+ return {status:rows.some(row=>row.status==='unavailable')?'partial':'ok',source:'hakari-fixed-docker-inspect',generatedAt:new Date(data.generatedAt).toISOString(),rows};
+}
 export class MetricsService {
  private activeWrites=0;
  private previousCpu={usage:process.cpuUsage(),time:performance.now()};
@@ -44,7 +59,7 @@ export class MetricsService {
    const data=JSON.parse(buffer.subarray(0,bytesRead).toString('utf8')),age=Date.now()-new Date(data.generatedAt).getTime();
    if(data.source!=='hakari-host'||!Number.isFinite(age)||age< -5000||age>120000)return {status:'unavailable',reason:'整机采集文件已过期或无效'};
    if(!finite(data.cpu?.percent)||data.cpu.percent>100||!finite(data.memory?.totalBytes)||!finite(data.memory?.availableBytes)||data.memory.availableBytes>data.memory.totalBytes||!finite(data.disk?.totalBytes)||!finite(data.disk?.availableBytes)||data.disk.availableBytes>data.disk.totalBytes)throw Error('Invalid metrics values');
-   return {status:'ok',source:'hakari-host',generatedAt:new Date(data.generatedAt).toISOString(),cpu:{percent:data.cpu.percent},memory:{totalBytes:data.memory.totalBytes,availableBytes:data.memory.availableBytes},disk:{totalBytes:data.disk.totalBytes,availableBytes:data.disk.availableBytes},containers:{status:'unavailable',reason:'未配置容器状态采集'}};
+   return {status:'ok',source:'hakari-host',generatedAt:new Date(data.generatedAt).toISOString(),cpu:{percent:data.cpu.percent},memory:{totalBytes:data.memory.totalBytes,availableBytes:data.memory.availableBytes},disk:{totalBytes:data.disk.totalBytes,availableBytes:data.disk.availableBytes},containers:hostContainers(data.containers)};
   }catch{return {status:'unavailable',reason:'整机采集文件不可读或无效'};}finally{await file?.close();}
  }
  async resources(actor:Actor){

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Superior Point 本地与云端项目、主题、历史记录和 Agent 接入帮助。">
+  <title>帮助中心 · Superior Point</title>
+  <link rel="stylesheet" href="help.css">
+  <script src="help.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到帮助内容</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Superior Point 首页"><span class="brand-mark" aria-hidden="true">S</span><span>SUPERIOR POINT</span></a>
+    <a class="back-link" href="/">返回工作台 <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">使用指南</p>
+      <h1 id="page-title">让每个项目都在<br><em>合适的位置</em></h1>
+      <p class="hero-copy">了解本地与云端项目如何保存，主题与历史记录如何工作，以及如何安全地连接 Agent。</p>
+      <label class="search-box" for="help-search">
+        <span aria-hidden="true">⌕</span>
+        <input id="help-search" type="search" placeholder="搜索帮助，例如：离线、PAT、恢复" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+      <p id="search-status" class="search-status" aria-live="polite">浏览全部指南</p>
+    </section>
+
+    <div class="layout">
+      <nav class="side-nav" aria-label="帮助目录">
+        <a href="#library">项目与存储</a>
+        <a href="#themes">主题库</a>
+        <a href="#history">历史与恢复</a>
+        <a href="#agents">Agent 接入</a>
+        <a href="#permissions">权限与限制</a>
+        <a href="#faq">常见问题</a>
+      </nav>
+
+      <div class="content">
+        <section id="library" class="help-section" data-search="本地 云端 项目 保存 浏览器 迁移 同步 存储">
+          <p class="section-index">01 / 工作区</p>
+          <h2>项目与存储</h2>
+          <p>工作台可以同时展示当前浏览器里的本地项目和账号下的云端项目。项目卡片会标明来源；打开已有项目时，保存仍回到它原来的位置。</p>
+          <div class="cards two-up">
+            <article class="info-card">
+              <span class="card-label">本地浏览器</span>
+              <h3>留在当前设备</h3>
+              <p>项目保存在此浏览器的站点数据中。登录或云端服务异常时，本地项目仍可使用。更换浏览器、设备或清除站点数据不会自动迁移这些内容。</p>
+            </article>
+            <article class="info-card accent-card">
+              <span class="card-label">云端账号</span>
+              <h3>账号内私有保存</h3>
+              <p>登录后可打开云端库。云端项目需要网络与有效账号权限；管理员身份本身不会获得他人私有项目的读取权。</p>
+            </article>
+          </div>
+          <div class="callout"><strong>迁移会复制。</strong>“复制到云端并核对”会验证云端副本，本地原项目仍保留。两份项目此后各自保存，不会自动同步。</div>
+          <p>新建项目的保存位置由账号面板中的“新建项目保存位置”决定。切换位置只改变后续新建项目的目标，不会移动现有项目。</p>
+        </section>
+
+        <section id="themes" class="help-section" data-search="主题 内置 个人 云端 私有 JSON 导入 导出 预览 版本">
+          <p class="section-index">02 / 外观</p>
+          <h2>主题库</h2>
+          <p>主题库分为内置主题、个人本地主题和账号私有的云端主题。内置主题只读；个人主题可在所属库中管理。云端主题不会公开给其他账号。</p>
+          <ul class="plain-list">
+            <li><span>导入与导出</span><span>主题可通过 JSON 文件在本地保存或迁移。导出的文件由你管理，不代表平台备份。</span></li>
+            <li><span>版本</span><span>已发布版本不可覆盖；更新会形成新的版本。上传云端会创建独立云端副本，原本地主题保留。</span></li>
+            <li><span>预览</span><span>预览用于查看示例效果。实际字体、图表及渲染结果可能因环境而不同。</span></li>
+          </ul>
+          <p class="link-row"><a href="https://github.com/J-X-C-Z/Superior-Point/blob/roadmap/v1.1-foundation/docs/THEMES.md" target="_blank" rel="noopener noreferrer">主题使用与格式说明 <span aria-hidden="true">↗</span></a></p>
+        </section>
+
+        <section id="history" class="help-section" data-search="历史 修订 版本 比较 恢复 冲突 离线 草稿 保存失败">
+          <p class="section-index">03 / 找回内容</p>
+          <h2>历史、冲突与恢复</h2>
+          <p>云端项目会记录服务端修订历史。可以查看修订、比较快照，并将较早版本恢复为一个新的当前修订。恢复不会删除之后的历史记录，也不是数据库回滚；需要项目读取与写入权限。</p>
+          <div class="steps" aria-label="遇到云端冲突时的建议步骤">
+            <div><b>1</b><p>先保留当前页面与提示，不要反复提交旧内容。</p></div>
+            <div><b>2</b><p>重新读取云端项目，确认最新修订，再决定是继续编辑还是从历史版本恢复。</p></div>
+            <div><b>3</b><p>若页面提供“恢复草稿”，可恢复为独立项目或另存为本地副本；原云端项目不会被草稿恢复覆盖。</p></div>
+          </div>
+          <div class="callout caution"><strong>离线边界。</strong>本地项目可以在当前浏览器使用。云端编辑不会在断网时自动同步；保存失败时可能留下浏览器本地恢复草稿。草稿依赖原浏览器站点数据与对应账号，清除站点数据或存储空间不足可能使其不可用。</div>
+          <p>云端历史仅适用于云端项目。恢复草稿不是服务端备份，也不保证跨浏览器或设备可用。需要编辑器内具体恢复操作时，请参阅<a href="https://github.com/J-X-C-Z/Superior-Point/blob/main/docs/RECOVERY.md" target="_blank" rel="noopener noreferrer">现有恢复说明 <span aria-hidden="true">↗</span></a>。</p>
+        </section>
+
+        <section id="agents" class="help-section" data-search="Agent PAT API OAuth MCP 授权 令牌 scopes 项目白名单 PKCE">
+          <p class="section-index">04 / 自动化</p>
+          <h2>Agent 接入</h2>
+          <p>在工作台打开“Agent 接入”可创建个人访问令牌（PAT）并设置权限。默认有效期为 30 天，最长 365 天。令牌只在创建时显示一次；请安全保存，避免放进截图、文档、网址或源代码。遗失后撤销旧令牌并创建新的。</p>
+          <div class="token-note"><span class="token-icon" aria-hidden="true">⌘</span><div><strong>从最小权限开始</strong><p>只勾选 Agent 当前需要的操作，并尽量限定项目范围。令牌可设置到期时间；不用时可随时撤销。</p></div></div>
+          <h3 class="subheading">API 示例</h3>
+          <p>将服务器地址与令牌放入当前终端的环境变量，然后用只读权限列出可访问的项目：</p>
+          <div class="code-wrap"><pre><code>export SP_API_URL="https://你的服务地址"
+export SP_API_TOKEN="在此终端安全设置令牌"
+curl --fail-with-body \
+  --header "Authorization: Bearer $SP_API_TOKEN" \
+  "$SP_API_URL/api/v1/projects"</code></pre><button class="copy-button" type="button" aria-label="复制 API 示例">复制</button></div>
+          <p class="fine-print">此示例需要 <code>projects:read</code>。请勿把真实令牌粘贴到共享终端或公开日志中。</p>
+          <h3 class="subheading">远程 MCP 与 OAuth</h3>
+          <p>支持该功能版本的服务可提供远程 HTTP MCP 入口 <code>/mcp</code>。MCP 传输使用无状态 JSON，不提供 MCP 特有的 SSE 通知流。OAuth 授权码与 PKCE 流程需要用户同意，并可限制项目范围；是否可用取决于部署中的服务版本。第三方桌面客户端与真实浏览器登录尚未逐一验收，请先确认客户端兼容性。OAuth 令牌面向 MCP 入口，不等同于网站登录，也不替代本地 stdio Bridge 所用的 PAT。</p>
+          <div class="callout">开发分支已实现云端项目修订变更的 SSE 提示接口，供浏览器获知项目状态变化；主控真实浏览器验收尚待完成，生产部署尚未进行。它与 MCP 工具传输分开，也不会自动读取、合并或保存正文。</div>
+          <p>云端原生 MCP 当前共有 20 个工具，其中新增 4 个历史工具：<code>sp_list_revisions</code> 列出修订、<code>sp_get_revision</code> 读取快照、<code>sp_revision_diff</code> 比较修订、<code>sp_restore_revision</code> 将较早内容提交为新修订。前三项需要 <code>projects:read</code>；恢复需要 <code>projects:write</code>、当前修订号和稳定的 mutation ID，并遵守项目编辑租约。</p>
+          <div class="callout">本地代码与测试通过不代表功能已部署到你的服务。若服务未提供对应入口或授权选项，请按当前部署实际显示为准。远程 MCP <code>/mcp</code> 仍使用无状态 JSON 传输，没有 MCP SSE 通知流。</div>
+        </section>
+
+        <section id="permissions" class="help-section" data-search="权限 范围 scopes 项目 私有 管理员 PAT themes delete export">
+          <p class="section-index">05 / 访问范围</p>
+          <h2>权限与限制</h2>
+          <p>Agent 授权按操作和数据范围分别控制。项目权限与主题权限相互独立；不要因为一次集成需要读取项目，就一并授予删除或主题发布权限。</p>
+          <div class="scope-grid">
+            <div><code>projects:read</code><span>列出并读取获准访问的项目</span></div>
+            <div><code>projects:create</code><span>创建项目</span></div>
+            <div><code>projects:write</code><span>编辑项目与恢复历史修订</span></div>
+            <div><code>projects:export</code><span>导出获准访问的项目</span></div>
+            <div><code>projects:delete</code><span>删除项目；按需单独授予</span></div>
+            <div><code>assets:write</code><span>服务端支持的资源写入授权；当前 PAT 表单未列出</span></div>
+            <div><code>themes:read / write / publish</code><span>读取、管理或发布个人主题</span></div>
+          </div>
+          <p class="fine-print">项目白名单会进一步限制可访问的项目。私有项目仍由所属账号控制；管理员没有绕过私有内容权限的特权。云端主题能力也取决于服务部署和令牌范围。</p>
+        </section>
+
+        <section id="faq" class="help-section faq-section" data-search="常见问题 FAQ 找不到 项目 不同步 令牌 丢失">
+          <p class="section-index">06 / 快速解答</p>
+          <h2>常见问题</h2>
+          <details class="faq-item" data-search="本地 云端 项目 不同步 迁移">
+            <summary>为什么本地项目没有出现在另一台设备？</summary>
+            <p>本地项目存放在创建它的浏览器中。登录云端账号不会自动上传它；需要主动复制到云端，且本地原件会保留。</p>
+          </details>
+          <details class="faq-item" data-search="令牌 PAT 丢失 撤销">
+            <summary>我忘了保存 PAT，还能再次查看吗？</summary>
+            <p>不能。撤销旧令牌，再创建一个新令牌，并只授予必需权限。</p>
+          </details>
+          <details class="faq-item" data-search="离线 云端 保存 草稿 浏览器">
+            <summary>断网后能继续编辑云端项目吗？</summary>
+            <p>云端改动不会自动离线同步。若已有本地恢复草稿，可按页面提供的选项另存为本地副本；恢复草稿依赖原浏览器站点数据。</p>
+          </details>
+          <details class="faq-item" data-search="历史 本地 修订 云端">
+            <summary>本地项目也有云端历史记录吗？</summary>
+            <p>没有。服务端修订历史适用于云端项目。</p>
+          </details>
+          <p id="no-results" class="no-results" hidden>没有找到匹配内容。试试“本地”“恢复”或“权限”。</p>
+        </section>
+
+        <footer class="footer"><span>Superior Point 帮助中心</span><a href="/">回到工作台 ↑</a></footer>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

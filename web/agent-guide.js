@@ -48,7 +48,7 @@ export function mountAgentGuide({container, document = container.ownerDocument, 
  const root = document.createElement("section");
  root.className = "agent-guide";
  const intro = document.createElement("p");
- intro.textContent = "Superior Point 当前通过本机 stdio Bridge 连接 MCP 客户端，再由 Bridge 使用 HTTPS 和 PAT 访问云端。需要 Node.js 22+，以及本机克隆的 Superior Point 仓库；当前没有远程 /mcp 或 OAuth 接入。";
+ intro.textContent = "Superior Point 的云端 stdio Bridge 与当前开发版本的原生 HTTP MCP 共用 20 个工具，涵盖项目、主题和历史版本。下方示例使用本机 Bridge，需要 Node.js 22+、本机仓库和 PAT。原生 /mcp 与 OAuth 是否可用取决于服务部署版本；仅本地测试通过不代表公网已更新。";
  root.append(intro);
  const repo = `cd ${REPO}\nnpm ci`;
  const {origin: apiOrigin, allowLoopbackHttp} = trustedCloudConfig(cloudURL ?? document.defaultView?.location?.origin, document);

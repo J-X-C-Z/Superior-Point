@@ -4,6 +4,7 @@ import {mkdtemp,writeFile,rm,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import Fastify from 'fastify';
+import {execFileSync} from 'node:child_process';
 import {AuthService} from '../../server/auth/auth-service.js';
 import {TokenService} from '../../server/auth/token-service.js';
 import {ProjectService} from '../../server/services/project-service.js';
@@ -46,6 +47,14 @@ test('resource scopes are explicit; host file is sanitized, bounded, stale-safe,
   const filename=path.join(directory,'host.json'),metrics=new MetricsService(db,{hostMetricsFile:filename});
   const fixture={source:'hakari-host',generatedAt:new Date().toISOString(),cpu:{percent:12.5},memory:{totalBytes:1000,availableBytes:500},disk:{totalBytes:2000,availableBytes:1500},env:'NEVER_EXPOSE_ENV',token:'NEVER_EXPOSE_TOKEN',containers:{dockerSocket:'NEVER_EXPOSE_SOCKET'}};
   await writeFile(filename,JSON.stringify(fixture));const current=await metrics.resources(admin);assert.equal(current.host.status,'ok');assert.doesNotMatch(JSON.stringify(current),/NEVER_EXPOSE/);
+  const containers={source:'hakari-fixed-docker-inspect',generatedAt:new Date().toISOString(),rows:['superior-point-app-1','superior-point-db-1','superior-point-caddy-1'].map(name=>({name,status:'ok',state:'running',health:'healthy',restartCount:2,oomKilled:false}))};
+  await writeFile(filename,JSON.stringify({...fixture,containers}));const withContainers=(await metrics.resources(admin)).host;const entries=withContainers.containers;assert.ok(entries&&'rows' in entries);assert.equal(entries.status,'ok');assert.equal(entries.rows.length,3);assert.deepEqual(entries.rows.map(row=>row.name),containers.rows.map(row=>row.name));
+  await writeFile(filename,JSON.stringify({...fixture,containers:{...containers,rows:containers.rows.slice(0,2)}}));assert.equal((await metrics.resources(admin)).host.containers?.status,'unavailable');
+  for(const bad of [{name:'other-service-1'},{state:'NEVER_EXPOSE_ENV'},{health:'<script>evil</script>'},{restartCount:-1},{restartCount:9007199254740992},{oomKilled:'false'},{Env:'NEVER_EXPOSE_ENV'}]){
+   await writeFile(filename,JSON.stringify({...fixture,containers:{...containers,rows:containers.rows.map((row,index)=>index===0?{...row,...bad}:row)}}));const value=await metrics.resources(admin);assert.equal(value.host.containers?.status,'unavailable');assert.doesNotMatch(JSON.stringify(value),/other-service|NEVER_EXPOSE|<script>/);
+  }
+  await writeFile(filename,JSON.stringify({...fixture,containers:{...containers,generatedAt:new Date(Date.now()-180000).toISOString()}}));const staleContainers=(await metrics.resources(admin)).host;assert.equal(staleContainers.status,'ok');assert.equal(staleContainers.containers?.status,'unavailable');
+  await writeFile(filename,JSON.stringify({...fixture,containers:{...containers,rows:[{name:'superior-point-app-1',status:'unavailable'},...containers.rows.slice(1)]}}));assert.equal((await metrics.resources(admin)).host.containers?.status,'partial');
   await writeFile(filename,JSON.stringify({...fixture,generatedAt:new Date(Date.now()-180000).toISOString()}));assert.equal((await metrics.resources(admin)).host.status,'unavailable');
   await writeFile(filename,JSON.stringify({...fixture,cpu:{percent:999}}));assert.equal((await metrics.resources(admin)).host.status,'unavailable');
   const link=path.join(directory,'link.json');await symlink(filename,link);assert.equal((await new MetricsService(db,{hostMetricsFile:link}).resources(admin)).host.status,'unavailable');
@@ -68,4 +77,33 @@ test('locked telemetry times out, drops excess concurrency and leaves business c
   assert.equal(await metrics.recordToolCall(input),true,'all concurrency slots and clients must be released after timeout');
   assert.equal((await metrics.tools(admin)).total,1);assert.equal((await new ProjectService(db).get(admin,document.id)).title,'business while metrics locked');
  }finally{if(lock){await lock.query('ROLLBACK');lock.release();}await cleanupTestDatabase(db);}
+});
+
+test('optional collector invokes only fixed formatted Docker inspection and publishes no extra data',()=>{
+ const output=execFileSync('python3',['-c',`import importlib.util, json, types, subprocess
+spec=importlib.util.spec_from_file_location('collector','deploy/hakari/collect-metrics.py')
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+calls=[]
+def inspect(args, **kwargs):
+ calls.append(args)
+ assert args[:4]==['/usr/bin/docker','--host=unix:///var/run/docker.sock','inspect','--type=container']
+ assert args[4]=='--format' and args[-1] in m.CONTAINERS
+ assert '.Config' not in args[5] and '.NetworkSettings' not in args[5] and '.Args' not in args[5]
+ assert kwargs['timeout']==5 and kwargs['check'] is True
+ if args[-1]=='superior-point-db-1': raise subprocess.CalledProcessError(1,args,stderr='NEVER_PRINT_SECRET')
+ return types.SimpleNamespace(stdout=json.dumps({'state':'running','health':'healthy','restartCount':3,'oomKilled':False,'Env':'NEVER_EXPOSE_SECRET'}))
+m.subprocess.run=inspect
+data=m.collect_containers()
+assert len(calls)==3 and len(data['rows'])==3
+assert data['rows'][1]=={'name':'superior-point-db-1','status':'unavailable'}
+assert data['rows'][0]['restartCount']==3
+assert 'NEVER_' not in json.dumps(data)
+print('fixed Docker fixture passed')`],{encoding:'utf8'});assert.match(output,/fixture passed/);
+});
+test('container dashboard identifies the host source and only fixed lifecycle rows',()=>{
+ const output=execFileSync(process.execPath,['--input-type=module','-e',`import assert from 'node:assert/strict';import {JSDOM} from 'jsdom';import {mountObservability} from './web/admin/observability.js';
+ const dom=new JSDOM('<main></main>'),container=dom.window.document.querySelector('main');let mounted;
+ const generatedAt=new Date().toISOString(),rows=['superior-point-app-1','superior-point-db-1','superior-point-caddy-1'].map(name=>({name,status:'ok',state:'running',health:'healthy',restartCount:2,oomKilled:false}));
+ const data={generatedAt,application:{status:'ok',uptimeSeconds:1,cpu:{oneCorePercent:0},memory:{rssBytes:1,heapUsedBytes:1},cgroup:{status:'unavailable'},disk:{status:'unavailable'}},api:{status:'ok'},database:{status:'ok',connections:1,active:1,probeDurationMs:1},host:{status:'ok',generatedAt,cpu:{percent:1},memory:{totalBytes:2,availableBytes:1},disk:{totalBytes:2,availableBytes:1},containers:{status:'ok',source:'hakari-fixed-docker-inspect',generatedAt,rows}}};
+ try{mounted=mountObservability({container,api:{async request(url){return url.includes('/resources')?data:{total:0,summary:{calls:0,errors:0,errorRate:0,averageDurationMs:0},rows:[]};}}});await new Promise(resolve=>setTimeout(resolve,0));assert.match(container.textContent,/Hakari 固定 Docker inspect 采集/);for(const row of rows)assert.ok(container.textContent.includes(row.name));assert.match(container.textContent,/重启次数/);assert.match(container.textContent,/OOM/);assert.match(container.textContent,/healthy/);assert.equal(container.querySelectorAll('table').length,4);console.log('container dashboard passed');}finally{mounted?.destroy();dom.window.close();}`],{encoding:'utf8'});assert.match(output,/dashboard passed/);
 });

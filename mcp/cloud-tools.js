@@ -74,4 +74,16 @@ export function registerCloudTools(server,{request,files,redact=value=>String(va
  register('sp_list_projects','List authorized cloud projects.',{trash:z.boolean().optional()},args=>request('GET','/projects'+(args.trash?'?trash=true':'')));
  register('sp_project_info','Read authoritative project metadata and slide counts.',{projectId:id},async args=>{const d=await request('GET',project(args.projectId));return {id:d.id,title:d.title,revision:d.revision,canvas:d.canvas,metadata:d.metadata,slideCount:d.slides.length,assetCount:d.assets.length};});
  register('sp_list_slides','List slides from the authoritative cloud document.',{projectId:id},async args=>{const d=await request('GET',project(args.projectId)+'/document');return {projectId:d.id,revision:d.revision,slides:d.slides.map(s=>({id:s.id,title:s.title,hidden:s.hidden,elementCount:s.elements.length}))};});
+ register('sp_list_revisions','List authorized immutable cloud revision metadata, newest first.',{projectId:id},args=>request('GET',project(args.projectId)+'/revisions'));
+ register('sp_get_revision','Read an authorized immutable historical document without changing the current project.',{projectId:id,revision:rev},args=>request('GET',project(args.projectId)+'/revisions/'+args.revision));
+ register('sp_revision_diff','Compare two authorized saved revisions with structured slide/object, theme and asset diagnostics.',{projectId:id,fromRevision:rev,toRevision:rev},args=>request('GET',project(args.projectId)+'/revision-diff?from='+args.fromRevision+'&to='+args.toRevision));
+ register('sp_restore_revision','Restore an earlier revision as a new CAS revision under an exclusive lease. Requires an explicit stable mutation ID; preserves history and never steals browser editing authority.',{projectId:id,revision:rev,expectedRevision:rev,clientMutationId:id},async({projectId,...payload})=>{
+  const route=project(projectId)+'/restore-revision';
+  // Existing receipts resolve before lease validation, including retries after a Bridge restart.
+  try{return await request('POST',route,payload,{retry:true});}catch(error){if(error.code!=='LOCK_LOST')throw error;}
+  const lease=await request('POST',project(projectId)+'/lease',{holder:'mcp-history-restore'});
+  try{return await request('POST',route,{...payload,leaseToken:lease.leaseToken},{retry:true});}
+  finally{try{await request('DELETE',project(projectId)+'/lease',{leaseToken:lease.leaseToken});}catch{ /* An uncertain outcome keeps the same mutation ID; the lease expires. */ }}
+ });
+
 }

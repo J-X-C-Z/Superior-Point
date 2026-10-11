@@ -2,7 +2,7 @@
 
 演示文稿工作台，集成 v0.39 编辑器。`0.1.0-alpha` 是可试用的预发布候选，不代表稳定版或完整路线图交付；产品版本与内部编辑器版本分别编号。
 
-当前 v1.1 服务开发分支新增原生 Streamable HTTP MCP、OAuth 授权码 + PKCE S256，以及管理员工具调用和资源统计；这是待部署开发能力，不能据此推断 Hakari 已上线。OAuth 授权仅用于 MCP，外部 REST API 继续使用 PAT。原生 HTTP MCP 采用无状态 JSON 响应，尚无 SSE 通知；stdio 完整调用统计、第三方客户端、真实浏览器授权和 Hakari 整机采集仍待验收。见 [远程 MCP](docs/mcp/http.md)、[OAuth](docs/mcp/oauth.md)、[运行统计](docs/deployment/observability.md)。
+当前 v1.1 服务开发分支新增原生 Streamable HTTP MCP、OAuth 授权码 + PKCE S256，以及管理员工具调用和资源统计；共享云端 MCP 现为 20 个工具，新增历史列表、修订读取、结构化差异和租约保护的 CAS 恢复；这是待部署开发能力，不能据此推断 Hakari 已上线。OAuth 授权仅用于 MCP，外部 REST API 继续使用 PAT。原生 HTTP MCP 采用无状态 JSON 响应，尚无 SSE 通知；stdio 完整调用统计、第三方客户端、真实浏览器授权和 Hakari 整机采集仍待验收。见 [远程 MCP](docs/mcp/http.md)、[OAuth](docs/mcp/oauth.md)、[运行统计](docs/deployment/observability.md)。
 
 ## Alpha 候选已部署
 
@@ -38,7 +38,7 @@ npm start
 - 可编辑 HTML：内嵌真实 Reveal.js 5.2.1 与 CSS、惰性 JSON 数据、安全导入，不加载 CDN。
 - 基础渲染器：文本、简单形状、连接线、内嵌图片、表格、条形图、appear fragments；高级富文本/复杂动画等仅保留数据，尚未实现最终表现。
 - 独立主题库（本仓库当前代码）：6 个只读内置主题、个人本地/云端主题、固定版本、JSON 导入导出，以及保留手工覆盖或明确重置的主题应用。
-- 本地 stdio MCP：8 个真实 SDK 工具和范围受限的文件项目库。云端 stdio MCP Bridge：16 个工具，其中 5 个用于主题；主题访问需单独授予 `themes:read`、`themes:write` 或 `themes:publish`。
+- 本地 stdio MCP：8 个真实 SDK 工具和范围受限的文件项目库。云端 stdio MCP Bridge：20 个工具，其中 5 个用于主题、4 个用于历史版本；主题访问需单独授予 `themes:read`、`themes:write` 或 `themes:publish`。
 - v0.39 候选适配：隔离 iframe、单一 Core 提交、统一撤销、关闭旧存储双写、失败快照恢复。
 - 独立 v0.32 只读参考检查与无损 JSON 保留实验，未在 UI 启用；图片字节检查和按元素的渲染兼容诊断。
 

@@ -1,3 +1,7 @@
+import {registerQuotaRoutes} from './routes/quota-routes.js';
+import {registerShareRoutes} from './routes/share-routes.js';
+import {ShareService} from './services/share-service.js';
+import {registerProjectEvents} from './project-events.js';
 import {MetricsService} from './observability/metrics-service.js';
 import {registerObservabilityRoutes} from './observability/routes.js';
 import {registerMcpHttp, type McpAuthenticator} from './mcp-http.js';
@@ -75,6 +79,9 @@ export function buildApp(options: AppOptions) {
   const result=await auth.login(body(request).username,body(request).password);
   reply.header('Set-Cookie',cookie(result.sessionToken,Math.max(0,Math.floor((new Date(result.expiresAt).getTime()-Date.now())/1000))));return {user:result.user,csrfToken:result.csrfToken};
  });
+ app.get('/api/v1/me/sessions',async request=>auth.listOwnSessions(await actor(request)));
+ app.delete('/api/v1/me/sessions/:id',{schema:{params:schema({id:{type:'string',format:'uuid'}},['id'])}},async request=>auth.revokeOwnSession(await writable(request),(request.params as {id:string}).id));
+ app.get('/api/v1/admin/security',async request=>auth.loginSecurity(await actor(request)));
  app.get('/api/v1/auth/me',async request=>({user:await auth.getUser(await actor(request))}));
  app.post('/api/v1/auth/csrf',async request=>{const current=await actor(request);if(current.source!=='web')throw errors.forbidden();return auth.rotateCsrf(current);});
  app.post('/api/v1/auth/reauth',{schema:{body:schema({password:{type:'string',minLength:1,maxLength:1024}},['password'])}},async request=>auth.reauthenticate(await writable(request),body(request).password));
@@ -123,7 +130,10 @@ export function buildApp(options: AppOptions) {
  app.addHook('onReady',async()=>backupService.reconcileInterrupted());
  app.addHook('onClose',async()=>backupService.waitForIdle());
  registerAdminRoutes(app,{db,auth,tokens,projects,actor,writable,backupService});
+ registerQuotaRoutes(app,{db,actor});
+ registerShareRoutes(app,{shares:new ShareService(db,{origin}),actor,writable});
  registerStaticRoutes(app,actor);
+ registerProjectEvents(app,{db,origin,actor});
  registerOAuthRoutes(app,{db,origin,auth,actor,service:oauth});
  const metrics=new MetricsService(db,{hostMetricsFile:options.hostMetricsFile});
  registerObservabilityRoutes(app,{metrics,actor});

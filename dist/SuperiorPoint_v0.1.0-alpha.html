@@ -192,16 +192,35 @@ body.editor-open #account-menu{display:none}
 @media(max-width:660px){.theme-heading h1{font-size:30px}.theme-filters{gap:10px}.theme-filters label{flex:1;min-width:120px}.theme-filters input,.theme-filters select{width:100%;max-width:none}.theme-grid,.theme-samples{grid-template-columns:1fr}.theme-dialog{padding:20px}.theme-edit-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.theme-actions{padding:12px}.theme-dialog h2{font-size:21px}}
 @media(max-width:380px){.theme-edit-fields{grid-template-columns:1fr}}
 
+/* Keep the landing-page action below the copy on the narrowest phones. */
+@media(max-width:380px){.intro{flex-direction:column}.intro>div,.new-card{width:100%;min-width:0}}
+
+/* Native dialogs stay reachable on short screens and their actions can wrap. */
+dialog{max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+.dialog-actions{flex-wrap:wrap}
+body>dialog[aria-labelledby="share-center-title"]{width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:clamp(16px,4vw,28px)}
+body>dialog[aria-labelledby="share-center-title"] textarea{display:block;width:100%;max-width:100%;overflow-wrap:anywhere}
+
 .project-history-dialog{width:min(920px,calc(100vw - 32px));max-height:90dvh;overflow:auto;padding:24px;border:1px solid var(--line);background:var(--paper,#faf9f5);color:var(--ink,#171717)}.project-history-dialog header,.project-history-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.project-history-list{display:grid;gap:8px;margin:20px 0;max-height:260px;overflow:auto}.project-history-row,.project-history-version{overflow-wrap:anywhere}.project-history-preview{white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere}.project-history-dialog button{min-height:40px}.project-history-dialog::backdrop{background:rgba(20,24,20,.35)}@media(max-width:480px){.project-history-dialog{padding:16px;width:calc(100vw - 24px)}}
+body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margin:0;padding:8px 12px;flex:none;border-left:0;border-bottom:1px solid #d0d5cc}
+@media(max-width:600px){
+ main>header{height:auto;min-height:65px;padding:8px 0;justify-content:flex-start;flex-wrap:wrap;gap:8px}
+ main>header .breadcrumb{flex:1 0 100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ main>header :is(a,button){font-size:10px;padding:7px 9px;white-space:nowrap}
+ main>header #account-menu{margin-left:auto}
+ .library-toolbar>div{width:100%;min-width:0;flex-wrap:wrap;gap:8px}
+ .library-toolbar>div #search{width:auto;min-width:0;flex:1 1 100%}
+ .library-toolbar>div #project-source,.library-toolbar>div #sort{width:auto;min-width:0;flex:1 1 120px}
+}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button><button data-view="themes">主题库 <span>05</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
-<main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
+<main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><a href="/web/help.html" class="secondary">帮助中心</a><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
 <p class="import-help">打开 SP 导出的 HTML 或 JSON 备份，最多 25 MiB。导入会保留原文件并创建独立项目。</p><div id="import-status" class="import-status" role="status" hidden><p id="import-message"></p><button id="import-go-home" class="secondary" hidden>在工作台查看</button></div>
 <section id="home-view"><div class="intro"><div><p class="eyebrow">SUPERIOR POINT / PRESENTATION STUDIO</p><h1>让想法，<br><em>有序呈现。</em></h1><p class="subtitle">从一个项目开始。内容保存在本地，随时导出、重新打开。</p></div><button id="new-project" class="new-card"><span class="plus">＋</span><span class="home-dots" aria-hidden="true"></span><strong>新建演示文稿</strong><small>空白项目 · 16:9 / 4:3</small><b>开始创作 ↗</b></button></div>
-<div class="library-toolbar"><h2 id="list-title">我的项目 <small id="count"></small></h2><div><input id="search" type="search" placeholder="搜索项目名称" aria-label="搜索项目"><select id="project-source" aria-label="项目来源筛选"><option value="all">全部来源</option><option value="local">本地项目</option><option value="cloud">云端项目</option><option value="uploaded">已上传云端</option><option value="draft">待恢复草稿</option></select><select id="sort" aria-label="项目排序"><option value="modified">最近修改</option><option value="title">按名称</option></select></div></div><p id="library-status" class="recovery-note" role="status" hidden></p><div id="projects" class="projects"></div><div id="empty" hidden><h3>这里还没有项目。</h3><p>新建一份演示文稿，或打开 SP 导出的 HTML / JSON 备份。</p></div>
+<div class="library-toolbar"><h2 id="list-title">我的项目 <small id="count"></small></h2><div><input id="search" type="search" placeholder="搜索项目名称" aria-label="搜索项目"><select id="project-source" aria-label="项目来源筛选"><option value="all">全部来源</option><option value="local">本地项目</option><option value="cloud">云端项目</option><option value="uploaded">已上传云端</option><option value="draft">待恢复草稿</option></select><select id="sort" aria-label="项目排序"><option value="modified">最近修改</option><option value="title">按名称</option></select></div></div><p id="library-status" class="recovery-note" role="status" hidden></p><div id="projects" class="projects"></div><div id="project-pages" class="pagination" aria-label="项目分页" hidden></div><div id="empty" hidden><h3>这里还没有项目。</h3><p>新建一份演示文稿，或打开 SP 导出的 HTML / JSON 备份。</p></div>
 <div class="framework-note"><span>0.1.0 Alpha 开发预览</span> <button id="open-example" class="secondary">试用五页示例 ↗</button> 已集成 v0.39 编辑器，保存由工作台统一管理。此为早期预览版，验证范围见发布说明。</div></section>
 <section id="theme-view" hidden aria-label="主题库"></section>
-<section id="workspace-view" hidden><div class="document-toolbar"><button id="back-home" class="secondary">← 工作台</button><input id="project-title" aria-label="项目名称"><span id="revision"></span><button id="export-project" title="可重新编辑版：包含备注与批注，请勿直接作为公开分享版">备份可编辑 HTML ↗</button><button id="share-project" title="仅供观众放映，不含备注、批注、历史或编辑项目数据">分享观众 HTML ↗</button></div><div class="save-row"><span id="save-state">读取中</span><button id="retry-save" hidden>重试保存</button><button id="backup-json" title="完整保留数据，可重新导入此工作台">导出备份 JSON</button><button id="recover-project" hidden>恢复为独立项目</button><button id="takeover" hidden>接管编辑</button></div><p id="recovery-note" class="recovery-note" role="status" hidden></p><p id="import-note" class="recovery-note" role="status" hidden></p><p class="export-privacy-note">备份 HTML 含备注与批注；观众分享 HTML 仅供放映，不能恢复为编辑项目。</p><div id="editor-mount"></div></section>
+<section id="workspace-view" hidden><div class="document-toolbar"><button id="back-home" class="secondary">← 工作台</button><input id="project-title" aria-label="项目名称"><span id="revision"></span><button id="export-project" title="可重新编辑版：包含备注与批注，请勿直接作为公开分享版">备份可编辑 HTML ↗</button><button id="share-project" title="仅供观众放映，不含备注、批注、历史或编辑项目数据">分享观众 HTML ↗</button></div><div class="save-row"><span id="save-state">读取中</span><button id="retry-save" hidden>重试保存</button><button id="backup-json" title="完整保留数据，可重新导入此工作台">导出备份 JSON</button><button id="recover-project" hidden>恢复为独立项目</button><button id="takeover" hidden>接管编辑</button></div><p id="recovery-note" class="recovery-note" role="status" hidden></p><p id="import-note" class="recovery-note" role="status" hidden></p><p class="export-privacy-note">备份 HTML 含备注与批注；观众分享 HTML 仅供放映，不能恢复为编辑项目。</p><p id="remote-revision-notice" class="recovery-note" role="status" hidden></p><div id="editor-mount"></div></section>
 <footer><span>SP / LOCAL FIRST</span><span>你的内容，你的文件。</span></footer></main>
 <dialog id="new-dialog"><form id="new-form"><p class="eyebrow">NEW PRESENTATION</p><h2>从空白开始</h2><label>项目名称<input id="new-title" required maxlength="200" value="未命名演示文稿"></label><label>画布比例<select id="new-ratio"><option value="16:9">16:9 · 宽屏</option><option value="4:3">4:3 · 标准</option></select></label><div class="dialog-actions"><button type="button" id="cancel-new" class="secondary">取消</button><button type="submit">创建项目 ↗</button></div></form></dialog>
 <input id="file-input" type="file" accept=".html,.htm,.json" hidden><div id="notification" role="status" hidden></div><script>(() => {
@@ -216,9 +235,9 @@ body.editor-open #account-menu{display:none}
   };
 
   // io/image-assets.js
-  function crc32(bytes3, start, end) {
+  function crc32(bytes4, start, end) {
     let crc = 4294967295;
-    for (let i = start; i < end; i++) crc = crcTable[(crc ^ bytes3[i]) & 255] ^ crc >>> 8;
+    for (let i = start; i < end; i++) crc = crcTable[(crc ^ bytes4[i]) & 255] ^ crc >>> 8;
     return (crc ^ 4294967295) >>> 0;
   }
   function dimensions(width, height) {
@@ -312,8 +331,8 @@ body.editor-open #account-menu{display:none}
       invalid("invalid base64");
     }
     if (binary.length > IMAGE_LIMITS.maxBytes || btoa(binary) !== encoded) invalid("noncanonical base64 or byte limit");
-    const bytes3 = Uint8Array.from(binary, (c) => c.charCodeAt(0)), kind = match[1] === "jpg" ? "jpeg" : match[1], size = { png, jpeg, gif, webp }[kind](bytes3);
-    return { mimeType: "image/" + kind, byteLength: bytes3.length, ...size };
+    const bytes4 = Uint8Array.from(binary, (c) => c.charCodeAt(0)), kind = match[1] === "jpg" ? "jpeg" : match[1], size = { png, jpeg, gif, webp }[kind](bytes4);
+    return { mimeType: "image/" + kind, byteLength: bytes4.length, ...size };
   }
   var IMAGE_LIMITS, invalid, uint32, little32, ascii, crcTable;
   var init_image_assets = __esm({
@@ -1090,6 +1109,1192 @@ body.editor-open #account-menu{display:none}
     }
   });
 
+  // web/admin/observability.js
+  function mountObservability({ container, api }) {
+    const document2 = container.ownerDocument, view2 = document2.defaultView;
+    let offset = 0, destroyed = false, generation = 0, total = 0;
+    const limit = 25;
+    const node = (tag, text2) => {
+      const el = document2.createElement(tag);
+      if (text2 !== void 0) el.textContent = String(text2);
+      return el;
+    };
+    const form = node("form");
+    form.className = "admin-toolbar";
+    function field(name, label, type, value) {
+      const wrap = node("label", label), input = node("input");
+      input.name = name;
+      input.type = type;
+      input.value = value ?? "";
+      wrap.append(input);
+      form.append(wrap);
+      return input;
+    }
+    const from = field("from", "\u5F00\u59CB\u65F6\u95F4", "datetime-local", localDate(new Date(Date.now() - 864e5))), to = field("to", "\u7ED3\u675F\u65F6\u95F4", "datetime-local", localDate(/* @__PURE__ */ new Date()));
+    from.required = to.required = true;
+    const user = field("userId", "\u7528\u6237 ID", "text");
+    user.placeholder = "\u5168\u90E8\u7528\u6237";
+    user.pattern = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
+    const toolWrap = node("label", "\u5DE5\u5177"), tool = node("select");
+    tool.name = "tool";
+    for (const name of ["", ...tools]) {
+      const option = node("option", name || "\u5168\u90E8\u5DE5\u5177");
+      option.value = name;
+      tool.append(option);
+    }
+    toolWrap.append(tool);
+    form.append(toolWrap);
+    const submit = node("button", "\u67E5\u8BE2");
+    submit.type = "submit";
+    form.append(submit);
+    const status = node("p");
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const resources = node("section"), calls = node("section"), pages = node("div");
+    pages.className = "pagination";
+    const previous = node("button", "\u4E0A\u4E00\u9875"), next = node("button", "\u4E0B\u4E00\u9875"), page = node("span");
+    previous.type = next.type = "button";
+    pages.append(previous, page, next);
+    container.replaceChildren(form, status, resources, calls, pages);
+    function table(section, caption, headers, rows) {
+      section.append(node("h3", caption));
+      const wrap = node("div");
+      wrap.className = "table-wrap";
+      const table2 = node("table"), head = node("thead"), tr = node("tr");
+      for (const title of headers) {
+        const th = node("th", title);
+        th.scope = "col";
+        tr.append(th);
+      }
+      head.append(tr);
+      table2.append(head);
+      const body = node("tbody");
+      for (const values of rows) {
+        const row = node("tr");
+        for (const value of values) row.append(node("td", value ?? "\u2014"));
+        body.append(row);
+      }
+      table2.append(body);
+      wrap.append(table2);
+      section.append(wrap);
+    }
+    function renderResources(data) {
+      resources.replaceChildren(node("h2", "\u8D44\u6E90\u72B6\u6001"));
+      resources.append(node("p", "\u91C7\u96C6\u65F6\u95F4\uFF1A" + time(data.generatedAt)));
+      const app = data.application, host = data.host;
+      table(resources, "\u5E94\u7528\u8FDB\u7A0B\u3001\u5BB9\u5668\u4E0E\u6570\u636E\u5E93", ["\u6307\u6807\u8303\u56F4", "\u72B6\u6001", "\u5B9E\u9645\u6570\u636E"], [
+        ["\u5E94\u7528\u8FDB\u7A0B", app.status, `RSS ${bytes(app.memory.rssBytes)}\uFF1B\u5806 ${bytes(app.memory.heapUsedBytes)}\uFF1BCPU \u5355\u6838\u5360\u6BD4 ${app.cpu.oneCorePercent === null ? "\u91C7\u96C6\u4E2D" : app.cpu.oneCorePercent.toFixed(1) + "%"}\uFF1B\u8FD0\u884C ${Math.floor(app.uptimeSeconds)} \u79D2`],
+        ["\u53EF\u89C1 cgroup \u8D44\u6E90", app.cgroup.status, app.cgroup.status === "ok" ? `\u5185\u5B58 ${bytes(app.cgroup.memoryBytes)} / ${bytes(app.cgroup.memoryLimitBytes)}\uFF1B\u7D2F\u8BA1 CPU ${app.cgroup.cpuUsageMs.toFixed(1)} ms` : app.cgroup.reason],
+        ["\u5E94\u7528\u6587\u4EF6\u7CFB\u7EDF", app.disk.status, app.disk.status === "ok" ? `\u53EF\u7528 ${bytes(app.disk.availableBytes)} / ${bytes(app.disk.totalBytes)}` : "\u4E0D\u53EF\u7528"],
+        ["\u5F53\u524D API \u8BF7\u6C42", data.api.status, "\u6B64\u8BF7\u6C42\u5DF2\u54CD\u5E94\uFF0C\u4E0D\u4EE3\u8868\u5176\u4ED6\u63A5\u53E3\u5168\u90E8\u6B63\u5E38"],
+        ["\u5F53\u524D\u6570\u636E\u5E93", data.database.status, `\u8FDE\u63A5 ${data.database.connections}\uFF0C\u6D3B\u8DC3 ${data.database.active}\uFF1B\u63A2\u6D4B ${data.database.probeDurationMs.toFixed(1)} ms`]
+      ]);
+      table(resources, "Hakari \u6574\u673A", ["\u72B6\u6001", "\u91C7\u96C6\u65F6\u95F4", "CPU", "\u5185\u5B58", "\u78C1\u76D8"], [[host.status === "ok" ? "\u6B63\u5E38" : "\u4E0D\u53EF\u7528", host.status === "ok" ? time(host.generatedAt) : host.reason, host.status === "ok" ? host.cpu.percent.toFixed(1) + "%" : "\u2014", host.status === "ok" ? `\u53EF\u7528 ${bytes(host.memory.availableBytes)} / ${bytes(host.memory.totalBytes)}` : "\u2014", host.status === "ok" ? `\u53EF\u7528 ${bytes(host.disk.availableBytes)} / ${bytes(host.disk.totalBytes)}` : "\u2014"]]);
+      if (host.status === "ok") {
+        const containers = host.containers;
+        if (containers.rows?.length) {
+          resources.append(node("p", "\u5BB9\u5668\u6765\u6E90\uFF1AHakari \u56FA\u5B9A Docker inspect \u91C7\u96C6 \xB7 " + time(containers.generatedAt)));
+          table(resources, "Superior Point \u6307\u5B9A\u5BB9\u5668", ["\u5BB9\u5668", "\u91C7\u96C6\u72B6\u6001", "\u8FD0\u884C\u72B6\u6001", "\u5065\u5EB7\u68C0\u67E5", "\u91CD\u542F\u6B21\u6570", "OOM"], containers.rows.map((row) => [row.name, row.status === "ok" ? "\u53EF\u8BFB\u53D6" : row.reason, row.state, row.health, row.restartCount, row.oomKilled === void 0 ? "\u2014" : row.oomKilled ? "\u662F" : "\u5426"]));
+        } else resources.append(node("p", "\u6574\u673A\u5BB9\u5668\u72B6\u6001\uFF1A" + containers.reason));
+      }
+    }
+    async function refresh() {
+      if (destroyed) return;
+      const current = ++generation;
+      status.textContent = "\u6B63\u5728\u8BFB\u53D6\u5B9E\u9645\u7EDF\u8BA1\u2026";
+      try {
+        const fromDate = new Date(from.value), toDate = new Date(to.value);
+        if (!Number.isFinite(fromDate.getTime()) || !Number.isFinite(toDate.getTime()) || fromDate >= toDate) throw Error("\u8BF7\u9009\u62E9\u6709\u6548\u7684\u5F00\u59CB\u548C\u7ED3\u675F\u65F6\u95F4\u3002");
+        const query = new URLSearchParams({ from: fromDate.toISOString(), to: toDate.toISOString(), limit: String(limit), offset: String(offset) });
+        if (user.value.trim()) query.set("userId", user.value.trim());
+        if (tool.value) query.set("tool", tool.value);
+        const [stats, data] = await Promise.all([api.request("/admin/observability/tools?" + query), api.request("/admin/observability/resources")]);
+        if (destroyed || current !== generation) return;
+        total = stats.total;
+        calls.replaceChildren(node("h2", "Agent \u5DE5\u5177\u8C03\u7528"));
+        calls.append(node("p", `${stats.summary.calls} \u6761\u5DF2\u8BB0\u5F55\u8C03\u7528\uFF1B${stats.summary.errors} \u6B21\u5931\u8D25\uFF1B\u9519\u8BEF\u7387 ${(stats.summary.errorRate * 100).toFixed(1)}%\uFF1B\u5E73\u5747 ${stats.summary.averageDurationMs.toFixed(1)} ms`));
+        table(calls, "\u8C03\u7528\u8BB0\u5F55", ["\u65F6\u95F4", "\u7528\u6237", "\u5DE5\u5177", "\u4F20\u8F93", "\u7ED3\u679C", "\u8017\u65F6", "\u9519\u8BEF\u4EE3\u7801"], stats.rows.map((row) => [time(row.createdAt), row.userId || "\u5DF2\u5220\u9664\u7528\u6237", row.tool, row.transport, row.outcome === "success" ? "\u6210\u529F" : "\u5931\u8D25", row.durationMs.toFixed(1) + " ms", row.errorCode]));
+        if (!stats.rows.length) calls.append(node("p", "\u6B64\u65F6\u95F4\u8303\u56F4\u6682\u65E0\u8C03\u7528\u8BB0\u5F55\u3002"));
+        renderResources(data);
+        previous.disabled = offset === 0;
+        next.disabled = offset + limit >= total;
+        page.textContent = `\u7B2C ${Math.floor(offset / limit) + 1} \u9875\uFF0C\u5171 ${total} \u6761`;
+        status.textContent = "\u6570\u636E\u5DF2\u66F4\u65B0\u3002";
+      } catch (error) {
+        if (!destroyed && current === generation) status.textContent = error.message || "\u7EDF\u8BA1\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u91CD\u8BD5\u3002";
+      }
+    }
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      offset = 0;
+      refresh();
+    };
+    previous.onclick = () => {
+      offset = Math.max(0, offset - limit);
+      refresh();
+    };
+    next.onclick = () => {
+      if (offset + limit < total) {
+        offset += limit;
+        refresh();
+      }
+    };
+    const interval = view2.setInterval(refresh, 3e4);
+    refresh();
+    return { refresh, destroy() {
+      destroyed = true;
+      generation++;
+      view2.clearInterval(interval);
+      form.onsubmit = previous.onclick = next.onclick = null;
+    } };
+  }
+  var tools, bytes, time, localDate;
+  var init_observability = __esm({
+    "web/admin/observability.js"() {
+      tools = ["sp_create_project", "sp_open_project", "sp_get_document", "sp_get_slide", "sp_edit", "sp_render_slide", "sp_validate", "sp_save_export", "sp_list_projects", "sp_project_info", "sp_list_slides", "sp_list_themes", "sp_get_theme", "sp_preview_theme", "sp_apply_theme", "sp_save_theme", "sp_list_revisions", "sp_get_revision", "sp_revision_diff", "sp_restore_revision"];
+      bytes = (value) => Number.isFinite(value) ? (value / 1048576).toFixed(1) + " MiB" : "\u4E0D\u53EF\u7528";
+      time = (value) => new Date(value).toLocaleString("zh-CN");
+      localDate = (value) => new Date(value.getTime() - value.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+    }
+  });
+
+  // storage/cloud-drafts.js
+  var CloudDraftStore;
+  var init_cloud_drafts = __esm({
+    "storage/cloud-drafts.js"() {
+      init_document_core();
+      CloudDraftStore = class {
+        constructor({ name = "superior-point-cloud-drafts-v1" } = {}) {
+          this.name = name;
+          this.branch = crypto.randomUUID();
+          this.db = null;
+          this.opening = null;
+        }
+        async open() {
+          if (this.db) return this;
+          if (!this.opening) this.opening = new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.name, 2);
+            request.onupgradeneeded = () => {
+              for (const name of ["drafts", "migrations"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "key" });
+            };
+            request.onsuccess = () => {
+              this.db = request.result;
+              this.db.onversionchange = () => this.close();
+              resolve(this);
+            };
+            request.onerror = () => reject(request.error);
+            request.onblocked = () => reject(new Error("\u8BF7\u5173\u95ED\u65E7\u7248\u8349\u7A3F\u6807\u7B7E\u9875\u540E\u91CD\u8BD5"));
+          }).finally(() => this.opening = null);
+          return this.opening;
+        }
+        close() {
+          this.db?.close();
+          this.db = null;
+        }
+        async tx(mode, operation, name = "drafts") {
+          await this.open();
+          return new Promise((resolve, reject) => {
+            const tx = this.db.transaction(name, mode);
+            let result;
+            tx.oncomplete = () => resolve(structuredClone(result));
+            tx.onabort = tx.onerror = () => reject(tx.error || new Error("\u672C\u5730\u6062\u590D\u8349\u7A3F\u5199\u5165\u5931\u8D25"));
+            operation(tx.objectStore(name), (value) => result = value);
+          });
+        }
+        async save(accountId, document2, { sourceRevision, mutation } = {}) {
+          const snapshot = importDocument(document2);
+          if (!accountId || !Number.isSafeInteger(sourceRevision) || sourceRevision < 0) throw new Error("\u8349\u7A3F\u7F3A\u5C11\u8D26\u53F7\u6216\u6765\u6E90\u4FEE\u8BA2");
+          const record = { key: [accountId, snapshot.id, sourceRevision, this.branch], accountId, projectId: snapshot.id, sourceRevision, document: snapshot, updatedAt: Date.now(), ...mutation ? { mutation: structuredClone(mutation) } : {} };
+          return this.tx("readwrite", (store2, done) => {
+            const request = store2.get(record.key);
+            request.onsuccess = () => {
+              const old = request.result;
+              if (old && old.document.revision > snapshot.revision) {
+                done(old);
+                return;
+              }
+              store2.put(record);
+              done(record);
+            };
+          });
+        }
+        async list(accountId, projectId) {
+          return this.tx("readonly", (store2, done) => {
+            const request = store2.getAll();
+            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId && (!projectId || record.projectId === projectId)).sort((a, b) => b.updatedAt - a.updatedAt));
+          });
+        }
+        async clearSaved(accountId, projectId, revision, branch = this.branch) {
+          return this.tx("readwrite", (store2, done) => {
+            const request = store2.getAll();
+            request.onsuccess = () => {
+              for (const record of request.result) if (record.accountId === accountId && record.projectId === projectId && record.key[3] === branch && record.document.revision <= revision) store2.delete(record.key);
+              done(true);
+            };
+          });
+        }
+        async remove(accountId, key) {
+          if (key?.[0] !== accountId) throw new Error("\u4E0D\u80FD\u5220\u9664\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F");
+          return this.tx("readwrite", (store2, done) => {
+            store2.delete(key);
+            done(true);
+          });
+        }
+        async markMigration(accountId, source, cloudId) {
+          const record = { key: [accountId, source.id], accountId, sourceProjectId: source.id, sourceRevision: source.revision, cloudProjectId: cloudId, verifiedAt: Date.now() };
+          return this.tx("readwrite", (store2, done) => {
+            store2.put(record);
+            done(record);
+          }, "migrations");
+        }
+        async migrations(accountId) {
+          return this.tx("readonly", (store2, done) => {
+            const request = store2.getAll();
+            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId));
+          }, "migrations");
+        }
+      };
+    }
+  });
+
+  // storage/cloud-project-store.js
+  function stableJSON(value) {
+    if (Array.isArray(value)) return "[" + value.map(stableJSON).join(",") + "]";
+    if (value && typeof value === "object") return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + stableJSON(value[key])).join(",") + "}";
+    return JSON.stringify(value);
+  }
+  function migrationContent(document2) {
+    const doc = importDocument(document2);
+    delete doc.id;
+    delete doc.revision;
+    delete doc.metadata.createdAt;
+    delete doc.metadata.updatedAt;
+    delete doc.metadata.spCloudImport;
+    return stableJSON(doc);
+  }
+  var CloudError, CloudAPI, CloudProjectStore;
+  var init_cloud_project_store = __esm({
+    "storage/cloud-project-store.js"() {
+      init_document_core();
+      init_cloud_drafts();
+      CloudError = class extends Error {
+        constructor(code, message, status = 0) {
+          super(message);
+          this.code = code;
+          this.status = status;
+        }
+      };
+      CloudAPI = class {
+        constructor({ base = "/api/v1", fetch = globalThis.fetch?.bind(globalThis), timeoutMs = 15e3 } = {}) {
+          this.base = base;
+          this.fetch = fetch;
+          this.timeoutMs = timeoutMs;
+          this.csrfToken = null;
+          this.user = null;
+        }
+        async request(path, { method = "GET", body, csrfRetry = true } = {}) {
+          const controller = new AbortController(), timer = setTimeout(() => controller.abort(), this.timeoutMs);
+          let response, result;
+          try {
+            response = await this.fetch(this.base + path, { method, credentials: "same-origin", headers: { ...body === void 0 ? {} : { "Content-Type": "application/json" }, ...this.user?.id ? { "X-SP-Account-ID": this.user.id } : {}, ...method === "GET" || !this.csrfToken ? {} : { "X-CSRF-Token": this.csrfToken } }, ...body === void 0 ? {} : { body: JSON.stringify(body) }, signal: controller.signal });
+            result = await response.json();
+          } catch (error) {
+            if (response && !controller.signal.aborted) throw new CloudError("INVALID_RESPONSE", "\u4E91\u7AEF\u54CD\u5E94\u65E0\u6CD5\u8BFB\u53D6\uFF0C\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\u3002", response.status);
+            throw new CloudError(controller.signal.aborted ? "TIMEOUT" : "OFFLINE", controller.signal.aborted ? "\u4E91\u7AEF\u8BF7\u6C42\u8D85\u65F6\uFF1B\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\uFF0C\u8BF7\u91CD\u8BD5\u540C\u4E00\u4EFD\u4FEE\u6539\u3002" : "\u65E0\u6CD5\u8FDE\u63A5\u4E91\u7AEF\uFF1B\u4FEE\u6539\u4ECD\u4FDD\u7559\u4E3A\u672C\u5730\u6062\u590D\u8349\u7A3F\u3002");
+          } finally {
+            clearTimeout(timer);
+          }
+          if (!response.ok) {
+            const error = result.error || {};
+            if (["ACCOUNT_CHANGED", "UNAUTHENTICATED"].includes(error.code)) {
+              this.user = null;
+              this.csrfToken = null;
+            }
+            if (error.code === "CSRF_INVALID" && csrfRetry && path !== "/auth/csrf") {
+              await this.rotateCsrf();
+              return this.request(path, { method, body, csrfRetry: false });
+            }
+            throw new CloudError(error.code || "CLOUD_ERROR", error.message || "\u4E91\u7AEF\u64CD\u4F5C\u5931\u8D25", response.status);
+          }
+          return result;
+        }
+        async login(username, password) {
+          const result = await this.request("/auth/login", { method: "POST", body: { username, password }, csrfRetry: false });
+          this.user = result.user;
+          this.csrfToken = result.csrfToken;
+          return result.user;
+        }
+        async rotateCsrf() {
+          if (this.user) {
+            const current = await this.request("/auth/me", { csrfRetry: false });
+            if (current.user.id !== this.user.id) {
+              this.user = null;
+              this.csrfToken = null;
+              throw new CloudError("ACCOUNT_CHANGED", "\u4E91\u7AEF\u8D26\u53F7\u5DF2\u5728\u5176\u4ED6\u6807\u7B7E\u9875\u53D8\u66F4\uFF0C\u8BF7\u5207\u6362\u5230\u672C\u5730\u540E\u91CD\u65B0\u767B\u5F55\uFF1B\u5F53\u524D\u8349\u7A3F\u4FDD\u7559\u3002", 403);
+            }
+          }
+          const result = await this.request("/auth/csrf", { method: "POST", body: {}, csrfRetry: false });
+          this.csrfToken = result.csrfToken;
+          return result.csrfToken;
+        }
+        async restoreSession() {
+          const result = await this.request("/auth/me");
+          this.user = result.user;
+          this.csrfToken = result.csrfToken;
+          if (!this.csrfToken) await this.rotateCsrf();
+          return this.user;
+        }
+        async logout() {
+          await this.request("/auth/logout", { method: "POST", body: {} });
+          this.user = null;
+          this.csrfToken = null;
+        }
+      };
+      CloudProjectStore = class {
+        constructor({ api, accountId = api?.user?.id, drafts = new CloudDraftStore() } = {}) {
+          if (!api || !accountId) throw new Error("\u4E91\u7AEF\u5B58\u50A8\u9700\u8981\u5DF2\u767B\u5F55\u8D26\u53F7");
+          this.api = api;
+          this.accountId = accountId;
+          this.drafts = drafts;
+          this.storage = "cloud";
+          this.name = "cloud:" + accountId;
+          this.leaseMs = 6e4;
+          this.opened = /* @__PURE__ */ new Map();
+          this.locks = /* @__PURE__ */ new Map();
+          this.mutations = /* @__PURE__ */ new Map();
+          this.imports = /* @__PURE__ */ new Map();
+        }
+        async open() {
+          await this.drafts.open();
+          return this;
+        }
+        close() {
+          this.drafts.close();
+        }
+        record(document2, metadata = {}) {
+          const doc = importDocument(document2);
+          return { id: doc.id, document: doc, modifiedAt: Date.parse(metadata.updatedAt || doc.metadata.updatedAt), openedAt: this.opened.get(doc.id) || Date.parse(metadata.updatedAt || doc.metadata.updatedAt), deletedAt: metadata.deletedAt ? Date.parse(metadata.deletedAt) : null, storage: "cloud" };
+        }
+        async list({ trash = false } = {}) {
+          const rows = await this.api.request("/projects" + (trash ? "?trash=true" : ""));
+          return rows.map((meta) => {
+            const doc = createDocument({ id: meta.id, title: meta.title, canvas: meta.canvas });
+            doc.revision = Number(meta.revision);
+            return { ...this.record(doc, meta), summaryOnly: true, slideCount: meta.slideCount ?? 0 };
+          });
+        }
+        async get(id) {
+          try {
+            return this.record(await this.api.request("/projects/" + encodeURIComponent(id) + "/document"));
+          } catch (error) {
+            if (error.code !== "NOT_FOUND") throw error;
+            const rows = await this.api.request("/projects?trash=true"), meta = rows.find((row) => row.id === id);
+            if (!meta) return null;
+            return this.record(await this.api.request("/projects/" + encodeURIComponent(id) + "/document?trash=true"), meta);
+          }
+        }
+        async create(document2) {
+          const doc = importDocument(document2), key = stableJSON(doc);
+          let request = this.imports.get(key);
+          if (!request) {
+            request = { document: doc, clientMutationId: crypto.randomUUID() };
+            this.imports.set(key, request);
+          }
+          const saved = importDocument(await this.api.request("/projects/import", { method: "POST", body: request }));
+          if (saved.id === doc.id || migrationContent(saved) !== migrationContent(doc)) throw new CloudError("IMPORT_READBACK_MISMATCH", "\u4E91\u7AEF\u5BFC\u5165\u6570\u636E\u4E0E\u6765\u6E90\u4E0D\u4E00\u81F4\uFF1B\u539F\u672C\u5730\u9879\u76EE\u4ECD\u4FDD\u7559\u3002");
+          const readback = await this.get(saved.id);
+          if (!readback || stableJSON(readback.document) !== stableJSON(saved)) throw new CloudError("IMPORT_READBACK_MISMATCH", "\u65E0\u6CD5\u786E\u8BA4\u4E91\u7AEF\u5BFC\u5165\u56DE\u8BFB\uFF0C\u8BF7\u4FDD\u7559\u6765\u6E90\u9879\u76EE\u540E\u91CD\u8BD5\u3002");
+          this.imports.delete(key);
+          return readback;
+        }
+        async markOpened(id) {
+          this.opened.set(id, Date.now());
+          return true;
+        }
+        async acquire(id, owner2, { takeover = false } = {}) {
+          if (takeover) throw new CloudError("PROJECT_BUSY", "\u4E91\u7AEF\u4E0D\u5141\u8BB8\u62A2\u5360\u6D3B\u52A8\u79DF\u7EA6\uFF0C\u8BF7\u7B49\u5F85\u5199\u5165\u65B9\u91CA\u653E\u3002", 409);
+          try {
+            const lease = await this.api.request("/projects/" + encodeURIComponent(id) + "/lease", { method: "POST", body: { holder: owner2 } });
+            const lock2 = { id, owner: owner2, token: lease.leaseToken, expiresAt: Date.parse(lease.expiresAt) };
+            this.locks.set(id, lock2);
+            return lock2;
+          } catch (error) {
+            if (error.code === "PROJECT_BUSY") return null;
+            throw error;
+          }
+        }
+        async renew(lock2) {
+          const lease = await this.api.request("/projects/" + encodeURIComponent(lock2.id) + "/lease/renew", { method: "POST", body: { leaseToken: lock2.token } });
+          const renewed = { ...lock2, expiresAt: Date.parse(lease.expiresAt) };
+          this.locks.set(lock2.id, renewed);
+          return renewed;
+        }
+        async release(lock2) {
+          if (!lock2) return;
+          try {
+            await this.api.request("/projects/" + encodeURIComponent(lock2.id) + "/lease", { method: "DELETE", body: { leaseToken: lock2.token } });
+            return true;
+          } finally {
+            if (this.locks.get(lock2.id)?.token === lock2.token) this.locks.delete(lock2.id);
+          }
+        }
+        async captureDraft(document2, sourceRevision) {
+          return this.drafts.save(this.accountId, document2, { sourceRevision });
+        }
+        async save(document2, { expectedRevision, lock: lock2 } = {}) {
+          const doc = importDocument(document2);
+          if (!lock2 || lock2.id !== doc.id) throw new CloudError("LOCK_LOST", "\u5F53\u524D\u4E91\u7AEF\u9879\u76EE\u6CA1\u6709\u5199\u5165\u6743", 409);
+          if (doc.revision === expectedRevision) {
+            const saved2 = await this.get(doc.id);
+            if (saved2 && stableJSON(saved2.document) === stableJSON(doc)) return saved2;
+            throw new CloudError("REVISION_CONFLICT", "\u4E91\u7AEF\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u5F53\u524D\u8349\u7A3F\u4ECD\u4FDD\u7559\u3002", 409);
+          }
+          if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || doc.revision <= expectedRevision) throw new CloudError("INVALID_REVISION", "\u5FEB\u7167\u4FEE\u8BA2\u5FC5\u987B\u5927\u4E8E\u5DF2\u786E\u8BA4\u4E91\u7AEF\u4FEE\u8BA2");
+          const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(stableJSON({ document: doc, expectedRevision, leaseToken: lock2.token }))), fingerprint = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
+          let pending = this.mutations.get(fingerprint);
+          if (!pending) {
+            const existing = (await this.drafts.list(this.accountId, doc.id)).find((record) => record.mutation?.fingerprint === fingerprint), failure = existing?.mutation?.failure;
+            pending = { request: { document: doc, expectedRevision, leaseToken: lock2.token, clientMutationId: existing?.mutation?.clientMutationId || crypto.randomUUID() }, error: failure ? new CloudError(failure.code, failure.message, failure.status) : null, previousBranch: existing?.key[3] };
+            this.mutations.set(fingerprint, pending);
+          }
+          if (pending.error) throw pending.error;
+          await this.drafts.save(this.accountId, doc, { sourceRevision: expectedRevision, mutation: { fingerprint, clientMutationId: pending.request.clientMutationId } });
+          let saved;
+          try {
+            saved = importDocument(await this.api.request("/projects/" + encodeURIComponent(doc.id) + "/snapshot", { method: "PUT", body: pending.request }));
+          } catch (error) {
+            if (error.status >= 400 && error.status < 500) {
+              pending.error = error;
+              await this.drafts.save(this.accountId, doc, { sourceRevision: expectedRevision, mutation: { fingerprint, clientMutationId: pending.request.clientMutationId, failure: { code: error.code, message: error.message, status: error.status } } }).catch(() => {
+              });
+            }
+            throw error;
+          }
+          if (saved.id !== doc.id || saved.revision !== doc.revision) throw new CloudError("INVALID_RESPONSE", "\u4E91\u7AEF\u5FEB\u7167\u4FEE\u8BA2\u4E0D\u5339\u914D\uFF0C\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\u3002");
+          this.mutations.delete(fingerprint);
+          try {
+            await this.drafts.clearSaved(this.accountId, doc.id, saved.revision);
+            if (pending.previousBranch) await this.drafts.clearSaved(this.accountId, doc.id, saved.revision, pending.previousBranch);
+          } catch (error) {
+            this.draftCleanupError = error;
+          }
+          return this.record(saved);
+        }
+        async setDeleted(id, deleted, { owner: owner2 } = {}) {
+          const record = await this.get(id);
+          if (!record) throw new CloudError("NOT_FOUND", "\u9879\u76EE\u4E0D\u5B58\u5728", 404);
+          const lease = this.locks.get(id);
+          const body = { expectedRevision: record.document.revision, clientMutationId: crypto.randomUUID(), ...lease && lease.owner === owner2 ? { leaseToken: lease.token } : {} };
+          await this.api.request("/projects/" + encodeURIComponent(id) + (deleted ? "" : "/restore"), { method: deleted ? "DELETE" : "POST", body });
+          return true;
+        }
+        async migrate(localStore2, id) {
+          const local = await localStore2.get(id);
+          if (!local || local.deletedAt) throw new CloudError("NOT_FOUND", "\u672C\u5730\u9879\u76EE\u4E0D\u5B58\u5728");
+          const saved = await this.create(local.document);
+          const source = await localStore2.get(id);
+          if (!source || stableJSON(source.document) !== stableJSON(local.document)) throw new CloudError("LOCAL_CHANGED", "\u672C\u5730\u9879\u76EE\u5728\u8FC1\u79FB\u671F\u95F4\u53D1\u751F\u4FEE\u6539\uFF0C\u8BF7\u91CD\u65B0\u6838\u5BF9\uFF1B\u4E91\u7AEF\u526F\u672C\u5DF2\u7ECF\u4FDD\u7559\u3002");
+          await this.drafts.markMigration(this.accountId, local.document, saved.id);
+          return saved;
+        }
+        async recoverDraft(record) {
+          if (record.accountId !== this.accountId) throw new CloudError("FORBIDDEN", "\u4E0D\u80FD\u6062\u590D\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F", 403);
+          const doc = structuredClone(record.document);
+          doc.title += " \xB7 \u4E91\u7AEF\u6062\u590D\u526F\u672C";
+          const saved = await this.create(doc);
+          await this.drafts.remove(this.accountId, record.key);
+          return saved;
+        }
+      };
+    }
+  });
+
+  // web/admin/app.js
+  function formDialog(document2, title, fields2 = [], { message = "", confirm = "\u786E\u8BA4" } = {}) {
+    return new Promise((resolve) => {
+      const previous = document2.activeElement, dialog = document2.createElement("dialog"), form = document2.createElement("form"), heading = document2.createElement("h2");
+      heading.textContent = title;
+      heading.id = "admin-dialog-heading";
+      dialog.setAttribute("aria-labelledby", heading.id);
+      form.append(heading);
+      if (message) {
+        const p = document2.createElement("p");
+        p.textContent = message;
+        form.append(p);
+      }
+      const controls = /* @__PURE__ */ new Map();
+      for (const field of fields2) {
+        const label = document2.createElement("label");
+        label.textContent = field.label;
+        const input = document2.createElement(field.options ? "select" : field.type === "textarea" ? "textarea" : "input");
+        input.name = field.name;
+        if (field.options) for (const [value, text2] of field.options) {
+          const option = document2.createElement("option");
+          option.value = value;
+          option.textContent = text2;
+          input.append(option);
+        }
+        else if (field.type !== "textarea") input.type = field.type || "text";
+        for (const key of ["required", "minLength", "maxLength", "pattern", "autocomplete", "placeholder", "min", "max"]) if (field[key] !== void 0) input[key] = field[key];
+        if (field.type === "checkbox") {
+          label.className = "checkbox";
+          input.checked = Boolean(field.value);
+          label.prepend(input);
+        } else {
+          if (field.value !== void 0) input.value = field.value;
+          label.append(input);
+        }
+        form.append(label);
+        controls.set(field.name, input);
+      }
+      const actions = document2.createElement("div");
+      actions.className = "dialog-actions";
+      const cancel = document2.createElement("button");
+      cancel.type = "button";
+      cancel.className = "secondary";
+      cancel.textContent = "\u53D6\u6D88";
+      const submit = document2.createElement("button");
+      submit.type = "submit";
+      submit.textContent = confirm;
+      actions.append(cancel, submit);
+      form.append(actions);
+      dialog.append(form);
+      document2.body.append(dialog);
+      let finished = false;
+      function finish(value) {
+        if (finished) return;
+        finished = true;
+        for (const input of controls.values()) {
+          input.value = "";
+          if (input.type === "checkbox") input.checked = false;
+        }
+        dialog.close?.();
+        dialog.remove();
+        previous?.focus?.();
+        resolve(value);
+      }
+      cancel.onclick = () => finish(null);
+      dialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        finish(null);
+      });
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        finish(Object.fromEntries([...controls].map(([name, input]) => [name, input.type === "checkbox" ? input.checked : input.value])));
+      });
+      if (dialog.showModal) dialog.showModal();
+      else dialog.setAttribute("open", "");
+      (controls.values().next().value || submit).focus();
+    });
+  }
+  async function mountAdmin({ document: document2 = globalThis.document, api = new CloudAPI(), navigate: navigate2 = (url) => globalThis.location.assign(url) } = {}) {
+    const content = document2.querySelector("#admin-content"), status = document2.querySelector("#admin-status");
+    let section = "dashboard", offset = 0, rows = [], search = "", recordFilter = "", trash = false, busy = false, poll = null, generation = 0;
+    let observabilityView = null;
+    const limit = 25;
+    function node(tag, text2, className) {
+      const element = document2.createElement(tag);
+      if (text2 !== void 0) element.textContent = String(text2);
+      if (className) element.className = className;
+      return element;
+    }
+    function notice(message, error = false) {
+      status.textContent = message;
+      status.classList.toggle("error", error);
+      status.hidden = !message;
+    }
+    function report(error) {
+      if (error.code === "UNAUTHENTICATED" || error.code === "ACCOUNT_CHANGED") {
+        navigate2("/login?returnTo=%2Fadmin");
+        return;
+      }
+      notice(error.code === "TIMEOUT" || error.code === "OFFLINE" ? "\u8BF7\u6C42\u7ED3\u679C\u672A\u786E\u8BA4\u3002\u8BF7\u5148\u5237\u65B0\u5217\u8868\u6838\u5BF9\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u91CD\u65B0\u64CD\u4F5C\u3002" : error.message || "\u64CD\u4F5C\u5931\u8D25\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u3002", true);
+    }
+    function button(text2, task, { write = false, danger = false } = {}) {
+      const item = node("button", text2, danger ? "danger" : "secondary");
+      item.type = "button";
+      if (write) {
+        item.dataset.write = "";
+        item.disabled = busy;
+      }
+      item.onclick = async () => {
+        if (write && busy) return;
+        if (write) {
+          busy = true;
+          for (const control of document2.querySelectorAll("[data-write]")) control.disabled = true;
+        }
+        try {
+          await task();
+        } catch (error) {
+          report(error);
+        } finally {
+          if (write) {
+            busy = false;
+            for (const control of document2.querySelectorAll("[data-write]")) control.disabled = control.hasAttribute("data-unavailable");
+          }
+        }
+      };
+      return item;
+    }
+    async function request(path, options) {
+      try {
+        return await api.request(path, options);
+      } catch (error) {
+        if (error.code !== "REAUTHENTICATION_REQUIRED") throw error;
+        const answer = await formDialog(document2, "\u91CD\u65B0\u9A8C\u8BC1\u5BC6\u7801", [{ name: "password", label: "\u5F53\u524D\u5BC6\u7801", type: "password", autocomplete: "current-password", required: true, maxLength: 1024 }], { message: "\u6B64\u64CD\u4F5C\u9700\u8981\u6700\u8FD1\u5B8C\u6210\u7684\u5BC6\u7801\u9A8C\u8BC1\u3002", confirm: "\u9A8C\u8BC1\u5E76\u7EE7\u7EED" });
+        if (!answer) return null;
+        try {
+          await api.request("/auth/reauth", { method: "POST", body: { password: answer.password } });
+        } finally {
+          answer.password = "";
+        }
+        return api.request(path, options);
+      }
+    }
+    async function confirm(title, message) {
+      return Boolean(await formDialog(document2, title, [], { message, confirm: title }));
+    }
+    async function mutation(path, body, method = "POST") {
+      const result = await request(path, { method, body });
+      if (result === null) return false;
+      notice("\u64CD\u4F5C\u5DF2\u5B8C\u6210\u3002");
+      await load();
+      return true;
+    }
+    function details(primary, secondary) {
+      const cell = node("span", primary);
+      if (secondary) cell.append(node("small", secondary));
+      return cell;
+    }
+    function toolbar({ create, filters = true } = {}) {
+      const bar = node("div", void 0, "admin-toolbar"), left = node("div"), right = node("div");
+      if (filters) {
+        const input = document2.createElement("input");
+        input.type = "search";
+        input.placeholder = "\u641C\u7D22\u5168\u90E8\u8BB0\u5F55";
+        input.setAttribute("aria-label", "\u641C\u7D22\u5168\u90E8\u8BB0\u5F55");
+        input.value = search;
+        input.oninput = () => {
+          search = input.value;
+        };
+        input.onkeydown = (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            offset = 0;
+            load().catch(report);
+          }
+        };
+        left.append(input, button("\u641C\u7D22", async () => {
+          offset = 0;
+          await load();
+        }));
+        const options = section === "users" ? [["", "\u5168\u90E8\u72B6\u6001"], ["active", "\u6709\u6548\u8D26\u53F7"], ["disabled", "\u5DF2\u7981\u7528"]] : section === "tokens" ? [["", "\u5168\u90E8\u72B6\u6001"], ["active", "\u6709\u6548\u6388\u6743"], ["expired", "\u5DF2\u8FC7\u671F"], ["revoked", "\u5DF2\u64A4\u9500"], ["disabled", "\u8D26\u53F7\u5DF2\u7981\u7528"]] : section === "audit" ? [["", "\u5168\u90E8\u7ED3\u679C"], ["success", "\u6210\u529F"], ["failure", "\u5931\u8D25"]] : [];
+        if (options.length) {
+          const select = document2.createElement("select");
+          select.setAttribute("aria-label", "\u8BB0\u5F55\u72B6\u6001\u7B5B\u9009");
+          for (const [value, text2] of options) {
+            const option = node("option", text2);
+            option.value = value;
+            select.append(option);
+          }
+          select.value = recordFilter;
+          select.onchange = () => {
+            recordFilter = select.value;
+            offset = 0;
+            load().catch(report);
+          };
+          left.append(select);
+        }
+      }
+      if (section === "projects") {
+        const select = document2.createElement("select");
+        select.setAttribute("aria-label", "\u9879\u76EE\u72B6\u6001");
+        for (const [value, text2] of [["false", "\u6D3B\u8DC3\u9879\u76EE"], ["true", "\u56DE\u6536\u7AD9"]]) {
+          const option = node("option", text2);
+          option.value = value;
+          select.append(option);
+        }
+        select.value = String(trash);
+        select.onchange = () => {
+          trash = select.value === "true";
+          offset = 0;
+          load().catch(report);
+        };
+        left.append(select);
+      }
+      right.append(button("\u5237\u65B0", load));
+      if (create) right.append(create);
+      bar.append(left, right);
+      content.append(bar);
+    }
+    function table(headers, records, cells) {
+      const wrap = node("div", void 0, "table-wrap"), table2 = document2.createElement("table"), caption = node("caption", sections[section][0]);
+      caption.hidden = true;
+      table2.append(caption);
+      const head = document2.createElement("thead"), header = document2.createElement("tr");
+      for (const text2 of headers) {
+        const cell = node("th", text2);
+        cell.scope = "col";
+        header.append(cell);
+      }
+      head.append(header);
+      table2.append(head);
+      const body = document2.createElement("tbody");
+      for (const record of records) {
+        const row = document2.createElement("tr");
+        for (const value of cells(record)) {
+          const cell = document2.createElement("td");
+          cell.append(value?.nodeType ? value : document2.createTextNode(String(value ?? "\u2014")));
+          row.append(cell);
+        }
+        body.append(row);
+      }
+      table2.append(body);
+      wrap.append(table2);
+      content.append(wrap);
+      if (!records.length) content.append(node("p", search ? "\u5F53\u524D\u9875\u6CA1\u6709\u7B26\u5408\u7B5B\u9009\u6761\u4EF6\u7684\u8BB0\u5F55\u3002" : "\u6682\u65E0\u8BB0\u5F55\u3002", "empty-state"));
+    }
+    function actions(items) {
+      const group = node("div", void 0, "row-actions");
+      for (const item of items) group.append(item);
+      return group;
+    }
+    function pages(total = null) {
+      const page = node("div", void 0, "pagination");
+      const previous = button("\u4E0A\u4E00\u9875", async () => {
+        offset -= limit;
+        await load();
+      });
+      previous.disabled = offset === 0;
+      const next = button("\u4E0B\u4E00\u9875", async () => {
+        offset += limit;
+        await load();
+      });
+      next.disabled = total === null ? rows.length < limit : offset + limit >= total;
+      page.append(previous, node("span", `\u7B2C ${Math.floor(offset / limit) + 1} \u9875`), next);
+      content.append(page);
+    }
+    function filtered() {
+      return rows;
+    }
+    function renderTable() {
+      const oldToolbar = content.querySelector(".admin-toolbar");
+      content.replaceChildren();
+      if (oldToolbar) content.append(oldToolbar);
+      else toolbar({ create: section === "users" ? button("\u521B\u5EFA\u7528\u6237", createUser, { write: true }) : null });
+      if (section === "users") table(["\u8D26\u53F7", "\u89D2\u8272", "\u72B6\u6001", "\u521B\u5EFA\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (user) => [details(user.username, user.id), user.role === "admin" ? "\u7BA1\u7406\u5458" : "\u666E\u901A\u7528\u6237", user.status === "active" ? "\u6709\u6548" : "\u5DF2\u7981\u7528", date(user.createdAt), actions([
+        button("\u91CD\u7F6E\u5BC6\u7801", () => resetPassword(user), { write: true }),
+        button(user.status === "active" ? "\u7981\u7528" : "\u542F\u7528", () => statusUser(user), { write: true, danger: user.status === "active" }),
+        button(user.role === "admin" ? "\u8BBE\u4E3A\u666E\u901A\u7528\u6237" : "\u8BBE\u4E3A\u7BA1\u7406\u5458", () => roleUser(user), { write: true }),
+        button("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", () => revokeSessions(user), { write: true }),
+        button("\u5220\u9664\u8D26\u53F7", () => deleteUser(user), { write: true, danger: true })
+      ])]);
+      if (section === "projects") table(["\u9879\u76EE", "\u6240\u6709\u8005", "\u4FEE\u8BA2", "\u66F4\u65B0\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (project) => [details(project.title, project.id), details(project.ownerUsername, project.ownerId), project.revision, date(project.updatedAt), actions([
+        button("\u8F6C\u79FB\u5F52\u5C5E", () => transferProject(project), { write: true }),
+        button(trash ? "\u6062\u590D" : "\u79FB\u5230\u56DE\u6536\u7AD9", () => trashProject(project), { write: true, danger: !trash })
+      ])]);
+      if (section === "tokens") table(["\u6388\u6743", "\u6240\u5C5E\u7528\u6237", "\u6743\u9650\u4E0E\u9879\u76EE\u8303\u56F4", "\u5230\u671F\u65F6\u95F4", "\u72B6\u6001", "\u64CD\u4F5C"], filtered(), (token) => [details(token.name, token.prefix + "\u2026"), details(token.userUsername || token.userId, token.userUsername ? token.userId : null), details(token.scopes.join("\u3001"), token.projectAllowlist === null ? "\u81EA\u5DF1\u7684\u5168\u90E8\u9879\u76EE" : `\u9650\u5B9A ${token.projectAllowlist.length} \u4E2A\u9879\u76EE`), date(token.expiresAt), { active: "\u6709\u6548", expired: "\u5DF2\u5230\u671F", revoked: "\u5DF2\u64A4\u9500", disabled: "\u8D26\u53F7\u5DF2\u7981\u7528" }[token.status] || (token.revokedAt ? "\u5DF2\u64A4\u9500" : Date.parse(token.expiresAt) <= Date.now() ? "\u5DF2\u5230\u671F" : "\u6709\u6548"), token.revokedAt ? "\u2014" : actions([button("\u64A4\u9500\u6388\u6743", () => revokeToken(token), { write: true, danger: true })])]);
+      if (section === "audit") table(["\u65F6\u95F4", "\u64CD\u4F5C\u4EBA", "\u64CD\u4F5C", "\u8D44\u6E90", "\u7ED3\u679C"], filtered(), (event) => [date(event.createdAt), event.actorId || "\u672A\u767B\u5F55", event.action, details(event.resourceType, event.resourceId), event.outcome === "success" ? "\u6210\u529F" : "\u5931\u8D25"]);
+      pages();
+    }
+    function renderStorage(data) {
+      toolbar();
+      const start = data.total ? offset + 1 : 0, end = Math.min(offset + rows.length, data.total);
+      content.append(node("p", `\u5171 ${data.total} \u4E2A\u8D26\u53F7 \xB7 \u663E\u793A ${start}\u2013${end} \u6761`, "admin-detail"));
+      table(["\u8D26\u53F7", "\u9879\u76EE\u6570", "\u5B58\u50A8\u914D\u989D", "\u7528\u91CF\u6784\u6210", "\u544A\u8B66"], rows, (record) => {
+        const usage = record.usage, quota = record.limits;
+        const breakdown = node("div");
+        for (const [label, key] of [["\u9879\u76EE\u6570\u636E", "projectBytes"], ["\u5386\u53F2", "historyBytes"], ["\u4E3B\u9898\u5143\u6570\u636E", "themeMetadataBytes"], ["\u4E3B\u9898\u7248\u672C", "themeVersionBytes"], ["\u56DE\u6267", "receiptBytes"], ["\u5206\u4EAB", "shareBytes"]]) breakdown.append(details(label, storageBytes(usage[key])));
+        const quotaDetail = node("span", `${usage.activeProjects} / ${quota.maxProjects} \u4E2A\u6D3B\u8DC3\u9879\u76EE`);
+        quotaDetail.append(node("small", `${storageBytes(usage.totalBytes)} / ${storageBytes(quota.maxBytes)} \xB7 \u544A\u8B66\u7EBF ${quota.warningPercent}%`));
+        const state = node("span", record.overQuota ? "\u8D85\u51FA\u914D\u989D" : record.warning ? "\u63A5\u8FD1\u914D\u989D" : "\u6B63\u5E38", record.overQuota || record.warning ? "error" : "");
+        state.setAttribute("role", "status");
+        return [details(record.username, record.userId), details(`${usage.activeProjects} \u4E2A\u6D3B\u8DC3`, `${usage.trashedProjects} \u4E2A\u56DE\u6536\u7AD9\u9879\u76EE`), quotaDetail, breakdown, state];
+      });
+      pages(data.total);
+    }
+    async function createUser() {
+      const answer = await formDialog(document2, "\u521B\u5EFA\u7528\u6237", [{ name: "username", label: "\u7528\u6237\u540D", required: true, minLength: 3, maxLength: 64, pattern: "[A-Za-z0-9_.-]{3,64}", autocomplete: "off" }, { name: "password", label: "\u521D\u59CB\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }, { name: "role", label: "\u89D2\u8272", options: [["user", "\u666E\u901A\u7528\u6237"], ["admin", "\u7BA1\u7406\u5458"]] }], { confirm: "\u521B\u5EFA\u7528\u6237" });
+      if (answer) try {
+        await mutation("/admin/users", answer);
+      } finally {
+        answer.password = "";
+      }
+    }
+    async function resetPassword(user) {
+      const answer = await formDialog(document2, "\u91CD\u7F6E\u5BC6\u7801", [{ name: "password", label: "\u65B0\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }], { message: `\u91CD\u7F6E ${user.username} \u7684\u5BC6\u7801\u540E\uFF0C\u8BE5\u8D26\u53F7\u7684\u6240\u6709\u767B\u5F55\u4F1A\u8BDD\u90FD\u4F1A\u9000\u51FA\u3002`, confirm: "\u91CD\u7F6E\u5BC6\u7801" });
+      if (answer) try {
+        if (await mutation(`/admin/users/${user.id}/reset-password`, answer) && user.id === api.user.id) navigate2("/login?returnTo=%2Fadmin");
+      } finally {
+        answer.password = "";
+      }
+    }
+    async function statusUser(user) {
+      const disable = user.status === "active";
+      if (await confirm(disable ? "\u7981\u7528\u8D26\u53F7" : "\u542F\u7528\u8D26\u53F7", `${user.username}\uFF1A${disable ? "\u6240\u6709\u767B\u5F55\u4F1A\u8BDD\u53CA Agent \u6388\u6743\u4F1A\u5931\u6548\u3002" : "\u8D26\u53F7\u53EF\u91CD\u65B0\u767B\u5F55\uFF1B\u5DF2\u64A4\u9500\u6388\u6743\u4E0D\u4F1A\u6062\u590D\u3002"}`)) {
+        if (await mutation(`/admin/users/${user.id}/status`, { status: disable ? "disabled" : "active" }, "PATCH") && disable && user.id === api.user.id) navigate2("/login");
+      }
+    }
+    async function roleUser(user) {
+      const role = user.role === "admin" ? "user" : "admin";
+      if (await confirm("\u53D8\u66F4\u89D2\u8272", `\u5C06 ${user.username} \u8BBE\u4E3A${role === "admin" ? "\u7BA1\u7406\u5458\u3002\u7BA1\u7406\u5458\u53EF\u4EE5\u7BA1\u7406\u5176\u4ED6\u8D26\u53F7\u548C\u5E73\u53F0\u8BBE\u7F6E\u3002" : "\u666E\u901A\u7528\u6237\u3002"}`)) {
+        if (await mutation(`/admin/users/${user.id}/role`, { role }, "PATCH") && user.id === api.user.id && role === "user") navigate2("/app");
+      }
+    }
+    async function revokeSessions(user) {
+      if (await confirm("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", `${user.username} \u7684\u6240\u6709\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5C06\u9000\u51FA\u3002`)) {
+        if (await mutation(`/admin/users/${user.id}/sessions`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
+      }
+    }
+    async function deleteUser(user) {
+      if (await confirm("\u5220\u9664\u8D26\u53F7", `\u5220\u9664 ${user.username} \u540E\uFF0C\u8BE5\u8D26\u53F7\u5C06\u65E0\u6CD5\u767B\u5F55\uFF0C\u6240\u6709 Agent \u6388\u6743\u7ACB\u5373\u5931\u6548\u3002\u6587\u7A3F\u548C\u5BA1\u8BA1\u8BB0\u5F55\u4F1A\u4FDD\u7559\u3002\u6B64\u64CD\u4F5C\u65E0\u6CD5\u64A4\u9500\u3002`) && await mutation(`/admin/users/${user.id}`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
+    }
+    async function transferProject(project) {
+      const query = await formDialog(document2, "\u9009\u62E9\u65B0\u6240\u6709\u8005", [{ name: "q", label: "\u641C\u7D22\u8D26\u53F7\u540D\u79F0", maxLength: 128 }], { message: "\u6309\u8D26\u53F7\u540D\u79F0\u641C\u7D22\u6709\u6548\u7528\u6237\uFF1B\u65E0\u9700\u586B\u5199\u7528\u6237 ID\u3002", confirm: "\u641C\u7D22\u8D26\u53F7" });
+      if (!query) return;
+      const users = await api.request("/admin/users?status=active&limit=100&q=" + encodeURIComponent(query.q.trim()));
+      if (!users.length) {
+        notice("\u6CA1\u6709\u5339\u914D\u7684\u6709\u6548\u8D26\u53F7\uFF0C\u8BF7\u91CD\u65B0\u641C\u7D22\u3002", true);
+        return;
+      }
+      const answer = await formDialog(document2, "\u8F6C\u79FB\u9879\u76EE\u5F52\u5C5E", [{ name: "newOwnerId", label: "\u65B0\u6240\u6709\u8005", options: users.map((user) => [user.id, user.username + (user.role === "admin" ? "\uFF08\u7BA1\u7406\u5458\uFF09" : "")]) }], { message: `\u8F6C\u79FB\u201C${project.title}\u201D\u540E\u539F\u6240\u6709\u8005\u5931\u53BB\u8BBF\u95EE\u6743\u9650\uFF1B\u6700\u591A\u663E\u793A100\u6761\u5339\u914D\uFF0C\u8BF7\u7528\u5B8C\u6574\u8D26\u53F7\u540D\u79F0\u7F29\u5C0F\u8303\u56F4\u3002\u6B63\u5728\u7F16\u8F91\u7684\u9879\u76EE\u65E0\u6CD5\u8F6C\u79FB\u3002`, confirm: "\u8F6C\u79FB\u5F52\u5C5E" });
+      if (answer) await mutation(`/admin/projects/${project.id}/transfer`, { ...answer, expectedRevision: project.revision, clientMutationId: crypto.randomUUID() });
+    }
+    async function trashProject(project) {
+      if (await confirm(trash ? "\u6062\u590D\u9879\u76EE" : "\u79FB\u5230\u56DE\u6536\u7AD9", `\u786E\u8BA4${trash ? "\u6062\u590D" : "\u5C06"}\u201C${project.title}\u201D${trash ? "\uFF1F" : "\u79FB\u5230\u56DE\u6536\u7AD9\uFF1F\u9879\u76EE\u53EF\u6062\u590D\u3002"}`)) await mutation(`/admin/projects/${project.id}/${trash ? "restore" : "trash"}`, { expectedRevision: project.revision, clientMutationId: crypto.randomUUID() });
+    }
+    async function revokeToken(token) {
+      if (await confirm("\u64A4\u9500\u6388\u6743", `\u64A4\u9500\u201C${token.name}\u201D\u540E\uFF0C\u4F7F\u7528\u8BE5\u6388\u6743\u7684 Agent \u5C06\u7ACB\u5373\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002`)) await mutation(`/admin/mcp/tokens/${token.id}/revoke`, void 0);
+    }
+    function renderDashboard(data) {
+      if (data.security?.warning) content.append(node("p", `\u5F02\u5E38\u767B\u5F55\u63D0\u9192\uFF1A\u6700\u8FD1 ${data.security.windowMinutes} \u5206\u949F\u5DF2\u8BB0\u5F55 ${data.security.failures} \u6B21\u5931\u8D25\u3002\u8BF7\u6838\u67E5\u5BA1\u8BA1\u8BB0\u5F55\uFF1B\u6B64\u63D0\u9192\u4E0D\u8868\u793A\u8D26\u53F7\u5DF2\u88AB\u5165\u4FB5\u3002`, "error"));
+      const list = node("dl", void 0, "summary-list");
+      for (const [label, value] of [["\u670D\u52A1\u72B6\u6001", data.service.status === "ok" ? "\u5728\u7EBF" : data.service.status], ["\u6709\u6548\u8D26\u53F7 / \u5168\u90E8\u8D26\u53F7", `${data.users.active} / ${data.users.total}`], ["\u6709\u6548\u7BA1\u7406\u5458", data.users.admins], ["\u6D3B\u8DC3\u9879\u76EE / \u56DE\u6536\u7AD9", `${data.projects.active} / ${data.projects.trash}`], ["\u6709\u6548 Agent \u6388\u6743", data.tokens.active], ["\u6587\u7A3F\u6570\u636E", bytes2(data.storage.documentBytes)], ["\u6570\u636E\u5E93\u7A7A\u95F4", bytes2(data.storage.databaseBytes)]]) {
+        const item = node("div");
+        item.append(node("dt", label), node("dd", value));
+        list.append(item);
+      }
+      content.append(list);
+      content.append(node("p", "\u7A7A\u95F4\u7EDF\u8BA1\u6765\u81EA\u5F53\u524D\u6570\u636E\u5E93\uFF1B\u9879\u76EE\u5185\u5BB9\u4E0D\u4F1A\u5728\u540E\u53F0\u9884\u89C8\u3002", "admin-detail"));
+      content.append(button("\u5237\u65B0\u72B6\u6001", load));
+    }
+    function renderSettings(settings) {
+      const form = node("form", void 0, "settings-form"), controls = {};
+      for (const [name, title, type] of [["siteName", "\u7AD9\u70B9\u540D\u79F0", "text"], ["announcement", "\u516C\u544A", "textarea"], ["maxUploadBytes", "\u4E0A\u4F20\u4E0A\u9650\uFF08\u5B57\u8282\uFF0C\u6700\u591A 32 MiB\uFF09", "number"], ["maintenanceMode", "\u5F00\u542F\u7EF4\u62A4\u6A21\u5F0F", "checkbox"]]) {
+        const label = node("label", title), input = document2.createElement(type === "textarea" ? "textarea" : "input");
+        input.name = name;
+        if (type !== "textarea") input.type = type;
+        if (type === "checkbox") {
+          input.checked = settings[name];
+          label.prepend(input);
+        } else {
+          input.value = settings[name];
+          label.append(input);
+        }
+        if (name === "siteName") {
+          input.required = true;
+          input.maxLength = 100;
+        }
+        if (name === "announcement") input.maxLength = 2e3;
+        if (name === "maxUploadBytes") {
+          input.required = true;
+          input.min = 1;
+          input.max = 33554432;
+        }
+        controls[name] = input;
+        form.append(label);
+      }
+      const quota = settings.storageQuota || { maxProjects: 100, maxBytes: 1073741824, warningPercent: 80 };
+      const quotaFields = node("fieldset", void 0, "storage-quota-settings"), legend = node("legend", "\u5168\u5C40\u5B58\u50A8\u914D\u989D");
+      quotaFields.append(legend);
+      for (const [name, title, min, max] of [["maxProjects", "\u6BCF\u4E2A\u8D26\u53F7\u6700\u591A\u6D3B\u8DC3\u9879\u76EE\u6570", 1, 1e5], ["maxBytes", "\u6BCF\u4E2A\u8D26\u53F7\u6700\u5927\u4FDD\u7559\u6570\u636E\uFF08\u5B57\u8282\uFF09", 1, 10 * 1024 ** 4], ["warningPercent", "\u914D\u989D\u544A\u8B66\u9608\u503C\uFF08\u767E\u5206\u6BD4\uFF09", 1, 100]]) {
+        const label = node("label", title), input = document2.createElement("input");
+        input.type = "number";
+        input.name = "storageQuota." + name;
+        input.required = true;
+        input.min = min;
+        input.max = max;
+        input.step = 1;
+        input.value = quota[name];
+        label.append(input);
+        quotaFields.append(label);
+        controls["storageQuota." + name] = input;
+      }
+      quotaFields.append(node("p", "\u9608\u503C\u9002\u7528\u4E8E\u6BCF\u4E2A\u8D26\u53F7\u7684\u6D3B\u8DC3\u9879\u76EE\u6570\u548C\u4FDD\u7559\u6570\u636E\u603B\u91CF\uFF1B\u4FDD\u7559\u6570\u636E\u5305\u542B\u9879\u76EE\u3001\u5386\u53F2\u3001\u4E3B\u9898\u3001\u56DE\u6267\u548C\u5206\u4EAB\u3002\u8BE5\u914D\u989D\u4E0D\u662F\u6570\u636E\u5E93\u7269\u7406\u78C1\u76D8\u4E0A\u9650\u3002", "admin-detail"));
+      form.append(quotaFields);
+      form.append(node("p", "\u516C\u5F00\u6CE8\u518C\u4FDD\u6301\u5173\u95ED\u3002\u8D26\u53F7\u7531\u7BA1\u7406\u5458\u521B\u5EFA\u3002", "admin-detail"));
+      const save = button("\u4FDD\u5B58\u8BBE\u7F6E", async () => {
+        if (!form.reportValidity()) return;
+        if (!await confirm("\u4FDD\u5B58\u8BBE\u7F6E", "\u786E\u8BA4\u66F4\u65B0\u7AD9\u70B9\u8BBE\u7F6E\uFF1F\u7EF4\u62A4\u6A21\u5F0F\u4F1A\u5F71\u54CD\u666E\u901A\u7528\u6237\u7684\u4E91\u7AEF\u5199\u5165\u3002")) return;
+        const patch = { siteName: controls.siteName.value, announcement: controls.announcement.value, maxUploadBytes: Number(controls.maxUploadBytes.value), maintenanceMode: controls.maintenanceMode.checked, publicRegistration: false, storageQuota: { maxProjects: Number(controls["storageQuota.maxProjects"].value), maxBytes: Number(controls["storageQuota.maxBytes"].value), warningPercent: Number(controls["storageQuota.warningPercent"].value) } };
+        await mutation("/admin/settings", patch, "PATCH");
+      }, { write: true });
+      form.onsubmit = (event) => {
+        event.preventDefault();
+        save.click();
+      };
+      form.append(save);
+      content.append(form);
+    }
+    function renderBackups(data) {
+      toolbar({ filters: false });
+      const bar = content.querySelector(".admin-toolbar>div:last-child");
+      const running = data.jobs.some((job) => ["queued", "running"].includes(job.status));
+      const start = button("\u521B\u5EFA\u5907\u4EFD", async () => {
+        if (await confirm("\u521B\u5EFA\u5907\u4EFD", "\u5C06\u5907\u4EFD\u6570\u636E\u5E93\u548C\u670D\u52A1\u7D20\u6750\u3002\u4EFB\u52A1\u5728\u670D\u52A1\u7AEF\u6267\u884C\uFF0C\u53EF\u5728\u6B64\u67E5\u770B\u8FDB\u5EA6\u3002")) await mutation("/admin/backups", void 0);
+      }, { write: true });
+      start.toggleAttribute("data-unavailable", !data.configured || running);
+      start.disabled = busy || start.hasAttribute("data-unavailable");
+      const restore = button("\u9A8C\u8BC1\u6062\u590D", async () => {
+        if (await confirm("\u9A8C\u8BC1\u6062\u590D", "\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u6062\u590D\u6700\u65B0\u5907\u4EFD\u5E76\u6838\u5BF9\u5185\u5BB9\u3002\u4E0D\u4F1A\u8986\u76D6\u5F53\u524D\u670D\u52A1\u6570\u636E\u5E93\u3002")) await mutation("/admin/backups/restore-check", void 0);
+      }, { write: true });
+      restore.toggleAttribute("data-unavailable", !data.restoreConfigured || running || !data.jobs.some((job) => ["completed", "verified"].includes(job.status)));
+      restore.disabled = busy || restore.hasAttribute("data-unavailable");
+      bar.append(start, restore);
+      content.append(node("p", !data.configured ? "\u670D\u52A1\u7AEF\u5C1A\u672A\u914D\u7F6E\u5907\u4EFD\u76EE\u5F55\u548C\u6570\u636E\u5E93\u8FDE\u63A5\u3002\u8BF7\u8054\u7CFB\u8FD0\u7EF4\u4EBA\u5458\u5B8C\u6210\u914D\u7F6E\u3002" : data.restoreConfigured ? "\u5907\u4EFD\u548C\u72EC\u7ACB\u6062\u590D\u9A8C\u8BC1\u5747\u5DF2\u914D\u7F6E\u3002" : "\u5907\u4EFD\u5DF2\u914D\u7F6E\uFF0C\u72EC\u7ACB\u6062\u590D\u9A8C\u8BC1\u5C1A\u672A\u914D\u7F6E\u3002", "admin-detail"));
+      const labels2 = { queued: "\u7B49\u5F85\u6267\u884C", running: "\u6267\u884C\u4E2D", completed: "\u5907\u4EFD\u5B8C\u6210", verified: "\u6062\u590D\u9A8C\u8BC1\u901A\u8FC7", failed: "\u5931\u8D25" };
+      table(["\u4EFB\u52A1", "\u72B6\u6001", "\u521B\u5EFA\u65F6\u95F4", "\u5B8C\u6210\u65F6\u95F4"], data.jobs, (job) => [details(job.id, job.errorCode), labels2[job.status] || job.status, date(job.createdAt), date(job.completedAt)]);
+      if (data.jobs.some((job) => ["queued", "running"].includes(job.status))) poll = setTimeout(() => load().catch(report), 2e3);
+    }
+    async function load() {
+      observabilityView?.destroy();
+      observabilityView = null;
+      clearTimeout(poll);
+      poll = null;
+      const current = ++generation, target = section;
+      content.setAttribute("aria-busy", "true");
+      content.replaceChildren(node("p", "\u6B63\u5728\u8BFB\u53D6\u670D\u52A1\u6570\u636E\u2026", "empty-state"));
+      try {
+        if (target === "observability") {
+          content.replaceChildren();
+          observabilityView = mountObservability({ container: content, api });
+          return;
+        }
+        let data;
+        if (target === "dashboard") {
+          data = await api.request("/admin/dashboard");
+          data.security = await api.request("/admin/security");
+        } else if (target === "settings") data = await api.request("/admin/settings");
+        else if (target === "backups") data = await api.request("/admin/backups");
+        else data = await api.request(`/admin/${target === "tokens" ? "mcp/tokens" : target}?limit=${limit}&offset=${offset}${target === "projects" ? "&trash=" + trash : ""}${search.trim() ? "&q=" + encodeURIComponent(search.trim()) : ""}${recordFilter ? "&" + (target === "audit" ? "outcome" : "status") + "=" + encodeURIComponent(recordFilter) : ""}`);
+        if (current !== generation) return;
+        content.replaceChildren();
+        if (target === "dashboard") renderDashboard(data);
+        else if (target === "settings") renderSettings(data);
+        else if (target === "backups") renderBackups(data);
+        else if (target === "storage") {
+          rows = data.rows;
+          renderStorage(data);
+        } else {
+          rows = data;
+          renderTable();
+        }
+      } catch (error) {
+        if (current === generation) {
+          content.replaceChildren(node("p", "\u8BFB\u53D6\u5931\u8D25\u3002\u68C0\u67E5\u63D0\u793A\u540E\u5237\u65B0\u91CD\u8BD5\u3002", "empty-state"), button("\u91CD\u65B0\u8BFB\u53D6", load));
+          report(error);
+        }
+      } finally {
+        if (current === generation) content.setAttribute("aria-busy", "false");
+      }
+    }
+    for (const nav of document2.querySelectorAll("[data-section]")) nav.onclick = () => {
+      section = nav.dataset.section;
+      offset = 0;
+      search = "";
+      recordFilter = "";
+      notice("");
+      for (const item of document2.querySelectorAll("[data-section]")) {
+        item.classList.toggle("active", item === nav);
+        item.setAttribute("aria-current", item === nav ? "page" : "false");
+      }
+      document2.querySelector("#section-name").textContent = sections[section][0];
+      document2.querySelector("#admin-title").textContent = sections[section][0];
+      document2.querySelector("#admin-description").textContent = sections[section][1];
+      load().catch(report);
+    };
+    document2.querySelector("#admin-logout").onclick = async () => {
+      try {
+        await api.logout();
+        navigate2("/login");
+      } catch (error) {
+        report(error);
+      }
+    };
+    try {
+      await api.restoreSession();
+      if (api.user.role !== "admin") {
+        notice("\u6B64\u8D26\u53F7\u6CA1\u6709\u7BA1\u7406\u540E\u53F0\u8BBF\u95EE\u6743\u9650\u3002\u8BF7\u8FD4\u56DE\u521B\u4F5C\u5DE5\u4F5C\u53F0\u3002", true);
+        content.replaceChildren();
+      } else {
+        document2.querySelector("#admin-account").textContent = api.user.username;
+        await load();
+      }
+    } catch (error) {
+      report(error);
+    }
+    return { reload: load, destroy() {
+      observabilityView?.destroy();
+      clearTimeout(poll);
+      generation++;
+    } };
+  }
+  var sections, date, bytes2, storageBytes;
+  var init_app = __esm({
+    "web/admin/app.js"() {
+      init_observability();
+      init_cloud_project_store();
+      sections = {
+        observability: ["\u8FD0\u884C\u7EDF\u8BA1", "\u67E5\u770B Agent \u8C03\u7528\u8BB0\u5F55\u548C\u5B9E\u9645\u8D44\u6E90\u72B6\u6001\u3002"],
+        dashboard: ["\u5E73\u53F0\u6982\u89C8", "\u68C0\u67E5\u670D\u52A1\u3001\u7528\u6237\u548C\u5B58\u50A8\u72B6\u6001\u3002"],
+        users: ["\u7528\u6237", "\u521B\u5EFA\u8D26\u53F7\uFF0C\u7BA1\u7406\u89D2\u8272\u3001\u767B\u5F55\u4F1A\u8BDD\u548C\u8D26\u53F7\u72B6\u6001\u3002"],
+        projects: ["\u9879\u76EE", "\u7BA1\u7406\u5F52\u5C5E\u548C\u56DE\u6536\u7AD9\u3002\u6B64\u5904\u4EC5\u5C55\u793A\u9879\u76EE\u5143\u6570\u636E\u3002"],
+        tokens: ["Agent \u6388\u6743", "\u67E5\u770B\u6388\u6743\u8303\u56F4\u548C\u6709\u6548\u671F\uFF0C\u64A4\u9500\u4E0D\u518D\u4F7F\u7528\u7684\u6388\u6743\u3002"],
+        storage: ["\u5B58\u50A8\u914D\u989D", "\u6309\u8D26\u53F7\u67E5\u770B\u4FDD\u7559\u6570\u636E\u7528\u91CF\u3001\u5168\u5C40\u9650\u989D\u548C\u544A\u8B66\u3002"],
+        audit: ["\u5BA1\u8BA1\u8BB0\u5F55", "\u67E5\u770B\u5B89\u5168\u4E0E\u7BA1\u7406\u64CD\u4F5C\u7684\u65F6\u95F4\u3001\u64CD\u4F5C\u4EBA\u548C\u7ED3\u679C\u3002"],
+        settings: ["\u7CFB\u7EDF\u8BBE\u7F6E", "\u8C03\u6574\u7AD9\u70B9\u4FE1\u606F\u3001\u4E0A\u4F20\u4E0A\u9650\u3001\u7EF4\u62A4\u72B6\u6001\u548C\u5168\u5C40\u5B58\u50A8\u914D\u989D\u3002"],
+        backups: ["\u5907\u4EFD\u4E0E\u6062\u590D\u9A8C\u8BC1", "\u521B\u5EFA\u670D\u52A1\u5907\u4EFD\uFF0C\u5E76\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u68C0\u67E5\u6062\u590D\u7ED3\u679C\u3002"]
+      };
+      date = (value) => value ? new Date(value).toLocaleString("zh-CN") : "\u2014";
+      bytes2 = (value) => value >= 1048576 ? (value / 1048576).toFixed(1) + " MiB" : (value / 1024).toFixed(1) + " KiB";
+      storageBytes = (value) => {
+        const units = ["B", "KiB", "MiB", "GiB", "TiB"];
+        let amount = Number(value) || 0, index2 = 0;
+        while (amount >= 1024 && index2 < units.length - 1) {
+          amount /= 1024;
+          index2++;
+        }
+        return `${index2 ? amount.toFixed(1) : amount} ${units[index2]}`;
+      };
+      if (typeof document !== "undefined" && document.querySelector("[data-admin-root]")) mountAdmin().catch(() => {
+      });
+    }
+  });
+
+  // web/share-center.js
+  async function openShareCenter({ api, projectId, accountId, document: document2 = globalThis.document }) {
+    if (!accountId || api.user?.id !== accountId) throw Error("\u8BF7\u767B\u5F55\u9879\u76EE\u6240\u5C5E\u8D26\u53F7\u3002");
+    const previous = document2.activeElement, dialog = document2.createElement("dialog"), title = document2.createElement("h2"), note = document2.createElement("p"), status = document2.createElement("p"), list = document2.createElement("div"), create = document2.createElement("button"), close = document2.createElement("button");
+    title.textContent = "\u5206\u4EAB\u94FE\u63A5";
+    title.id = "share-center-title";
+    dialog.setAttribute("aria-labelledby", title.id);
+    note.textContent = "\u5206\u4EAB\u5F53\u524D\u5DF2\u4FDD\u5B58\u7248\u672C\u3002\u4E4B\u540E\u4FEE\u6539\u6587\u7A3F\u4E0D\u4F1A\u66F4\u65B0\u6B64\u94FE\u63A5\uFF1B\u6301\u6709\u94FE\u63A5\u7684\u4EBA\u53EF\u67E5\u770B\u516C\u5F00\u5C55\u793A\u5185\u5BB9\u3002\u5907\u6CE8\u3001\u6279\u6CE8\u548C\u5386\u53F2\u4E0D\u968F\u94FE\u63A5\u5206\u4EAB\u3002";
+    status.setAttribute("role", "status");
+    create.type = close.type = "button";
+    create.textContent = "\u521B\u5EFA 7 \u5929\u6709\u6548\u94FE\u63A5";
+    close.textContent = "\u5173\u95ED";
+    let busy = false;
+    const finish = () => {
+      dialog.close?.();
+      dialog.remove();
+      previous?.focus?.();
+    };
+    close.onclick = finish;
+    dialog.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      finish();
+    });
+    dialog.append(title, note, status, create, list, close);
+    document2.body.append(dialog);
+    dialog.showModal?.();
+    const same3 = () => dialog.isConnected && api.user?.id === accountId;
+    const path = "/projects/" + encodeURIComponent(projectId) + "/shares";
+    async function reload() {
+      const rows = await api.request(path);
+      if (!same3()) return;
+      list.replaceChildren();
+      if (!rows.length) {
+        const empty = document2.createElement("p");
+        empty.textContent = "\u6682\u65E0\u5206\u4EAB\u94FE\u63A5\u3002";
+        list.append(empty);
+      }
+      for (const row of rows) {
+        const item = document2.createElement("p"), label = document2.createElement("span"), revoke = document2.createElement("button");
+        label.textContent = `\u4FEE\u8BA2 ${row.revision} \xB7 \u5230\u671F ${new Date(row.expiresAt).toLocaleString("zh-CN")} \xB7 ${row.revokedAt ? "\u5DF2\u64A4\u9500" : Date.parse(row.expiresAt) <= Date.now() ? "\u5DF2\u5230\u671F" : row.active === false ? "\u6682\u4E0D\u53EF\u7528" : "\u6709\u6548"} `;
+        revoke.textContent = "\u64A4\u9500";
+        revoke.type = "button";
+        revoke.disabled = !!row.revokedAt;
+        revoke.onclick = async () => {
+          if (busy || !same3()) return;
+          busy = true;
+          revoke.disabled = true;
+          try {
+            if (!await formDialog(document2, "\u64A4\u9500\u5206\u4EAB\u94FE\u63A5", [], { message: "\u6B64\u94FE\u63A5\u5C06\u65E0\u6CD5\u7EE7\u7EED\u6253\u5F00\uFF0C\u5DF2\u4E0B\u8F7D\u7684\u5185\u5BB9\u65E0\u6CD5\u6536\u56DE\u3002", confirm: "\u64A4\u9500\u94FE\u63A5" }) || !same3()) return;
+            await api.request(path + "/" + encodeURIComponent(row.id), { method: "DELETE" });
+            if (same3()) {
+              status.textContent = "\u94FE\u63A5\u5DF2\u64A4\u9500\u3002";
+              await reload();
+            }
+          } catch (error) {
+            if (same3()) status.textContent = error.message;
+          } finally {
+            busy = false;
+            revoke.disabled = !!row.revokedAt;
+          }
+        };
+        item.append(label, revoke);
+        list.append(item);
+      }
+    }
+    create.onclick = async () => {
+      if (busy || !same3()) return;
+      busy = true;
+      create.disabled = true;
+      try {
+        if (!await formDialog(document2, "\u521B\u5EFA\u5206\u4EAB\u94FE\u63A5", [], { message: "\u5C06\u516C\u5F00\u5F53\u524D\u5DF2\u4FDD\u5B58\u7684\u56FA\u5B9A\u7248\u672C\uFF0C\u94FE\u63A5\u6709\u6548\u671F\u4E3A 7 \u5929\u3002\u8BF7\u786E\u8BA4\u5C55\u793A\u5185\u5BB9\u53EF\u4EE5\u5206\u4EAB\u3002", confirm: "\u521B\u5EFA\u94FE\u63A5" }) || !same3()) return;
+        const current = await api.request("/projects/" + encodeURIComponent(projectId));
+        if (!same3()) return;
+        const result = await api.request(path, { method: "POST", body: { expectedRevision: current.revision, expiresAt: new Date(Date.now() + 7 * 864e5).toISOString() } });
+        if (!same3()) return;
+        const secret = document2.createElement("textarea"), done = document2.createElement("button"), copy2 = document2.createElement("button"), box = document2.createElement("div");
+        secret.value = result.url;
+        secret.readOnly = true;
+        secret.rows = 3;
+        secret.setAttribute("aria-label", "\u65B0\u5EFA\u5206\u4EAB\u94FE\u63A5\uFF08\u4EC5\u663E\u793A\u4E00\u6B21\uFF09");
+        done.type = copy2.type = "button";
+        done.textContent = "\u5173\u95ED\u94FE\u63A5\u663E\u793A";
+        copy2.textContent = "\u590D\u5236\u94FE\u63A5";
+        copy2.onclick = async () => {
+          try {
+            await document2.defaultView.navigator.clipboard.writeText(secret.value);
+            copy2.textContent = "\u5DF2\u590D\u5236";
+          } catch {
+            secret.focus();
+            secret.select();
+          }
+        };
+        done.onclick = () => {
+          secret.value = "";
+          box.remove();
+        };
+        box.append(secret, copy2, done);
+        dialog.insertBefore(box, list);
+        status.textContent = "\u94FE\u63A5\u53EA\u663E\u793A\u4E00\u6B21\uFF0C\u8BF7\u4FDD\u5B58\u540E\u5173\u95ED\u3002";
+        delete result.token;
+        delete result.url;
+        await reload();
+      } catch (error) {
+        if (same3()) status.textContent = error.code === "TIMEOUT" ? "\u521B\u5EFA\u7ED3\u679C\u672A\u786E\u8BA4\uFF0C\u8BF7\u5237\u65B0\u5217\u8868\u6838\u5BF9\uFF1B\u4E0D\u8981\u91CD\u590D\u70B9\u51FB\u3002" : error.message;
+      } finally {
+        busy = false;
+        create.disabled = false;
+      }
+    };
+    try {
+      await reload();
+    } catch (error) {
+      if (same3()) status.textContent = error.message;
+    }
+    return { close: finish };
+  }
+  var init_share_center = __esm({
+    "web/share-center.js"() {
+      init_app();
+    }
+  });
+
   // examples/five-slides.js
   function fiveSlideDocument() {
     const time2 = "2026-10-10T00:00:00.000Z";
@@ -1430,13 +2635,13 @@ body.editor-open #account-menu{display:none}
     if (file.size > MAX_IMPORT_BYTES) throw tooLarge();
     if (typeof file.stream === "function") {
       const reader = file.stream().getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
-      let bytes3 = 0, text3 = "";
+      let bytes4 = 0, text3 = "";
       try {
         for (; ; ) {
           const { done, value } = await reader.read();
           if (done) break;
-          bytes3 += value.byteLength;
-          if (bytes3 > MAX_IMPORT_BYTES) throw tooLarge();
+          bytes4 += value.byteLength;
+          if (bytes4 > MAX_IMPORT_BYTES) throw tooLarge();
           text3 += decoder.decode(value, { stream: true });
         }
         return text3 + decoder.decode();
@@ -1722,8 +2927,8 @@ function v24OfflineExportBootstrap(width,height){
 
   // io/editor-export.js
   async function scriptHash(source) {
-    const bytes3 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
-    return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes3))) + "'";
+    const bytes4 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+    return "'sha256-" + btoa(String.fromCharCode(...new Uint8Array(bytes4))) + "'";
   }
   async function exportEditorHTML(input, renderedHTML, { domDocument = globalThis.document, audience = false } = {}) {
     const doc = importDocument(input);
@@ -1784,1030 +2989,200 @@ function v24OfflineExportBootstrap(width,height){
     }
   });
 
-  // storage/cloud-drafts.js
-  var CloudDraftStore;
-  var init_cloud_drafts = __esm({
-    "storage/cloud-drafts.js"() {
-      init_document_core();
-      CloudDraftStore = class {
-        constructor({ name = "superior-point-cloud-drafts-v1" } = {}) {
-          this.name = name;
-          this.branch = crypto.randomUUID();
-          this.db = null;
-          this.opening = null;
-        }
-        async open() {
-          if (this.db) return this;
-          if (!this.opening) this.opening = new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.name, 2);
-            request.onupgradeneeded = () => {
-              for (const name of ["drafts", "migrations"]) if (!request.result.objectStoreNames.contains(name)) request.result.createObjectStore(name, { keyPath: "key" });
-            };
-            request.onsuccess = () => {
-              this.db = request.result;
-              this.db.onversionchange = () => this.close();
-              resolve(this);
-            };
-            request.onerror = () => reject(request.error);
-            request.onblocked = () => reject(new Error("\u8BF7\u5173\u95ED\u65E7\u7248\u8349\u7A3F\u6807\u7B7E\u9875\u540E\u91CD\u8BD5"));
-          }).finally(() => this.opening = null);
-          return this.opening;
-        }
-        close() {
-          this.db?.close();
-          this.db = null;
-        }
-        async tx(mode, operation, name = "drafts") {
-          await this.open();
-          return new Promise((resolve, reject) => {
-            const tx = this.db.transaction(name, mode);
-            let result;
-            tx.oncomplete = () => resolve(structuredClone(result));
-            tx.onabort = tx.onerror = () => reject(tx.error || new Error("\u672C\u5730\u6062\u590D\u8349\u7A3F\u5199\u5165\u5931\u8D25"));
-            operation(tx.objectStore(name), (value) => result = value);
-          });
-        }
-        async save(accountId, document2, { sourceRevision, mutation } = {}) {
-          const snapshot = importDocument(document2);
-          if (!accountId || !Number.isSafeInteger(sourceRevision) || sourceRevision < 0) throw new Error("\u8349\u7A3F\u7F3A\u5C11\u8D26\u53F7\u6216\u6765\u6E90\u4FEE\u8BA2");
-          const record = { key: [accountId, snapshot.id, sourceRevision, this.branch], accountId, projectId: snapshot.id, sourceRevision, document: snapshot, updatedAt: Date.now(), ...mutation ? { mutation: structuredClone(mutation) } : {} };
-          return this.tx("readwrite", (store2, done) => {
-            const request = store2.get(record.key);
-            request.onsuccess = () => {
-              const old = request.result;
-              if (old && old.document.revision > snapshot.revision) {
-                done(old);
-                return;
-              }
-              store2.put(record);
-              done(record);
-            };
-          });
-        }
-        async list(accountId, projectId) {
-          return this.tx("readonly", (store2, done) => {
-            const request = store2.getAll();
-            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId && (!projectId || record.projectId === projectId)).sort((a, b) => b.updatedAt - a.updatedAt));
-          });
-        }
-        async clearSaved(accountId, projectId, revision, branch = this.branch) {
-          return this.tx("readwrite", (store2, done) => {
-            const request = store2.getAll();
-            request.onsuccess = () => {
-              for (const record of request.result) if (record.accountId === accountId && record.projectId === projectId && record.key[3] === branch && record.document.revision <= revision) store2.delete(record.key);
-              done(true);
-            };
-          });
-        }
-        async remove(accountId, key) {
-          if (key?.[0] !== accountId) throw new Error("\u4E0D\u80FD\u5220\u9664\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F");
-          return this.tx("readwrite", (store2, done) => {
-            store2.delete(key);
-            done(true);
-          });
-        }
-        async markMigration(accountId, source, cloudId) {
-          const record = { key: [accountId, source.id], accountId, sourceProjectId: source.id, sourceRevision: source.revision, cloudProjectId: cloudId, verifiedAt: Date.now() };
-          return this.tx("readwrite", (store2, done) => {
-            store2.put(record);
-            done(record);
-          }, "migrations");
-        }
-        async migrations(accountId) {
-          return this.tx("readonly", (store2, done) => {
-            const request = store2.getAll();
-            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId));
-          }, "migrations");
-        }
-      };
+  // web/project-events.js
+  function subscribeProjectEvents({ api, projectId, revision = 0, onRevision, onState = () => {
+  }, EventSource = globalThis.EventSource } = {}) {
+    const accountId = api?.user?.id;
+    if (!accountId || typeof projectId !== "string" || !Number.isSafeInteger(revision) || revision < 0 || typeof onRevision !== "function") throw Error("Revision subscription requires an account, project and callback");
+    if (typeof EventSource !== "function") {
+      onState("unavailable");
+      return { close() {
+      } };
     }
-  });
-
-  // storage/cloud-project-store.js
-  function stableJSON(value) {
-    if (Array.isArray(value)) return "[" + value.map(stableJSON).join(",") + "]";
-    if (value && typeof value === "object") return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + stableJSON(value[key])).join(",") + "}";
-    return JSON.stringify(value);
-  }
-  function migrationContent(document2) {
-    const doc = importDocument(document2);
-    delete doc.id;
-    delete doc.revision;
-    delete doc.metadata.createdAt;
-    delete doc.metadata.updatedAt;
-    delete doc.metadata.spCloudImport;
-    return stableJSON(doc);
-  }
-  var CloudError, CloudAPI, CloudProjectStore;
-  var init_cloud_project_store = __esm({
-    "storage/cloud-project-store.js"() {
-      init_document_core();
-      init_cloud_drafts();
-      CloudError = class extends Error {
-        constructor(code, message, status = 0) {
-          super(message);
-          this.code = code;
-          this.status = status;
-        }
-      };
-      CloudAPI = class {
-        constructor({ base = "/api/v1", fetch = globalThis.fetch?.bind(globalThis), timeoutMs = 15e3 } = {}) {
-          this.base = base;
-          this.fetch = fetch;
-          this.timeoutMs = timeoutMs;
-          this.csrfToken = null;
-          this.user = null;
-        }
-        async request(path, { method = "GET", body, csrfRetry = true } = {}) {
-          const controller = new AbortController(), timer = setTimeout(() => controller.abort(), this.timeoutMs);
-          let response, result;
-          try {
-            response = await this.fetch(this.base + path, { method, credentials: "same-origin", headers: { ...body === void 0 ? {} : { "Content-Type": "application/json" }, ...this.user?.id ? { "X-SP-Account-ID": this.user.id } : {}, ...method === "GET" || !this.csrfToken ? {} : { "X-CSRF-Token": this.csrfToken } }, ...body === void 0 ? {} : { body: JSON.stringify(body) }, signal: controller.signal });
-            result = await response.json();
-          } catch (error) {
-            if (response && !controller.signal.aborted) throw new CloudError("INVALID_RESPONSE", "\u4E91\u7AEF\u54CD\u5E94\u65E0\u6CD5\u8BFB\u53D6\uFF0C\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\u3002", response.status);
-            throw new CloudError(controller.signal.aborted ? "TIMEOUT" : "OFFLINE", controller.signal.aborted ? "\u4E91\u7AEF\u8BF7\u6C42\u8D85\u65F6\uFF1B\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\uFF0C\u8BF7\u91CD\u8BD5\u540C\u4E00\u4EFD\u4FEE\u6539\u3002" : "\u65E0\u6CD5\u8FDE\u63A5\u4E91\u7AEF\uFF1B\u4FEE\u6539\u4ECD\u4FDD\u7559\u4E3A\u672C\u5730\u6062\u590D\u8349\u7A3F\u3002");
-          } finally {
-            clearTimeout(timer);
-          }
-          if (!response.ok) {
-            const error = result.error || {};
-            if (["ACCOUNT_CHANGED", "UNAUTHENTICATED"].includes(error.code)) {
-              this.user = null;
-              this.csrfToken = null;
-            }
-            if (error.code === "CSRF_INVALID" && csrfRetry && path !== "/auth/csrf") {
-              await this.rotateCsrf();
-              return this.request(path, { method, body, csrfRetry: false });
-            }
-            throw new CloudError(error.code || "CLOUD_ERROR", error.message || "\u4E91\u7AEF\u64CD\u4F5C\u5931\u8D25", response.status);
-          }
-          return result;
-        }
-        async login(username, password) {
-          const result = await this.request("/auth/login", { method: "POST", body: { username, password }, csrfRetry: false });
-          this.user = result.user;
-          this.csrfToken = result.csrfToken;
-          return result.user;
-        }
-        async rotateCsrf() {
-          if (this.user) {
-            const current = await this.request("/auth/me", { csrfRetry: false });
-            if (current.user.id !== this.user.id) {
-              this.user = null;
-              this.csrfToken = null;
-              throw new CloudError("ACCOUNT_CHANGED", "\u4E91\u7AEF\u8D26\u53F7\u5DF2\u5728\u5176\u4ED6\u6807\u7B7E\u9875\u53D8\u66F4\uFF0C\u8BF7\u5207\u6362\u5230\u672C\u5730\u540E\u91CD\u65B0\u767B\u5F55\uFF1B\u5F53\u524D\u8349\u7A3F\u4FDD\u7559\u3002", 403);
-            }
-          }
-          const result = await this.request("/auth/csrf", { method: "POST", body: {}, csrfRetry: false });
-          this.csrfToken = result.csrfToken;
-          return result.csrfToken;
-        }
-        async restoreSession() {
-          const result = await this.request("/auth/me");
-          this.user = result.user;
-          this.csrfToken = result.csrfToken;
-          if (!this.csrfToken) await this.rotateCsrf();
-          return this.user;
-        }
-        async logout() {
-          await this.request("/auth/logout", { method: "POST", body: {} });
-          this.user = null;
-          this.csrfToken = null;
-        }
-      };
-      CloudProjectStore = class {
-        constructor({ api, accountId = api?.user?.id, drafts = new CloudDraftStore() } = {}) {
-          if (!api || !accountId) throw new Error("\u4E91\u7AEF\u5B58\u50A8\u9700\u8981\u5DF2\u767B\u5F55\u8D26\u53F7");
-          this.api = api;
-          this.accountId = accountId;
-          this.drafts = drafts;
-          this.storage = "cloud";
-          this.name = "cloud:" + accountId;
-          this.leaseMs = 6e4;
-          this.opened = /* @__PURE__ */ new Map();
-          this.locks = /* @__PURE__ */ new Map();
-          this.mutations = /* @__PURE__ */ new Map();
-          this.imports = /* @__PURE__ */ new Map();
-        }
-        async open() {
-          await this.drafts.open();
-          return this;
-        }
-        close() {
-          this.drafts.close();
-        }
-        record(document2, metadata = {}) {
-          const doc = importDocument(document2);
-          return { id: doc.id, document: doc, modifiedAt: Date.parse(metadata.updatedAt || doc.metadata.updatedAt), openedAt: this.opened.get(doc.id) || Date.parse(metadata.updatedAt || doc.metadata.updatedAt), deletedAt: metadata.deletedAt ? Date.parse(metadata.deletedAt) : null, storage: "cloud" };
-        }
-        async list({ trash = false } = {}) {
-          const rows = await this.api.request("/projects" + (trash ? "?trash=true" : "")), records = new Array(rows.length);
-          let cursor = 0;
-          await Promise.all(Array.from({ length: Math.min(4, rows.length) }, async () => {
-            while (cursor < rows.length) {
-              const index2 = cursor++, meta = rows[index2];
-              try {
-                records[index2] = this.record(await this.api.request("/projects/" + encodeURIComponent(meta.id) + "/document" + (trash ? "?trash=true" : "")), meta);
-              } catch (error) {
-                if (error.code !== "NOT_FOUND") throw error;
-              }
-            }
-          }));
-          return records.filter(Boolean);
-        }
-        async get(id) {
-          try {
-            return this.record(await this.api.request("/projects/" + encodeURIComponent(id) + "/document"));
-          } catch (error) {
-            if (error.code !== "NOT_FOUND") throw error;
-            const rows = await this.api.request("/projects?trash=true"), meta = rows.find((row) => row.id === id);
-            if (!meta) return null;
-            return this.record(await this.api.request("/projects/" + encodeURIComponent(id) + "/document?trash=true"), meta);
-          }
-        }
-        async create(document2) {
-          const doc = importDocument(document2), key = stableJSON(doc);
-          let request = this.imports.get(key);
-          if (!request) {
-            request = { document: doc, clientMutationId: crypto.randomUUID() };
-            this.imports.set(key, request);
-          }
-          const saved = importDocument(await this.api.request("/projects/import", { method: "POST", body: request }));
-          if (saved.id === doc.id || migrationContent(saved) !== migrationContent(doc)) throw new CloudError("IMPORT_READBACK_MISMATCH", "\u4E91\u7AEF\u5BFC\u5165\u6570\u636E\u4E0E\u6765\u6E90\u4E0D\u4E00\u81F4\uFF1B\u539F\u672C\u5730\u9879\u76EE\u4ECD\u4FDD\u7559\u3002");
-          const readback = await this.get(saved.id);
-          if (!readback || stableJSON(readback.document) !== stableJSON(saved)) throw new CloudError("IMPORT_READBACK_MISMATCH", "\u65E0\u6CD5\u786E\u8BA4\u4E91\u7AEF\u5BFC\u5165\u56DE\u8BFB\uFF0C\u8BF7\u4FDD\u7559\u6765\u6E90\u9879\u76EE\u540E\u91CD\u8BD5\u3002");
-          this.imports.delete(key);
-          return readback;
-        }
-        async markOpened(id) {
-          this.opened.set(id, Date.now());
-          return true;
-        }
-        async acquire(id, owner2, { takeover = false } = {}) {
-          if (takeover) throw new CloudError("PROJECT_BUSY", "\u4E91\u7AEF\u4E0D\u5141\u8BB8\u62A2\u5360\u6D3B\u52A8\u79DF\u7EA6\uFF0C\u8BF7\u7B49\u5F85\u5199\u5165\u65B9\u91CA\u653E\u3002", 409);
-          try {
-            const lease = await this.api.request("/projects/" + encodeURIComponent(id) + "/lease", { method: "POST", body: { holder: owner2 } });
-            const lock2 = { id, owner: owner2, token: lease.leaseToken, expiresAt: Date.parse(lease.expiresAt) };
-            this.locks.set(id, lock2);
-            return lock2;
-          } catch (error) {
-            if (error.code === "PROJECT_BUSY") return null;
-            throw error;
-          }
-        }
-        async renew(lock2) {
-          const lease = await this.api.request("/projects/" + encodeURIComponent(lock2.id) + "/lease/renew", { method: "POST", body: { leaseToken: lock2.token } });
-          const renewed = { ...lock2, expiresAt: Date.parse(lease.expiresAt) };
-          this.locks.set(lock2.id, renewed);
-          return renewed;
-        }
-        async release(lock2) {
-          if (!lock2) return;
-          try {
-            await this.api.request("/projects/" + encodeURIComponent(lock2.id) + "/lease", { method: "DELETE", body: { leaseToken: lock2.token } });
-            return true;
-          } finally {
-            if (this.locks.get(lock2.id)?.token === lock2.token) this.locks.delete(lock2.id);
-          }
-        }
-        async captureDraft(document2, sourceRevision) {
-          return this.drafts.save(this.accountId, document2, { sourceRevision });
-        }
-        async save(document2, { expectedRevision, lock: lock2 } = {}) {
-          const doc = importDocument(document2);
-          if (!lock2 || lock2.id !== doc.id) throw new CloudError("LOCK_LOST", "\u5F53\u524D\u4E91\u7AEF\u9879\u76EE\u6CA1\u6709\u5199\u5165\u6743", 409);
-          if (doc.revision === expectedRevision) {
-            const saved2 = await this.get(doc.id);
-            if (saved2 && stableJSON(saved2.document) === stableJSON(doc)) return saved2;
-            throw new CloudError("REVISION_CONFLICT", "\u4E91\u7AEF\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u5F53\u524D\u8349\u7A3F\u4ECD\u4FDD\u7559\u3002", 409);
-          }
-          if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || doc.revision <= expectedRevision) throw new CloudError("INVALID_REVISION", "\u5FEB\u7167\u4FEE\u8BA2\u5FC5\u987B\u5927\u4E8E\u5DF2\u786E\u8BA4\u4E91\u7AEF\u4FEE\u8BA2");
-          const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(stableJSON({ document: doc, expectedRevision, leaseToken: lock2.token }))), fingerprint = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
-          let pending = this.mutations.get(fingerprint);
-          if (!pending) {
-            const existing = (await this.drafts.list(this.accountId, doc.id)).find((record) => record.mutation?.fingerprint === fingerprint), failure = existing?.mutation?.failure;
-            pending = { request: { document: doc, expectedRevision, leaseToken: lock2.token, clientMutationId: existing?.mutation?.clientMutationId || crypto.randomUUID() }, error: failure ? new CloudError(failure.code, failure.message, failure.status) : null, previousBranch: existing?.key[3] };
-            this.mutations.set(fingerprint, pending);
-          }
-          if (pending.error) throw pending.error;
-          await this.drafts.save(this.accountId, doc, { sourceRevision: expectedRevision, mutation: { fingerprint, clientMutationId: pending.request.clientMutationId } });
-          let saved;
-          try {
-            saved = importDocument(await this.api.request("/projects/" + encodeURIComponent(doc.id) + "/snapshot", { method: "PUT", body: pending.request }));
-          } catch (error) {
-            if (error.status >= 400 && error.status < 500) {
-              pending.error = error;
-              await this.drafts.save(this.accountId, doc, { sourceRevision: expectedRevision, mutation: { fingerprint, clientMutationId: pending.request.clientMutationId, failure: { code: error.code, message: error.message, status: error.status } } }).catch(() => {
-              });
-            }
-            throw error;
-          }
-          if (saved.id !== doc.id || saved.revision !== doc.revision) throw new CloudError("INVALID_RESPONSE", "\u4E91\u7AEF\u5FEB\u7167\u4FEE\u8BA2\u4E0D\u5339\u914D\uFF0C\u4FDD\u5B58\u7ED3\u679C\u672A\u786E\u8BA4\u3002");
-          this.mutations.delete(fingerprint);
-          try {
-            await this.drafts.clearSaved(this.accountId, doc.id, saved.revision);
-            if (pending.previousBranch) await this.drafts.clearSaved(this.accountId, doc.id, saved.revision, pending.previousBranch);
-          } catch (error) {
-            this.draftCleanupError = error;
-          }
-          return this.record(saved);
-        }
-        async setDeleted(id, deleted, { owner: owner2 } = {}) {
-          const record = await this.get(id);
-          if (!record) throw new CloudError("NOT_FOUND", "\u9879\u76EE\u4E0D\u5B58\u5728", 404);
-          const lease = this.locks.get(id);
-          const body = { expectedRevision: record.document.revision, clientMutationId: crypto.randomUUID(), ...lease && lease.owner === owner2 ? { leaseToken: lease.token } : {} };
-          await this.api.request("/projects/" + encodeURIComponent(id) + (deleted ? "" : "/restore"), { method: deleted ? "DELETE" : "POST", body });
-          return true;
-        }
-        async migrate(localStore2, id) {
-          const local = await localStore2.get(id);
-          if (!local || local.deletedAt) throw new CloudError("NOT_FOUND", "\u672C\u5730\u9879\u76EE\u4E0D\u5B58\u5728");
-          const saved = await this.create(local.document);
-          const source = await localStore2.get(id);
-          if (!source || stableJSON(source.document) !== stableJSON(local.document)) throw new CloudError("LOCAL_CHANGED", "\u672C\u5730\u9879\u76EE\u5728\u8FC1\u79FB\u671F\u95F4\u53D1\u751F\u4FEE\u6539\uFF0C\u8BF7\u91CD\u65B0\u6838\u5BF9\uFF1B\u4E91\u7AEF\u526F\u672C\u5DF2\u7ECF\u4FDD\u7559\u3002");
-          await this.drafts.markMigration(this.accountId, local.document, saved.id);
-          return saved;
-        }
-        async recoverDraft(record) {
-          if (record.accountId !== this.accountId) throw new CloudError("FORBIDDEN", "\u4E0D\u80FD\u6062\u590D\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F", 403);
-          const doc = structuredClone(record.document);
-          doc.title += " \xB7 \u4E91\u7AEF\u6062\u590D\u526F\u672C";
-          const saved = await this.create(doc);
-          await this.drafts.remove(this.accountId, record.key);
-          return saved;
-        }
-      };
-    }
-  });
-
-  // storage/cloud-collaboration.js
-  function mergeCloudDocument(base, local, remote) {
-    if (base.id !== local.id || base.id !== remote.id) throw new CloudError("COLLABORATION_CONFLICT", "\u534F\u540C\u6587\u7A3F\u8EAB\u4EFD\u4E0D\u4E00\u81F4\uFF0C\u8BF7\u4FDD\u7559\u5907\u4EFD\u3002");
-    function merge(before, mine, theirs, path) {
-      if (equal(mine, before)) return structuredClone(theirs);
-      if (equal(theirs, before) || equal(mine, theirs)) return structuredClone(mine);
-      if (object3(before) && object3(mine) && object3(theirs)) {
-        const result = {};
-        for (const key of /* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(mine), ...Object.keys(theirs)])) {
-          const value = merge(before[key], mine[key], theirs[key], path + "." + key);
-          if (value !== void 0) result[key] = value;
-        }
-        return result;
-      }
-      if (keyed(before) && keyed(mine) && keyed(theirs)) {
-        const ids = (items) => items.map((item) => item.id), order = merge(ids(before), ids(mine), ids(theirs), path + ".\u987A\u5E8F");
-        const maps = [before, mine, theirs].map((items) => new Map(items.map((item) => [item.id, item])));
-        const values = new Map([...new Set([...before, ...mine, ...theirs].map((item) => item.id))].map((id) => [id, merge(...maps.map((map) => map.get(id)), path + "." + id)]));
-        return order.map((id) => values.get(id)).filter((value) => value !== void 0);
-      }
-      throw new CloudError("COLLABORATION_CONFLICT", "\u4F60\u4E0E AI \u4FEE\u6539\u4E86\u540C\u4E00\u5904\u5185\u5BB9\uFF08" + path + "\uFF09\u3002\u5F53\u524D\u4FEE\u6539\u5DF2\u4FDD\u7559\uFF0C\u8BF7\u5BFC\u51FA\u5907\u4EFD\u6216\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u3002");
-    }
-    const strip = (document2) => {
-      const value = structuredClone(document2);
-      delete value.revision;
-      delete value.metadata.updatedAt;
-      return value;
+    const source = new EventSource((api.base ?? "/api/v1") + "/projects/" + encodeURIComponent(projectId) + "/events?accountId=" + encodeURIComponent(accountId));
+    let closed = false, last = revision, lastDeleted = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      source.close();
     };
-    const merged = merge(strip(base), strip(local), strip(remote), "\u6587\u7A3F");
-    const changed = !equal(merged, strip(remote));
-    merged.revision = remote.revision + (changed ? 1 : 0);
-    merged.metadata.updatedAt = changed ? (/* @__PURE__ */ new Date()).toISOString() : remote.metadata.updatedAt;
-    return importDocument(merged);
-  }
-  var equal, object3, keyed;
-  var init_cloud_collaboration = __esm({
-    "storage/cloud-collaboration.js"() {
-      init_document_core();
-      init_cloud_project_store();
-      equal = (a, b) => stableJSON(a) === stableJSON(b);
-      object3 = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
-      keyed = (value) => Array.isArray(value) && value.every((item) => object3(item) && typeof item.id === "string") && new Set(value.map((item) => item.id)).size === value.length;
-    }
-  });
-
-  // web/admin/observability.js
-  function mountObservability({ container, api }) {
-    const document2 = container.ownerDocument, view2 = document2.defaultView;
-    let offset = 0, destroyed = false, generation = 0, total = 0;
-    const limit = 25;
-    const node = (tag, text2) => {
-      const el = document2.createElement(tag);
-      if (text2 !== void 0) el.textContent = String(text2);
-      return el;
+    const active = () => {
+      if (closed) return false;
+      if (api.user?.id !== accountId) {
+        close();
+        onState("account-changed");
+        return false;
+      }
+      return true;
     };
-    const form = node("form");
-    form.className = "admin-toolbar";
-    function field(name, label, type, value) {
-      const wrap = node("label", label), input = node("input");
-      input.name = name;
-      input.type = type;
-      input.value = value ?? "";
-      wrap.append(input);
-      form.append(wrap);
-      return input;
-    }
-    const from = field("from", "\u5F00\u59CB\u65F6\u95F4", "datetime-local", localDate(new Date(Date.now() - 864e5))), to = field("to", "\u7ED3\u675F\u65F6\u95F4", "datetime-local", localDate(/* @__PURE__ */ new Date()));
-    from.required = to.required = true;
-    const user = field("userId", "\u7528\u6237 ID", "text");
-    user.placeholder = "\u5168\u90E8\u7528\u6237";
-    user.pattern = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}";
-    const toolWrap = node("label", "\u5DE5\u5177"), tool = node("select");
-    tool.name = "tool";
-    for (const name of ["", ...tools]) {
-      const option = node("option", name || "\u5168\u90E8\u5DE5\u5177");
-      option.value = name;
-      tool.append(option);
-    }
-    toolWrap.append(tool);
-    form.append(toolWrap);
-    const submit = node("button", "\u67E5\u8BE2");
-    submit.type = "submit";
-    form.append(submit);
-    const status = node("p");
-    status.setAttribute("role", "status");
-    status.setAttribute("aria-live", "polite");
-    const resources = node("section"), calls = node("section"), pages = node("div");
-    pages.className = "pagination";
-    const previous = node("button", "\u4E0A\u4E00\u9875"), next = node("button", "\u4E0B\u4E00\u9875"), page = node("span");
-    previous.type = next.type = "button";
-    pages.append(previous, page, next);
-    container.replaceChildren(form, status, resources, calls, pages);
-    function table(section, caption, headers, rows) {
-      section.append(node("h3", caption));
-      const wrap = node("div");
-      wrap.className = "table-wrap";
-      const table2 = node("table"), head = node("thead"), tr = node("tr");
-      for (const title of headers) {
-        const th = node("th", title);
-        th.scope = "col";
-        tr.append(th);
-      }
-      head.append(tr);
-      table2.append(head);
-      const body = node("tbody");
-      for (const values of rows) {
-        const row = node("tr");
-        for (const value of values) row.append(node("td", value ?? "\u2014"));
-        body.append(row);
-      }
-      table2.append(body);
-      wrap.append(table2);
-      section.append(wrap);
-    }
-    function renderResources(data) {
-      resources.replaceChildren(node("h2", "\u8D44\u6E90\u72B6\u6001"));
-      resources.append(node("p", "\u91C7\u96C6\u65F6\u95F4\uFF1A" + time(data.generatedAt)));
-      const app = data.application, host = data.host;
-      table(resources, "\u5E94\u7528\u8FDB\u7A0B\u3001\u5BB9\u5668\u4E0E\u6570\u636E\u5E93", ["\u6307\u6807\u8303\u56F4", "\u72B6\u6001", "\u5B9E\u9645\u6570\u636E"], [
-        ["\u5E94\u7528\u8FDB\u7A0B", app.status, `RSS ${bytes(app.memory.rssBytes)}\uFF1B\u5806 ${bytes(app.memory.heapUsedBytes)}\uFF1BCPU \u5355\u6838\u5360\u6BD4 ${app.cpu.oneCorePercent === null ? "\u91C7\u96C6\u4E2D" : app.cpu.oneCorePercent.toFixed(1) + "%"}\uFF1B\u8FD0\u884C ${Math.floor(app.uptimeSeconds)} \u79D2`],
-        ["\u53EF\u89C1 cgroup \u8D44\u6E90", app.cgroup.status, app.cgroup.status === "ok" ? `\u5185\u5B58 ${bytes(app.cgroup.memoryBytes)} / ${bytes(app.cgroup.memoryLimitBytes)}\uFF1B\u7D2F\u8BA1 CPU ${app.cgroup.cpuUsageMs.toFixed(1)} ms` : app.cgroup.reason],
-        ["\u5E94\u7528\u6587\u4EF6\u7CFB\u7EDF", app.disk.status, app.disk.status === "ok" ? `\u53EF\u7528 ${bytes(app.disk.availableBytes)} / ${bytes(app.disk.totalBytes)}` : "\u4E0D\u53EF\u7528"],
-        ["\u5F53\u524D API \u8BF7\u6C42", data.api.status, "\u6B64\u8BF7\u6C42\u5DF2\u54CD\u5E94\uFF0C\u4E0D\u4EE3\u8868\u5176\u4ED6\u63A5\u53E3\u5168\u90E8\u6B63\u5E38"],
-        ["\u5F53\u524D\u6570\u636E\u5E93", data.database.status, `\u8FDE\u63A5 ${data.database.connections}\uFF0C\u6D3B\u8DC3 ${data.database.active}\uFF1B\u63A2\u6D4B ${data.database.probeDurationMs.toFixed(1)} ms`]
-      ]);
-      table(resources, "Hakari \u6574\u673A", ["\u72B6\u6001", "\u91C7\u96C6\u65F6\u95F4", "CPU", "\u5185\u5B58", "\u78C1\u76D8"], [[host.status === "ok" ? "\u6B63\u5E38" : "\u4E0D\u53EF\u7528", host.status === "ok" ? time(host.generatedAt) : host.reason, host.status === "ok" ? host.cpu.percent.toFixed(1) + "%" : "\u2014", host.status === "ok" ? `\u53EF\u7528 ${bytes(host.memory.availableBytes)} / ${bytes(host.memory.totalBytes)}` : "\u2014", host.status === "ok" ? `\u53EF\u7528 ${bytes(host.disk.availableBytes)} / ${bytes(host.disk.totalBytes)}` : "\u2014"]]);
-      if (host.status === "ok") resources.append(node("p", "\u6574\u673A\u5BB9\u5668\u72B6\u6001\uFF1A" + host.containers.reason));
-    }
-    async function refresh() {
-      if (destroyed) return;
-      const current = ++generation;
-      status.textContent = "\u6B63\u5728\u8BFB\u53D6\u5B9E\u9645\u7EDF\u8BA1\u2026";
+    source.onopen = () => {
+      if (active()) onState("connected");
+    };
+    source.onerror = () => {
+      if (active()) onState("reconnecting");
+    };
+    source.addEventListener("revision", (event) => {
+      if (!active()) return;
+      let data;
       try {
-        const fromDate = new Date(from.value), toDate = new Date(to.value);
-        if (!Number.isFinite(fromDate.getTime()) || !Number.isFinite(toDate.getTime()) || fromDate >= toDate) throw Error("\u8BF7\u9009\u62E9\u6709\u6548\u7684\u5F00\u59CB\u548C\u7ED3\u675F\u65F6\u95F4\u3002");
-        const query = new URLSearchParams({ from: fromDate.toISOString(), to: toDate.toISOString(), limit: String(limit), offset: String(offset) });
-        if (user.value.trim()) query.set("userId", user.value.trim());
-        if (tool.value) query.set("tool", tool.value);
-        const [stats, data] = await Promise.all([api.request("/admin/observability/tools?" + query), api.request("/admin/observability/resources")]);
-        if (destroyed || current !== generation) return;
-        total = stats.total;
-        calls.replaceChildren(node("h2", "Agent \u5DE5\u5177\u8C03\u7528"));
-        calls.append(node("p", `${stats.summary.calls} \u6B21\u8C03\u7528\uFF1B${stats.summary.errors} \u6B21\u5931\u8D25\uFF1B\u9519\u8BEF\u7387 ${(stats.summary.errorRate * 100).toFixed(1)}%\uFF1B\u5E73\u5747 ${stats.summary.averageDurationMs.toFixed(1)} ms`));
-        table(calls, "\u8C03\u7528\u8BB0\u5F55", ["\u65F6\u95F4", "\u7528\u6237", "\u5DE5\u5177", "\u4F20\u8F93", "\u7ED3\u679C", "\u8017\u65F6", "\u9519\u8BEF\u4EE3\u7801"], stats.rows.map((row) => [time(row.createdAt), row.userId || "\u5DF2\u5220\u9664\u7528\u6237", row.tool, row.transport, row.outcome === "success" ? "\u6210\u529F" : "\u5931\u8D25", row.durationMs.toFixed(1) + " ms", row.errorCode]));
-        if (!stats.rows.length) calls.append(node("p", "\u6B64\u65F6\u95F4\u8303\u56F4\u6682\u65E0\u8C03\u7528\u8BB0\u5F55\u3002"));
-        renderResources(data);
-        previous.disabled = offset === 0;
-        next.disabled = offset + limit >= total;
-        page.textContent = `\u7B2C ${Math.floor(offset / limit) + 1} \u9875\uFF0C\u5171 ${total} \u6761`;
-        status.textContent = "\u6570\u636E\u5DF2\u66F4\u65B0\u3002";
-      } catch (error) {
-        if (!destroyed && current === generation) status.textContent = error.message || "\u7EDF\u8BA1\u6682\u4E0D\u53EF\u7528\uFF0C\u8BF7\u91CD\u8BD5\u3002";
-      }
-    }
-    form.onsubmit = (event) => {
-      event.preventDefault();
-      if (!form.reportValidity()) return;
-      offset = 0;
-      refresh();
-    };
-    previous.onclick = () => {
-      offset = Math.max(0, offset - limit);
-      refresh();
-    };
-    next.onclick = () => {
-      if (offset + limit < total) {
-        offset += limit;
-        refresh();
-      }
-    };
-    const interval = view2.setInterval(refresh, 3e4);
-    refresh();
-    return { refresh, destroy() {
-      destroyed = true;
-      generation++;
-      view2.clearInterval(interval);
-      form.onsubmit = previous.onclick = next.onclick = null;
-    } };
-  }
-  var tools, bytes, time, localDate;
-  var init_observability = __esm({
-    "web/admin/observability.js"() {
-      tools = ["sp_create_project", "sp_open_project", "sp_get_document", "sp_get_slide", "sp_edit", "sp_render_slide", "sp_validate", "sp_save_export", "sp_list_projects", "sp_project_info", "sp_list_slides", "sp_list_themes", "sp_get_theme", "sp_preview_theme", "sp_apply_theme", "sp_save_theme"];
-      bytes = (value) => Number.isFinite(value) ? (value / 1048576).toFixed(1) + " MiB" : "\u4E0D\u53EF\u7528";
-      time = (value) => new Date(value).toLocaleString("zh-CN");
-      localDate = (value) => new Date(value.getTime() - value.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-    }
-  });
-
-  // web/admin/app.js
-  function formDialog(document2, title, fields2 = [], { message = "", confirm = "\u786E\u8BA4" } = {}) {
-    return new Promise((resolve) => {
-      const previous = document2.activeElement, dialog = document2.createElement("dialog"), form = document2.createElement("form"), heading = document2.createElement("h2");
-      heading.textContent = title;
-      heading.id = "admin-dialog-heading";
-      dialog.setAttribute("aria-labelledby", heading.id);
-      form.append(heading);
-      if (message) {
-        const p = document2.createElement("p");
-        p.textContent = message;
-        form.append(p);
-      }
-      const controls = /* @__PURE__ */ new Map();
-      for (const field of fields2) {
-        const label = document2.createElement("label");
-        label.textContent = field.label;
-        const input = document2.createElement(field.options ? "select" : field.type === "textarea" ? "textarea" : "input");
-        input.name = field.name;
-        if (field.options) for (const [value, text2] of field.options) {
-          const option = document2.createElement("option");
-          option.value = value;
-          option.textContent = text2;
-          input.append(option);
-        }
-        else if (field.type !== "textarea") input.type = field.type || "text";
-        for (const key of ["required", "minLength", "maxLength", "pattern", "autocomplete", "placeholder", "min", "max"]) if (field[key] !== void 0) input[key] = field[key];
-        if (field.type === "checkbox") {
-          label.className = "checkbox";
-          input.checked = Boolean(field.value);
-          label.prepend(input);
-        } else {
-          if (field.value !== void 0) input.value = field.value;
-          label.append(input);
-        }
-        form.append(label);
-        controls.set(field.name, input);
-      }
-      const actions = document2.createElement("div");
-      actions.className = "dialog-actions";
-      const cancel = document2.createElement("button");
-      cancel.type = "button";
-      cancel.className = "secondary";
-      cancel.textContent = "\u53D6\u6D88";
-      const submit = document2.createElement("button");
-      submit.type = "submit";
-      submit.textContent = confirm;
-      actions.append(cancel, submit);
-      form.append(actions);
-      dialog.append(form);
-      document2.body.append(dialog);
-      let finished = false;
-      function finish(value) {
-        if (finished) return;
-        finished = true;
-        for (const input of controls.values()) {
-          input.value = "";
-          if (input.type === "checkbox") input.checked = false;
-        }
-        dialog.close?.();
-        dialog.remove();
-        previous?.focus?.();
-        resolve(value);
-      }
-      cancel.onclick = () => finish(null);
-      dialog.addEventListener("cancel", (event) => {
-        event.preventDefault();
-        finish(null);
-      });
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (!form.reportValidity()) return;
-        finish(Object.fromEntries([...controls].map(([name, input]) => [name, input.type === "checkbox" ? input.checked : input.value])));
-      });
-      if (dialog.showModal) dialog.showModal();
-      else dialog.setAttribute("open", "");
-      (controls.values().next().value || submit).focus();
-    });
-  }
-  async function mountAdmin({ document: document2 = globalThis.document, api = new CloudAPI(), navigate: navigate2 = (url) => globalThis.location.assign(url) } = {}) {
-    const content = document2.querySelector("#admin-content"), status = document2.querySelector("#admin-status");
-    let section = "dashboard", offset = 0, rows = [], search = "", trash = false, busy = false, poll = null, generation = 0;
-    let observabilityView = null;
-    const limit = 25;
-    function node(tag, text2, className) {
-      const element = document2.createElement(tag);
-      if (text2 !== void 0) element.textContent = String(text2);
-      if (className) element.className = className;
-      return element;
-    }
-    function notice(message, error = false) {
-      status.textContent = message;
-      status.classList.toggle("error", error);
-      status.hidden = !message;
-    }
-    function report(error) {
-      if (error.code === "UNAUTHENTICATED" || error.code === "ACCOUNT_CHANGED") {
-        navigate2("/login?returnTo=%2Fadmin");
+        data = JSON.parse(event.data);
+      } catch {
         return;
       }
-      notice(error.code === "TIMEOUT" || error.code === "OFFLINE" ? "\u8BF7\u6C42\u7ED3\u679C\u672A\u786E\u8BA4\u3002\u8BF7\u5148\u5237\u65B0\u5217\u8868\u6838\u5BF9\uFF0C\u518D\u51B3\u5B9A\u662F\u5426\u91CD\u65B0\u64CD\u4F5C\u3002" : error.message || "\u64CD\u4F5C\u5931\u8D25\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u3002", true);
-    }
-    function button(text2, task, { write = false, danger = false } = {}) {
-      const item = node("button", text2, danger ? "danger" : "secondary");
-      item.type = "button";
-      if (write) {
-        item.dataset.write = "";
-        item.disabled = busy;
+      if (data.projectId !== projectId || !Number.isSafeInteger(data.revision) || data.revision < 0 || typeof data.deleted !== "boolean") return;
+      if (data.revision < last || data.revision === last && data.deleted === lastDeleted) return;
+      last = data.revision;
+      lastDeleted = data.deleted;
+      onRevision({ projectId, revision: last, deleted: lastDeleted });
+    });
+    source.addEventListener("access-revoked", () => {
+      if (active()) {
+        close();
+        onState("access-revoked");
       }
-      item.onclick = async () => {
-        if (write && busy) return;
-        if (write) {
-          busy = true;
-          for (const control of document2.querySelectorAll("[data-write]")) control.disabled = true;
-        }
-        try {
-          await task();
-        } catch (error) {
-          report(error);
-        } finally {
-          if (write) {
-            busy = false;
-            for (const control of document2.querySelectorAll("[data-write]")) control.disabled = control.hasAttribute("data-unavailable");
-          }
-        }
-      };
-      return item;
+    });
+    source.addEventListener("unavailable", () => {
+      if (active()) onState("reconnecting");
+    });
+    return { close };
+  }
+  var init_project_events = __esm({
+    "web/project-events.js"() {
     }
-    async function request(path, options) {
-      try {
-        return await api.request(path, options);
-      } catch (error) {
-        if (error.code !== "REAUTHENTICATION_REQUIRED") throw error;
-        const answer = await formDialog(document2, "\u91CD\u65B0\u9A8C\u8BC1\u5BC6\u7801", [{ name: "password", label: "\u5F53\u524D\u5BC6\u7801", type: "password", autocomplete: "current-password", required: true, maxLength: 1024 }], { message: "\u6B64\u64CD\u4F5C\u9700\u8981\u6700\u8FD1\u5B8C\u6210\u7684\u5BC6\u7801\u9A8C\u8BC1\u3002", confirm: "\u9A8C\u8BC1\u5E76\u7EE7\u7EED" });
-        if (!answer) return null;
-        try {
-          await api.request("/auth/reauth", { method: "POST", body: { password: answer.password } });
-        } finally {
-          answer.password = "";
-        }
-        return api.request(path, options);
-      }
-    }
-    async function confirm(title, message) {
-      return Boolean(await formDialog(document2, title, [], { message, confirm: title }));
-    }
-    async function mutation(path, body, method = "POST") {
-      const result = await request(path, { method, body });
-      if (result === null) return false;
-      notice("\u64CD\u4F5C\u5DF2\u5B8C\u6210\u3002");
-      await load();
-      return true;
-    }
-    function details(primary, secondary) {
-      const cell = node("span", primary);
-      if (secondary) cell.append(node("small", secondary));
-      return cell;
-    }
-    function toolbar({ create, filters = true } = {}) {
-      const bar = node("div", void 0, "admin-toolbar"), left = node("div"), right = node("div");
-      if (filters) {
-        const input = document2.createElement("input");
-        input.type = "search";
-        input.placeholder = "\u7B5B\u9009\u5F53\u524D\u9875";
-        input.setAttribute("aria-label", "\u7B5B\u9009\u5F53\u524D\u9875");
-        input.value = search;
-        input.oninput = () => {
-          search = input.value;
-          renderTable();
-        };
-        left.append(input);
-      }
-      if (section === "projects") {
-        const select = document2.createElement("select");
-        select.setAttribute("aria-label", "\u9879\u76EE\u72B6\u6001");
-        for (const [value, text2] of [["false", "\u6D3B\u8DC3\u9879\u76EE"], ["true", "\u56DE\u6536\u7AD9"]]) {
-          const option = node("option", text2);
-          option.value = value;
-          select.append(option);
-        }
-        select.value = String(trash);
-        select.onchange = () => {
-          trash = select.value === "true";
-          offset = 0;
-          load().catch(report);
-        };
-        left.append(select);
-      }
-      right.append(button("\u5237\u65B0", load));
-      if (create) right.append(create);
-      bar.append(left, right);
-      content.append(bar);
-    }
-    function table(headers, records, cells) {
-      const wrap = node("div", void 0, "table-wrap"), table2 = document2.createElement("table"), caption = node("caption", sections[section][0]);
-      caption.hidden = true;
-      table2.append(caption);
-      const head = document2.createElement("thead"), header = document2.createElement("tr");
-      for (const text2 of headers) {
-        const cell = node("th", text2);
-        cell.scope = "col";
-        header.append(cell);
-      }
-      head.append(header);
-      table2.append(head);
-      const body = document2.createElement("tbody");
-      for (const record of records) {
-        const row = document2.createElement("tr");
-        for (const value of cells(record)) {
-          const cell = document2.createElement("td");
-          cell.append(value?.nodeType ? value : document2.createTextNode(String(value ?? "\u2014")));
-          row.append(cell);
-        }
-        body.append(row);
-      }
-      table2.append(body);
-      wrap.append(table2);
-      content.append(wrap);
-      if (!records.length) content.append(node("p", search ? "\u5F53\u524D\u9875\u6CA1\u6709\u7B26\u5408\u7B5B\u9009\u6761\u4EF6\u7684\u8BB0\u5F55\u3002" : "\u6682\u65E0\u8BB0\u5F55\u3002", "empty-state"));
-    }
-    function actions(items) {
-      const group = node("div", void 0, "row-actions");
-      for (const item of items) group.append(item);
-      return group;
-    }
-    function pages() {
-      const page = node("div", void 0, "pagination");
-      const previous = button("\u4E0A\u4E00\u9875", async () => {
-        offset -= limit;
-        await load();
-      });
-      previous.disabled = offset === 0;
-      const next = button("\u4E0B\u4E00\u9875", async () => {
-        offset += limit;
-        await load();
-      });
-      next.disabled = rows.length < limit;
-      page.append(previous, node("span", `\u7B2C ${Math.floor(offset / limit) + 1} \u9875`), next);
-      content.append(page);
-    }
-    function filtered() {
-      const term = search.trim().toLocaleLowerCase();
-      return rows.filter((row) => !term || JSON.stringify(row).toLocaleLowerCase().includes(term));
-    }
-    function renderTable() {
-      const oldToolbar = content.querySelector(".admin-toolbar");
-      content.replaceChildren();
-      if (oldToolbar) content.append(oldToolbar);
-      else toolbar({ create: section === "users" ? button("\u521B\u5EFA\u7528\u6237", createUser, { write: true }) : null });
-      if (section === "users") table(["\u8D26\u53F7", "\u89D2\u8272", "\u72B6\u6001", "\u521B\u5EFA\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (user) => [details(user.username, user.id), user.role === "admin" ? "\u7BA1\u7406\u5458" : "\u666E\u901A\u7528\u6237", user.status === "active" ? "\u6709\u6548" : "\u5DF2\u7981\u7528", date(user.createdAt), actions([
-        button("\u91CD\u7F6E\u5BC6\u7801", () => resetPassword(user), { write: true }),
-        button(user.status === "active" ? "\u7981\u7528" : "\u542F\u7528", () => statusUser(user), { write: true, danger: user.status === "active" }),
-        button(user.role === "admin" ? "\u8BBE\u4E3A\u666E\u901A\u7528\u6237" : "\u8BBE\u4E3A\u7BA1\u7406\u5458", () => roleUser(user), { write: true }),
-        button("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", () => revokeSessions(user), { write: true }),
-        button("\u5220\u9664\u8D26\u53F7", () => deleteUser(user), { write: true, danger: true })
-      ])]);
-      if (section === "projects") table(["\u9879\u76EE", "\u6240\u6709\u8005", "\u4FEE\u8BA2", "\u66F4\u65B0\u65F6\u95F4", "\u64CD\u4F5C"], filtered(), (project) => [details(project.title, project.id), details(project.ownerUsername, project.ownerId), project.revision, date(project.updatedAt), actions([
-        button("\u8F6C\u79FB\u5F52\u5C5E", () => transferProject(project), { write: true }),
-        button(trash ? "\u6062\u590D" : "\u79FB\u5230\u56DE\u6536\u7AD9", () => trashProject(project), { write: true, danger: !trash })
-      ])]);
-      if (section === "tokens") table(["\u6388\u6743", "\u6240\u5C5E\u7528\u6237", "\u6743\u9650\u4E0E\u9879\u76EE\u8303\u56F4", "\u5230\u671F\u65F6\u95F4", "\u72B6\u6001", "\u64CD\u4F5C"], filtered(), (token) => [details(token.name, token.prefix + "\u2026"), token.userId, details(token.scopes.join("\u3001"), token.projectAllowlist === null ? "\u81EA\u5DF1\u7684\u5168\u90E8\u9879\u76EE" : `\u9650\u5B9A ${token.projectAllowlist.length} \u4E2A\u9879\u76EE`), date(token.expiresAt), token.revokedAt ? "\u5DF2\u64A4\u9500" : Date.parse(token.expiresAt) <= Date.now() ? "\u5DF2\u5230\u671F" : "\u6709\u6548", token.revokedAt ? "\u2014" : actions([button("\u64A4\u9500\u6388\u6743", () => revokeToken(token), { write: true, danger: true })])]);
-      if (section === "audit") table(["\u65F6\u95F4", "\u64CD\u4F5C\u4EBA", "\u64CD\u4F5C", "\u8D44\u6E90", "\u7ED3\u679C"], filtered(), (event) => [date(event.createdAt), event.actorId || "\u672A\u767B\u5F55", event.action, details(event.resourceType, event.resourceId), event.outcome === "success" ? "\u6210\u529F" : "\u5931\u8D25"]);
-      pages();
-    }
-    async function createUser() {
-      const answer = await formDialog(document2, "\u521B\u5EFA\u7528\u6237", [{ name: "username", label: "\u7528\u6237\u540D", required: true, minLength: 3, maxLength: 64, pattern: "[A-Za-z0-9_.-]{3,64}", autocomplete: "off" }, { name: "password", label: "\u521D\u59CB\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }, { name: "role", label: "\u89D2\u8272", options: [["user", "\u666E\u901A\u7528\u6237"], ["admin", "\u7BA1\u7406\u5458"]] }], { confirm: "\u521B\u5EFA\u7528\u6237" });
-      if (answer) try {
-        await mutation("/admin/users", answer);
-      } finally {
-        answer.password = "";
-      }
-    }
-    async function resetPassword(user) {
-      const answer = await formDialog(document2, "\u91CD\u7F6E\u5BC6\u7801", [{ name: "password", label: "\u65B0\u5BC6\u7801\uFF08\u81F3\u5C11 12 \u4E2A\u5B57\u7B26\uFF09", type: "password", required: true, minLength: 12, maxLength: 1024, autocomplete: "new-password" }], { message: `\u91CD\u7F6E ${user.username} \u7684\u5BC6\u7801\u540E\uFF0C\u8BE5\u8D26\u53F7\u7684\u6240\u6709\u767B\u5F55\u4F1A\u8BDD\u90FD\u4F1A\u9000\u51FA\u3002`, confirm: "\u91CD\u7F6E\u5BC6\u7801" });
-      if (answer) try {
-        if (await mutation(`/admin/users/${user.id}/reset-password`, answer) && user.id === api.user.id) navigate2("/login?returnTo=%2Fadmin");
-      } finally {
-        answer.password = "";
-      }
-    }
-    async function statusUser(user) {
-      const disable = user.status === "active";
-      if (await confirm(disable ? "\u7981\u7528\u8D26\u53F7" : "\u542F\u7528\u8D26\u53F7", `${user.username}\uFF1A${disable ? "\u6240\u6709\u767B\u5F55\u4F1A\u8BDD\u53CA Agent \u6388\u6743\u4F1A\u5931\u6548\u3002" : "\u8D26\u53F7\u53EF\u91CD\u65B0\u767B\u5F55\uFF1B\u5DF2\u64A4\u9500\u6388\u6743\u4E0D\u4F1A\u6062\u590D\u3002"}`)) {
-        if (await mutation(`/admin/users/${user.id}/status`, { status: disable ? "disabled" : "active" }, "PATCH") && disable && user.id === api.user.id) navigate2("/login");
-      }
-    }
-    async function roleUser(user) {
-      const role = user.role === "admin" ? "user" : "admin";
-      if (await confirm("\u53D8\u66F4\u89D2\u8272", `\u5C06 ${user.username} \u8BBE\u4E3A${role === "admin" ? "\u7BA1\u7406\u5458\u3002\u7BA1\u7406\u5458\u53EF\u4EE5\u7BA1\u7406\u5176\u4ED6\u8D26\u53F7\u548C\u5E73\u53F0\u8BBE\u7F6E\u3002" : "\u666E\u901A\u7528\u6237\u3002"}`)) {
-        if (await mutation(`/admin/users/${user.id}/role`, { role }, "PATCH") && user.id === api.user.id && role === "user") navigate2("/app");
-      }
-    }
-    async function revokeSessions(user) {
-      if (await confirm("\u9000\u51FA\u6240\u6709\u4F1A\u8BDD", `${user.username} \u7684\u6240\u6709\u6D4F\u89C8\u5668\u4F1A\u8BDD\u5C06\u9000\u51FA\u3002`)) {
-        if (await mutation(`/admin/users/${user.id}/sessions`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
-      }
-    }
-    async function deleteUser(user) {
-      if (await confirm("\u5220\u9664\u8D26\u53F7", `\u5220\u9664 ${user.username} \u540E\uFF0C\u8BE5\u8D26\u53F7\u5C06\u65E0\u6CD5\u767B\u5F55\uFF0C\u6240\u6709 Agent \u6388\u6743\u7ACB\u5373\u5931\u6548\u3002\u6587\u7A3F\u548C\u5BA1\u8BA1\u8BB0\u5F55\u4F1A\u4FDD\u7559\u3002\u6B64\u64CD\u4F5C\u65E0\u6CD5\u64A4\u9500\u3002`) && await mutation(`/admin/users/${user.id}`, void 0, "DELETE") && user.id === api.user.id) navigate2("/login");
-    }
-    async function transferProject(project) {
-      const answer = await formDialog(document2, "\u8F6C\u79FB\u9879\u76EE\u5F52\u5C5E", [{ name: "newOwnerId", label: "\u65B0\u6240\u6709\u8005\u7684\u8D26\u53F7 ID", required: true, value: project.ownerId, pattern: "[a-fA-F0-9-]{36}" }], { message: `\u8F6C\u79FB\u201C${project.title}\u201D\u540E\uFF0C\u539F\u6240\u6709\u8005\u5C06\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002\u6B63\u5728\u7F16\u8F91\u7684\u9879\u76EE\u65E0\u6CD5\u8F6C\u79FB\u3002`, confirm: "\u8F6C\u79FB\u5F52\u5C5E" });
-      if (answer) await mutation(`/admin/projects/${project.id}/transfer`, { ...answer, expectedRevision: project.revision, clientMutationId: crypto.randomUUID() });
-    }
-    async function trashProject(project) {
-      if (await confirm(trash ? "\u6062\u590D\u9879\u76EE" : "\u79FB\u5230\u56DE\u6536\u7AD9", `\u786E\u8BA4${trash ? "\u6062\u590D" : "\u5C06"}\u201C${project.title}\u201D${trash ? "\uFF1F" : "\u79FB\u5230\u56DE\u6536\u7AD9\uFF1F\u9879\u76EE\u53EF\u6062\u590D\u3002"}`)) await mutation(`/admin/projects/${project.id}/${trash ? "restore" : "trash"}`, { expectedRevision: project.revision, clientMutationId: crypto.randomUUID() });
-    }
-    async function revokeToken(token) {
-      if (await confirm("\u64A4\u9500\u6388\u6743", `\u64A4\u9500\u201C${token.name}\u201D\u540E\uFF0C\u4F7F\u7528\u8BE5\u6388\u6743\u7684 Agent \u5C06\u7ACB\u5373\u5931\u53BB\u8BBF\u95EE\u6743\u9650\u3002`)) await mutation(`/admin/mcp/tokens/${token.id}/revoke`, void 0);
-    }
-    function renderDashboard(data) {
-      const list = node("dl", void 0, "summary-list");
-      for (const [label, value] of [["\u670D\u52A1\u72B6\u6001", data.service.status === "ok" ? "\u5728\u7EBF" : data.service.status], ["\u6709\u6548\u8D26\u53F7 / \u5168\u90E8\u8D26\u53F7", `${data.users.active} / ${data.users.total}`], ["\u6709\u6548\u7BA1\u7406\u5458", data.users.admins], ["\u6D3B\u8DC3\u9879\u76EE / \u56DE\u6536\u7AD9", `${data.projects.active} / ${data.projects.trash}`], ["\u6709\u6548 Agent \u6388\u6743", data.tokens.active], ["\u6587\u7A3F\u6570\u636E", bytes2(data.storage.documentBytes)], ["\u6570\u636E\u5E93\u7A7A\u95F4", bytes2(data.storage.databaseBytes)]]) {
-        const item = node("div");
-        item.append(node("dt", label), node("dd", value));
-        list.append(item);
-      }
-      content.append(list);
-      content.append(node("p", "\u7A7A\u95F4\u7EDF\u8BA1\u6765\u81EA\u5F53\u524D\u6570\u636E\u5E93\uFF1B\u9879\u76EE\u5185\u5BB9\u4E0D\u4F1A\u5728\u540E\u53F0\u9884\u89C8\u3002", "admin-detail"));
-      content.append(button("\u5237\u65B0\u72B6\u6001", load));
-    }
-    function renderSettings(settings) {
-      const form = node("form", void 0, "settings-form"), controls = {};
-      for (const [name, title, type] of [["siteName", "\u7AD9\u70B9\u540D\u79F0", "text"], ["announcement", "\u516C\u544A", "textarea"], ["maxUploadBytes", "\u4E0A\u4F20\u4E0A\u9650\uFF08\u5B57\u8282\uFF0C\u6700\u591A 32 MiB\uFF09", "number"], ["maintenanceMode", "\u5F00\u542F\u7EF4\u62A4\u6A21\u5F0F", "checkbox"]]) {
-        const label = node("label", title), input = document2.createElement(type === "textarea" ? "textarea" : "input");
-        input.name = name;
-        if (type !== "textarea") input.type = type;
-        if (type === "checkbox") {
-          input.checked = settings[name];
-          label.prepend(input);
-        } else {
-          input.value = settings[name];
-          label.append(input);
-        }
-        if (name === "siteName") {
-          input.required = true;
-          input.maxLength = 100;
-        }
-        if (name === "announcement") input.maxLength = 2e3;
-        if (name === "maxUploadBytes") {
-          input.required = true;
-          input.min = 1;
-          input.max = 33554432;
-        }
-        controls[name] = input;
-        form.append(label);
-      }
-      form.append(node("p", "\u516C\u5F00\u6CE8\u518C\u4FDD\u6301\u5173\u95ED\u3002\u8D26\u53F7\u7531\u7BA1\u7406\u5458\u521B\u5EFA\u3002", "admin-detail"));
-      const save = button("\u4FDD\u5B58\u8BBE\u7F6E", async () => {
-        if (!form.reportValidity()) return;
-        if (!await confirm("\u4FDD\u5B58\u8BBE\u7F6E", "\u786E\u8BA4\u66F4\u65B0\u7AD9\u70B9\u8BBE\u7F6E\uFF1F\u7EF4\u62A4\u6A21\u5F0F\u4F1A\u5F71\u54CD\u666E\u901A\u7528\u6237\u7684\u4E91\u7AEF\u5199\u5165\u3002")) return;
-        const patch = { siteName: controls.siteName.value, announcement: controls.announcement.value, maxUploadBytes: Number(controls.maxUploadBytes.value), maintenanceMode: controls.maintenanceMode.checked, publicRegistration: false };
-        await mutation("/admin/settings", patch, "PATCH");
-      }, { write: true });
-      form.onsubmit = (event) => {
-        event.preventDefault();
-        save.click();
-      };
-      form.append(save);
-      content.append(form);
-    }
-    function renderBackups(data) {
-      toolbar({ filters: false });
-      const bar = content.querySelector(".admin-toolbar>div:last-child");
-      const running = data.jobs.some((job) => ["queued", "running"].includes(job.status));
-      const start = button("\u521B\u5EFA\u5907\u4EFD", async () => {
-        if (await confirm("\u521B\u5EFA\u5907\u4EFD", "\u5C06\u5907\u4EFD\u6570\u636E\u5E93\u548C\u670D\u52A1\u7D20\u6750\u3002\u4EFB\u52A1\u5728\u670D\u52A1\u7AEF\u6267\u884C\uFF0C\u53EF\u5728\u6B64\u67E5\u770B\u8FDB\u5EA6\u3002")) await mutation("/admin/backups", void 0);
-      }, { write: true });
-      start.toggleAttribute("data-unavailable", !data.configured || running);
-      start.disabled = busy || start.hasAttribute("data-unavailable");
-      const restore = button("\u9A8C\u8BC1\u6062\u590D", async () => {
-        if (await confirm("\u9A8C\u8BC1\u6062\u590D", "\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u6062\u590D\u6700\u65B0\u5907\u4EFD\u5E76\u6838\u5BF9\u5185\u5BB9\u3002\u4E0D\u4F1A\u8986\u76D6\u5F53\u524D\u670D\u52A1\u6570\u636E\u5E93\u3002")) await mutation("/admin/backups/restore-check", void 0);
-      }, { write: true });
-      restore.toggleAttribute("data-unavailable", !data.restoreConfigured || running || !data.jobs.some((job) => ["completed", "verified"].includes(job.status)));
-      restore.disabled = busy || restore.hasAttribute("data-unavailable");
-      bar.append(start, restore);
-      content.append(node("p", !data.configured ? "\u670D\u52A1\u7AEF\u5C1A\u672A\u914D\u7F6E\u5907\u4EFD\u76EE\u5F55\u548C\u6570\u636E\u5E93\u8FDE\u63A5\u3002\u8BF7\u8054\u7CFB\u8FD0\u7EF4\u4EBA\u5458\u5B8C\u6210\u914D\u7F6E\u3002" : data.restoreConfigured ? "\u5907\u4EFD\u548C\u72EC\u7ACB\u6062\u590D\u9A8C\u8BC1\u5747\u5DF2\u914D\u7F6E\u3002" : "\u5907\u4EFD\u5DF2\u914D\u7F6E\uFF0C\u72EC\u7ACB\u6062\u590D\u9A8C\u8BC1\u5C1A\u672A\u914D\u7F6E\u3002", "admin-detail"));
-      const labels2 = { queued: "\u7B49\u5F85\u6267\u884C", running: "\u6267\u884C\u4E2D", completed: "\u5907\u4EFD\u5B8C\u6210", verified: "\u6062\u590D\u9A8C\u8BC1\u901A\u8FC7", failed: "\u5931\u8D25" };
-      table(["\u4EFB\u52A1", "\u72B6\u6001", "\u521B\u5EFA\u65F6\u95F4", "\u5B8C\u6210\u65F6\u95F4"], data.jobs, (job) => [details(job.id, job.errorCode), labels2[job.status] || job.status, date(job.createdAt), date(job.completedAt)]);
-      if (data.jobs.some((job) => ["queued", "running"].includes(job.status))) poll = setTimeout(() => load().catch(report), 2e3);
-    }
-    async function load() {
-      observabilityView?.destroy();
-      observabilityView = null;
-      clearTimeout(poll);
-      poll = null;
-      const current = ++generation, target = section;
-      content.setAttribute("aria-busy", "true");
-      content.replaceChildren(node("p", "\u6B63\u5728\u8BFB\u53D6\u670D\u52A1\u6570\u636E\u2026", "empty-state"));
-      try {
-        if (target === "observability") {
-          content.replaceChildren();
-          observabilityView = mountObservability({ container: content, api });
-          return;
-        }
-        let data;
-        if (target === "dashboard") data = await api.request("/admin/dashboard");
-        else if (target === "settings") data = await api.request("/admin/settings");
-        else if (target === "backups") data = await api.request("/admin/backups");
-        else data = await api.request(`/admin/${target === "tokens" ? "mcp/tokens" : target}?limit=${limit}&offset=${offset}${target === "projects" ? "&trash=" + trash : ""}`);
-        if (current !== generation) return;
-        content.replaceChildren();
-        if (target === "dashboard") renderDashboard(data);
-        else if (target === "settings") renderSettings(data);
-        else if (target === "backups") renderBackups(data);
-        else {
-          rows = data;
-          renderTable();
-        }
-      } catch (error) {
-        if (current === generation) {
-          content.replaceChildren(node("p", "\u8BFB\u53D6\u5931\u8D25\u3002\u68C0\u67E5\u63D0\u793A\u540E\u5237\u65B0\u91CD\u8BD5\u3002", "empty-state"), button("\u91CD\u65B0\u8BFB\u53D6", load));
-          report(error);
-        }
-      } finally {
-        if (current === generation) content.setAttribute("aria-busy", "false");
-      }
-    }
-    for (const nav of document2.querySelectorAll("[data-section]")) nav.onclick = () => {
-      section = nav.dataset.section;
-      offset = 0;
-      search = "";
-      notice("");
-      for (const item of document2.querySelectorAll("[data-section]")) {
-        item.classList.toggle("active", item === nav);
-        item.setAttribute("aria-current", item === nav ? "page" : "false");
-      }
-      document2.querySelector("#section-name").textContent = sections[section][0];
-      document2.querySelector("#admin-title").textContent = sections[section][0];
-      document2.querySelector("#admin-description").textContent = sections[section][1];
-      load().catch(report);
+  });
+
+  // web/storage-usage.js
+  async function openStorageUsage({ api, document: document2 = globalThis.document }) {
+    const accountId = api.user?.id, previous = document2.activeElement, dialog = document2.createElement("dialog");
+    if (!accountId) throw Error("\u8BF7\u5148\u767B\u5F55\u3002");
+    const title = document2.createElement("h2"), status = document2.createElement("p"), list = document2.createElement("dl"), close = document2.createElement("button");
+    title.textContent = "\u5B58\u50A8\u7528\u91CF";
+    title.id = "storage-usage-title";
+    dialog.setAttribute("aria-labelledby", title.id);
+    status.setAttribute("role", "status");
+    status.textContent = "\u6B63\u5728\u8BFB\u53D6\u7528\u91CF\u2026";
+    close.type = "button";
+    close.textContent = "\u5173\u95ED";
+    const finish = () => {
+      dialog.close?.();
+      dialog.remove();
+      previous?.focus?.();
     };
-    document2.querySelector("#admin-logout").onclick = async () => {
-      try {
-        await api.logout();
-        navigate2("/login");
-      } catch (error) {
-        report(error);
-      }
-    };
+    close.onclick = finish;
+    dialog.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      finish();
+    });
+    dialog.append(title, status, list, close);
+    document2.body.append(dialog);
+    dialog.showModal?.();
     try {
-      await api.restoreSession();
-      if (api.user.role !== "admin") {
-        notice("\u6B64\u8D26\u53F7\u6CA1\u6709\u7BA1\u7406\u540E\u53F0\u8BBF\u95EE\u6743\u9650\u3002\u8BF7\u8FD4\u56DE\u521B\u4F5C\u5DE5\u4F5C\u53F0\u3002", true);
-        content.replaceChildren();
-      } else {
-        document2.querySelector("#admin-account").textContent = api.user.username;
-        await load();
+      const value = await api.request("/me/storage");
+      if (!dialog.isConnected) return;
+      if (api.user?.id !== accountId) {
+        status.textContent = "\u8D26\u53F7\u5DF2\u53D8\u66F4\uFF0C\u8BF7\u5173\u95ED\u540E\u91CD\u65B0\u6253\u5F00\u3002";
+        return;
+      }
+      status.textContent = value.overQuota ? "\u5DF2\u8D85\u8FC7\u914D\u989D\u3002\u53EF\u4EE5\u8BFB\u53D6\u3001\u5BFC\u51FA\u6216\u7F29\u5C0F\u6587\u7A3F\uFF1B\u65B0\u589E\u5185\u5BB9\u53D7\u9650\u3002" : value.warning ? "\u7528\u91CF\u5DF2\u8FBE\u5230\u9884\u8B66\u7EBF\u3002" : "\u5F53\u524D\u7528\u91CF\u5728\u914D\u989D\u8303\u56F4\u5185\u3002";
+      for (const [name, text2] of [["\u6D3B\u8DC3\u9879\u76EE", `${value.usage.activeProjects} / ${value.limits.maxProjects}`], ["\u7559\u5B58\u5185\u5BB9", `${bytes3(value.usage.totalBytes)} / ${bytes3(value.limits.maxBytes)}`], ["\u5386\u53F2\u7248\u672C", bytes3(value.usage.historyBytes)], ["\u5206\u4EAB\u9875\u9762", bytes3(value.usage.shareBytes)], ["\u56DE\u6536\u7AD9\u9879\u76EE", value.usage.trashedProjects], ["\u8BA1\u91CF\u8BF4\u660E", "\u5305\u542B\u5386\u53F2\u3001\u56DE\u6536\u7AD9\u3001\u4E3B\u9898\u548C\u5206\u4EAB\u9875\u9762\uFF1B\u79FB\u5165\u56DE\u6536\u7AD9\u4E0D\u4F1A\u91CA\u653E\u7559\u5B58\u5185\u5BB9\u3002"]]) {
+        const term = document2.createElement("dt"), description = document2.createElement("dd");
+        term.textContent = name;
+        description.textContent = String(text2);
+        list.append(term, description);
       }
     } catch (error) {
-      report(error);
+      if (dialog.isConnected) status.textContent = error.message || "\u65E0\u6CD5\u8BFB\u53D6\u5B58\u50A8\u7528\u91CF\u3002";
     }
-    return { reload: load, destroy() {
-      observabilityView?.destroy();
-      clearTimeout(poll);
-      generation++;
-    } };
+    return { close: finish };
   }
-  var sections, date, bytes2;
-  var init_app = __esm({
-    "web/admin/app.js"() {
-      init_observability();
-      init_cloud_project_store();
-      sections = {
-        observability: ["\u8FD0\u884C\u7EDF\u8BA1", "\u67E5\u770B Agent \u8C03\u7528\u8BB0\u5F55\u548C\u5B9E\u9645\u8D44\u6E90\u72B6\u6001\u3002"],
-        dashboard: ["\u5E73\u53F0\u6982\u89C8", "\u68C0\u67E5\u670D\u52A1\u3001\u7528\u6237\u548C\u5B58\u50A8\u72B6\u6001\u3002"],
-        users: ["\u7528\u6237", "\u521B\u5EFA\u8D26\u53F7\uFF0C\u7BA1\u7406\u89D2\u8272\u3001\u767B\u5F55\u4F1A\u8BDD\u548C\u8D26\u53F7\u72B6\u6001\u3002"],
-        projects: ["\u9879\u76EE", "\u7BA1\u7406\u5F52\u5C5E\u548C\u56DE\u6536\u7AD9\u3002\u6B64\u5904\u4EC5\u5C55\u793A\u9879\u76EE\u5143\u6570\u636E\u3002"],
-        tokens: ["Agent \u6388\u6743", "\u67E5\u770B\u6388\u6743\u8303\u56F4\u548C\u6709\u6548\u671F\uFF0C\u64A4\u9500\u4E0D\u518D\u4F7F\u7528\u7684\u6388\u6743\u3002"],
-        audit: ["\u5BA1\u8BA1\u8BB0\u5F55", "\u67E5\u770B\u5B89\u5168\u4E0E\u7BA1\u7406\u64CD\u4F5C\u7684\u65F6\u95F4\u3001\u64CD\u4F5C\u4EBA\u548C\u7ED3\u679C\u3002"],
-        settings: ["\u7CFB\u7EDF\u8BBE\u7F6E", "\u8C03\u6574\u7AD9\u70B9\u4FE1\u606F\u3001\u4E0A\u4F20\u4E0A\u9650\u548C\u7EF4\u62A4\u72B6\u6001\u3002"],
-        backups: ["\u5907\u4EFD\u4E0E\u6062\u590D\u9A8C\u8BC1", "\u521B\u5EFA\u670D\u52A1\u5907\u4EFD\uFF0C\u5E76\u5728\u72EC\u7ACB\u6570\u636E\u5E93\u4E2D\u68C0\u67E5\u6062\u590D\u7ED3\u679C\u3002"]
-      };
-      date = (value) => value ? new Date(value).toLocaleString("zh-CN") : "\u2014";
-      bytes2 = (value) => value >= 1048576 ? (value / 1048576).toFixed(1) + " MiB" : (value / 1024).toFixed(1) + " KiB";
-      if (typeof document !== "undefined" && document.querySelector("[data-admin-root]")) mountAdmin().catch(() => {
-      });
+  var bytes3;
+  var init_storage_usage = __esm({
+    "web/storage-usage.js"() {
+      bytes3 = (value) => value >= 1048576 ? (value / 1048576).toFixed(1) + " MiB" : (value / 1024).toFixed(1) + " KiB";
+    }
+  });
+
+  // web/security-center.js
+  async function openSessionCenter({ api, document: document2 = globalThis.document, navigate: navigate2 = (url) => globalThis.location.assign(url) }) {
+    const accountId = api.user?.id, previous = document2.activeElement;
+    if (!accountId) throw Error("\u8BF7\u5148\u767B\u5F55\u3002");
+    const dialog = document2.createElement("dialog"), heading = document2.createElement("h2"), status = document2.createElement("p"), list = document2.createElement("div"), close = document2.createElement("button");
+    heading.textContent = "\u6D3B\u8DC3\u767B\u5F55\u4F1A\u8BDD";
+    heading.id = "session-center-title";
+    dialog.setAttribute("aria-labelledby", heading.id);
+    status.setAttribute("role", "status");
+    close.textContent = "\u5173\u95ED";
+    close.type = "button";
+    const finish = () => {
+      dialog.close?.();
+      dialog.remove();
+      previous?.focus?.();
+    };
+    close.onclick = finish;
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      finish();
+    });
+    dialog.append(heading, status, list, close);
+    document2.body.append(dialog);
+    dialog.showModal?.();
+    const same3 = () => api.user?.id === accountId && dialog.isConnected;
+    async function reload() {
+      status.textContent = "\u6B63\u5728\u8BFB\u53D6\u4F1A\u8BDD\u2026";
+      const sessions = await api.request("/me/sessions");
+      if (!same3()) return;
+      list.replaceChildren();
+      status.textContent = "\u4EC5\u5C55\u793A\u4F60\u7684\u6709\u6548\u4F1A\u8BDD\uFF1B\u9000\u51FA\u4F1A\u8BDD\u4E0D\u4F1A\u5220\u9664\u6587\u7A3F\u3002";
+      for (const session2 of sessions) {
+        const row = document2.createElement("p"), label = document2.createElement("span"), revoke = document2.createElement("button");
+        label.textContent = `${session2.current ? "\u5F53\u524D\u4F1A\u8BDD \xB7 " : ""}${new Date(session2.createdAt).toLocaleString("zh-CN")} \xB7 \u5230\u671F ${new Date(session2.expiresAt).toLocaleString("zh-CN")} `;
+        revoke.type = "button";
+        revoke.textContent = "\u9000\u51FA\u6B64\u4F1A\u8BDD";
+        row.append(label, revoke);
+        list.append(row);
+        revoke.onclick = async () => {
+          if (!same3()) return;
+          revoke.disabled = true;
+          try {
+            if (!await formDialog(document2, "\u9000\u51FA\u4F1A\u8BDD", [], { message: session2.current ? "\u5F53\u524D\u9875\u9762\u5C06\u9000\u51FA\u767B\u5F55\uFF0C\u672A\u4FDD\u5B58\u5185\u5BB9\u8BF7\u5148\u4FDD\u7559\u3002" : "\u8BE5\u4F1A\u8BDD\u5C06\u65E0\u6CD5\u7EE7\u7EED\u8BBF\u95EE\u4E91\u7AEF\u3002", confirm: "\u9000\u51FA\u4F1A\u8BDD" })) return;
+            if (!same3()) return;
+            let result;
+            try {
+              result = await api.request("/me/sessions/" + encodeURIComponent(session2.id), { method: "DELETE" });
+            } catch (error) {
+              if (error.code !== "REAUTHENTICATION_REQUIRED") throw error;
+              const answer = await formDialog(document2, "\u9A8C\u8BC1\u5F53\u524D\u5BC6\u7801", [{ name: "password", label: "\u5F53\u524D\u5BC6\u7801", type: "password", required: true, autocomplete: "current-password" }]);
+              if (!answer) return;
+              try {
+                await api.request("/auth/reauth", { method: "POST", body: { password: answer.password } });
+              } finally {
+                answer.password = "";
+              }
+              if (!same3()) return;
+              result = await api.request("/me/sessions/" + encodeURIComponent(session2.id), { method: "DELETE" });
+            }
+            if (result.current) {
+              finish();
+              navigate2("/login");
+            } else await reload();
+          } catch (error) {
+            if (same3()) status.textContent = error.message;
+          } finally {
+            revoke.disabled = false;
+          }
+        };
+      }
+    }
+    try {
+      await reload();
+    } catch (error) {
+      if (same3()) status.textContent = error.message;
+    }
+    return { close: finish };
+  }
+  var init_security_center = __esm({
+    "web/security-center.js"() {
+      init_app();
     }
   });
 
@@ -2972,7 +3347,7 @@ function v24OfflineExportBootstrap(width,height){
         answer.newPassword = "";
       }
     }
-    toolbar.append(button("\u521B\u5EFA\u6388\u6743", create, true), button("\u5237\u65B0\u5217\u8868", reload), button("\u4FEE\u6539\u5BC6\u7801", password, true));
+    toolbar.append(button("\u5B58\u50A8\u7528\u91CF", () => openStorageUsage({ api, document: document2 })), button("\u6D3B\u8DC3\u767B\u5F55\u4F1A\u8BDD", () => openSessionCenter({ api, document: document2, navigate: navigate2 })), button("\u521B\u5EFA\u6388\u6743", create, true), button("\u5237\u65B0\u5217\u8868", reload), button("\u4FEE\u6539\u5BC6\u7801", password, true));
     async function reload() {
       list.setAttribute("aria-busy", "true");
       list.replaceChildren();
@@ -3022,6 +3397,8 @@ function v24OfflineExportBootstrap(width,height){
   var permissions, uuid, date2;
   var init_token_settings = __esm({
     "web/token-settings.js"() {
+      init_storage_usage();
+      init_security_center();
       init_cloud_project_store();
       init_app();
       permissions = [["projects:read", "\u8BFB\u53D6\u9879\u76EE", true], ["projects:create", "\u521B\u5EFA\u9879\u76EE", true], ["projects:write", "\u7F16\u8F91\u9879\u76EE", true], ["projects:export", "\u5BFC\u51FA\u9879\u76EE", true], ["projects:delete", "\u5220\u9664\u548C\u6062\u590D\u9879\u76EE", false], ["themes:read", "\u8BFB\u53D6\u4E3B\u9898", true], ["themes:write", "\u4FDD\u5B58\u4E2A\u4EBA\u4E3B\u9898", false], ["themes:publish", "\u53D1\u5E03\u4E2A\u4EBA\u4E3B\u9898\u65B0\u7248\u672C", false]];
@@ -3077,7 +3454,7 @@ function v24OfflineExportBootstrap(width,height){
     const root = document2.createElement("section");
     root.className = "agent-guide";
     const intro = document2.createElement("p");
-    intro.textContent = "Superior Point \u5F53\u524D\u901A\u8FC7\u672C\u673A stdio Bridge \u8FDE\u63A5 MCP \u5BA2\u6237\u7AEF\uFF0C\u518D\u7531 Bridge \u4F7F\u7528 HTTPS \u548C PAT \u8BBF\u95EE\u4E91\u7AEF\u3002\u9700\u8981 Node.js 22+\uFF0C\u4EE5\u53CA\u672C\u673A\u514B\u9686\u7684 Superior Point \u4ED3\u5E93\uFF1B\u5F53\u524D\u6CA1\u6709\u8FDC\u7A0B /mcp \u6216 OAuth \u63A5\u5165\u3002";
+    intro.textContent = "Superior Point \u7684\u4E91\u7AEF stdio Bridge \u4E0E\u5F53\u524D\u5F00\u53D1\u7248\u672C\u7684\u539F\u751F HTTP MCP \u5171\u7528 20 \u4E2A\u5DE5\u5177\uFF0C\u6DB5\u76D6\u9879\u76EE\u3001\u4E3B\u9898\u548C\u5386\u53F2\u7248\u672C\u3002\u4E0B\u65B9\u793A\u4F8B\u4F7F\u7528\u672C\u673A Bridge\uFF0C\u9700\u8981 Node.js 22+\u3001\u672C\u673A\u4ED3\u5E93\u548C PAT\u3002\u539F\u751F /mcp \u4E0E OAuth \u662F\u5426\u53EF\u7528\u53D6\u51B3\u4E8E\u670D\u52A1\u90E8\u7F72\u7248\u672C\uFF1B\u4EC5\u672C\u5730\u6D4B\u8BD5\u901A\u8FC7\u4E0D\u4EE3\u8868\u516C\u7F51\u5DF2\u66F4\u65B0\u3002";
     root.append(intro);
     const repo = `cd ${REPO}
 npm ci`;
@@ -3679,14 +4056,14 @@ claude mcp list
   }
   function bytesOf(asset) {
     if (typeof asset.data !== "string" || !asset.data.length || asset.data.length % 4 !== 0 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(asset.data)) fail2("Asset data must be canonical base64");
-    const raw = atob(asset.data), bytes3 = Uint8Array.from(raw, (c) => c.charCodeAt(0));
+    const raw = atob(asset.data), bytes4 = Uint8Array.from(raw, (c) => c.charCodeAt(0));
     if (btoa(raw) !== asset.data) fail2("Asset data must be canonical base64");
-    return bytes3;
+    return bytes4;
   }
-  function matchesImage(bytes3, mime) {
-    if (mime === "image/png") return bytes3.length >= 24 && [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => bytes3[i] === v) && String.fromCharCode(...bytes3.slice(12, 16)) === "IHDR";
-    if (mime === "image/jpeg") return bytes3.length >= 4 && bytes3[0] === 255 && bytes3[1] === 216 && bytes3.at(-2) === 255 && bytes3.at(-1) === 217;
-    if (mime === "image/webp") return bytes3.length >= 12 && String.fromCharCode(...bytes3.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes3.slice(8, 12)) === "WEBP";
+  function matchesImage(bytes4, mime) {
+    if (mime === "image/png") return bytes4.length >= 24 && [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => bytes4[i] === v) && String.fromCharCode(...bytes4.slice(12, 16)) === "IHDR";
+    if (mime === "image/jpeg") return bytes4.length >= 4 && bytes4[0] === 255 && bytes4[1] === 216 && bytes4.at(-2) === 255 && bytes4.at(-1) === 217;
+    if (mime === "image/webp") return bytes4.length >= 12 && String.fromCharCode(...bytes4.slice(0, 4)) === "RIFF" && String.fromCharCode(...bytes4.slice(8, 12)) === "WEBP";
     return false;
   }
   function validateTheme(raw) {
@@ -3697,7 +4074,7 @@ claude mcp list
     } catch (e) {
       return { valid: false, errors: [e.message], warnings };
     }
-    if (!object4(theme)) return { valid: false, errors: ["Theme must be an object"], warnings };
+    if (!object3(theme)) return { valid: false, errors: ["Theme must be an object"], warnings };
     if (utf8(JSON.stringify(theme)).length > THEME_LIMITS.packageBytes) return { valid: false, errors: ["Theme package exceeds size limit"], warnings };
     inspect(theme, errors);
     if (theme.format !== THEME_FORMAT) errors.push("Invalid theme format");
@@ -3707,13 +4084,13 @@ claude mcp list
     if (!text(theme.version, 64) || !/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(theme.version)) errors.push("Invalid theme version");
     if (!Array.isArray(theme.tags) || theme.tags.length > 32 || theme.tags.some((v) => !text(v, 64))) errors.push("Invalid tags");
     if (!Array.isArray(theme.supportedRatios) || !theme.supportedRatios.length || theme.supportedRatios.some((v) => !["16:9", "4:3"].includes(v)) || new Set(theme.supportedRatios).size !== theme.supportedRatios.length) errors.push("Invalid supportedRatios");
-    if (!object4(theme.tokens)) errors.push("tokens must be an object");
+    if (!object3(theme.tokens)) errors.push("tokens must be an object");
     else {
       const t = theme.tokens;
-      for (const k of ["colors", "typography", "spacing", "components"]) if (!object4(t[k])) errors.push(`tokens.${k} must be an object`);
-      for (const [key, v] of Object.entries(object4(t.colors) ? t.colors : {})) if (typeof v !== "string" || !/^#[a-fA-F0-9]{6}(?:[a-fA-F0-9]{2})?$/.test(v)) errors.push(`Invalid color: ${key}`);
-      for (const [role, v] of Object.entries(object4(t.typography) ? t.typography : {})) {
-        if (!object4(v)) {
+      for (const k of ["colors", "typography", "spacing", "components"]) if (!object3(t[k])) errors.push(`tokens.${k} must be an object`);
+      for (const [key, v] of Object.entries(object3(t.colors) ? t.colors : {})) if (typeof v !== "string" || !/^#[a-fA-F0-9]{6}(?:[a-fA-F0-9]{2})?$/.test(v)) errors.push(`Invalid color: ${key}`);
+      for (const [role, v] of Object.entries(object3(t.typography) ? t.typography : {})) {
+        if (!object3(v)) {
           errors.push(`Invalid typography role: ${role}`);
           continue;
         }
@@ -3724,9 +4101,9 @@ claude mcp list
         if (v.fontWeight !== void 0 && (!Number.isInteger(v.fontWeight) || !bounded(v.fontWeight, 100, 900))) errors.push(`Invalid fontWeight: ${role}`);
         if (v.lineHeight !== void 0 && !bounded(v.lineHeight, 0.5, 4)) errors.push(`Invalid lineHeight: ${role}`);
       }
-      for (const [key, v] of Object.entries(object4(t.spacing) ? t.spacing : {})) if (!bounded(v, 0, 512)) errors.push(`Invalid spacing: ${key}`);
-      for (const [key, v] of Object.entries(object4(t.components) ? t.components : {})) {
-        if (!object4(v)) {
+      for (const [key, v] of Object.entries(object3(t.spacing) ? t.spacing : {})) if (!bounded(v, 0, 512)) errors.push(`Invalid spacing: ${key}`);
+      for (const [key, v] of Object.entries(object3(t.components) ? t.components : {})) {
+        if (!object3(v)) {
           errors.push(`Component style must be an object: ${key}`);
           continue;
         }
@@ -3734,19 +4111,19 @@ claude mcp list
         const checkStyle = (style) => {
           for (const [k, x] of Object.entries(style)) {
             if (styleBounds[k] && !bounded(x, ...styleBounds[k])) errors.push(`Invalid component ${k}: ${key}`);
-            if (object4(x)) checkStyle(x);
+            if (object3(x)) checkStyle(x);
           }
         };
         checkStyle(v);
       }
       if (t.motion !== void 0) {
-        if (!object4(t.motion) || !bounded(t.motion.durationMs, 0, 1e4) || !["linear", "ease", "ease-in", "ease-out", "ease-in-out"].includes(t.motion.easing)) errors.push("Invalid motion");
+        if (!object3(t.motion) || !bounded(t.motion.durationMs, 0, 1e4) || !["linear", "ease", "ease-in", "ease-out", "ease-in-out"].includes(t.motion.easing)) errors.push("Invalid motion");
       }
     }
     const layoutIds = /* @__PURE__ */ new Set();
     if (!Array.isArray(theme.layouts) || theme.layouts.length > 32) errors.push("Invalid layouts");
     else for (const layout of theme.layouts) {
-      if (!object4(layout) || !text(layout.id, 64) || layoutIds.has(layout.id) || !["cover", "section", "content", "data", "image"].includes(layout.kind) || !object4(layout.rules)) {
+      if (!object3(layout) || !text(layout.id, 64) || layoutIds.has(layout.id) || !["cover", "section", "content", "data", "image"].includes(layout.kind) || !object3(layout.rules)) {
         errors.push("Invalid or duplicate layout");
         continue;
       }
@@ -3765,16 +4142,16 @@ claude mcp list
     const assetIds = /* @__PURE__ */ new Set();
     if (!Array.isArray(theme.assets) || theme.assets.length > THEME_LIMITS.assets) errors.push("Invalid assets");
     else for (const asset of theme.assets) {
-      if (!object4(asset) || !text(asset.id, 128) || assetIds.has(asset.id) || !hashPattern.test(asset.hash) || !text(asset.license)) {
+      if (!object3(asset) || !text(asset.id, 128) || assetIds.has(asset.id) || !hashPattern.test(asset.hash) || !text(asset.license)) {
         errors.push("Invalid or duplicate asset identity, hash or license");
         continue;
       }
       assetIds.add(asset.id);
       try {
-        const bytes3 = bytesOf(asset);
-        total += bytes3.length;
-        if (bytes3.length > THEME_LIMITS.assetBytes) errors.push("Asset exceeds size limit");
-        if (!matchesImage(bytes3, asset.mimeType)) errors.push("Asset format or signature not supported");
+        const bytes4 = bytesOf(asset);
+        total += bytes4.length;
+        if (bytes4.length > THEME_LIMITS.assetBytes) errors.push("Asset exceeds size limit");
+        if (!matchesImage(bytes4, asset.mimeType)) errors.push("Asset format or signature not supported");
       } catch (e) {
         errors.push(e.message);
       }
@@ -3797,11 +4174,11 @@ claude mcp list
   }
   function canonical(value) {
     if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-    if (object4(value)) return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${canonical(value[k])}`).join(",")}}`;
+    if (object3(value)) return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${canonical(value[k])}`).join(",")}}`;
     return JSON.stringify(value);
   }
-  async function sha256(bytes3) {
-    return "sha256:" + Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes3)), (b) => b.toString(16).padStart(2, "0")).join("");
+  async function sha256(bytes4) {
+    return "sha256:" + Array.from(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes4)), (b) => b.toString(16).padStart(2, "0")).join("");
   }
   async function verifyThemeAssets(input) {
     const theme = importTheme(input);
@@ -3816,7 +4193,7 @@ claude mcp list
     const errors = [], warnings = [];
     try {
       const ref = cloneJSON(input);
-      if (!object4(ref) || !hashPattern.test(ref.hash)) fail2("Invalid theme reference");
+      if (!object3(ref) || !hashPattern.test(ref.hash)) fail2("Invalid theme reference");
       const expected = await createThemeRef(ref.snapshot);
       if (ref.id !== expected.id || ref.version !== expected.version || ref.hash !== expected.hash) fail2("Theme reference does not match snapshot");
     } catch (e) {
@@ -3827,26 +4204,26 @@ claude mcp list
   function resolveThemeStyle({ defaults = {}, global = {}, component = {}, page = {}, manual = {} } = {}) {
     const merge = (target, source) => {
       for (const [key, value] of Object.entries(source)) {
-        target[key] = object4(value) ? merge(object4(target[key]) ? target[key] : {}, value) : value;
+        target[key] = object3(value) ? merge(object3(target[key]) ? target[key] : {}, value) : value;
       }
       return target;
     };
     let result = {};
     for (const layer of [defaults, global, component, page, manual]) {
       const value = cloneJSON(layer);
-      if (!object4(value)) fail2("Style layer must be an object");
+      if (!object3(value)) fail2("Style layer must be an object");
       result = merge(result, value);
     }
     return result;
   }
-  var THEME_FORMAT, THEME_SCHEMA_VERSION, THEME_LIMITS, object4, text, hashPattern, utf8, fail2, bounded, executableKeys;
+  var THEME_FORMAT, THEME_SCHEMA_VERSION, THEME_LIMITS, object3, text, hashPattern, utf8, fail2, bounded, executableKeys;
   var init_theme_schema = __esm({
     "core/theme-schema.js"() {
       init_document_core();
       THEME_FORMAT = "superior-point-theme";
       THEME_SCHEMA_VERSION = 1;
       THEME_LIMITS = Object.freeze({ packageBytes: 12 * 1024 * 1024, assetBytes: 2 * 1024 * 1024, totalAssetBytes: 8 * 1024 * 1024, assets: 16 });
-      object4 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+      object3 = (v) => !!v && typeof v === "object" && !Array.isArray(v);
       text = (v, max = 200) => typeof v === "string" && v.trim().length > 0 && v.length <= max;
       hashPattern = /^sha256:[a-f0-9]{64}$/;
       utf8 = (v) => new TextEncoder().encode(v);
@@ -4027,7 +4404,7 @@ claude mcp list
           const key = JSON.stringify([this.accountId, path, ref.hash, expectedRevision]);
           let body = this.pending.get(key);
           if (!body) {
-            const bytes3 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)), hex = Array.from(new Uint8Array(bytes3), (b) => b.toString(16).padStart(2, "0")).join("");
+            const bytes4 = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)), hex = Array.from(new Uint8Array(bytes4), (b) => b.toString(16).padStart(2, "0")).join("");
             const clientMutationId = hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-4" + hex.slice(13, 16) + "-8" + hex.slice(17, 20) + "-" + hex.slice(20, 32);
             body = { theme, clientMutationId, ...importing ? {} : { expectedRevision } };
             this.pending.set(key, body);
@@ -5187,8 +5564,9 @@ claude mcp list
     return result;
   }
   function clearCurrent() {
-    clearInterval(collaborationTimer);
-    collaborationTimer = null;
+    revisionSubscription?.close();
+    revisionSubscription = null;
+    $("remote-revision-notice").hidden = true;
     stopLeaseWait();
     document.body.classList.remove("editor-integrated", "editor-attention");
     clearInterval(heartbeat);
@@ -5245,7 +5623,7 @@ claude mcp list
     recoveryError = null;
     const ownerSession = ++session, ownerCore = core;
     const active = () => ownerSession === session && ownerCore === core;
-    let savedRevision = rec.document.revision, savedDocument = rec.document, syncing = false;
+    let savedRevision = rec.document.revision;
     autosave = new AutosaveQueue({
       write: async (doc) => {
         if (!active()) throw new Error("\u4FDD\u5B58\u4F1A\u8BDD\u5DF2\u5931\u6548");
@@ -5253,7 +5631,6 @@ claude mcp list
         try {
           const saved = await store.save(doc, { expectedRevision: savedRevision, lock: lease2 });
           savedRevision = saved.document.revision;
-          savedDocument = saved.document;
           if (active()) {
             persistedRevision = savedRevision;
             announce(doc.id);
@@ -5305,36 +5682,19 @@ claude mcp list
     repaint();
     startHeartbeat();
     if (waitForLease && !lock) startLeaseWait();
-    if (store.storage === "cloud" && lock) collaborationTimer = setInterval(async () => {
-      if (!active() || !lock || syncing || closing || recovering || autosave.running || recoveryError) return;
-      syncing = true;
-      try {
-        const remote = await store.get(rec.id);
-        if (!active() || closing || !remote || remote.deletedAt || remote.document.revision <= savedRevision) return;
-        await flushEditor();
-        if (!active() || !lock || closing || remote.document.revision <= savedRevision || autosave.running || recoveryError || editor?.getRejectedSnapshot?.()) return;
-        const merged = mergeCloudDocument(savedDocument, core.getDocument(), remote.document);
-        autosave.cancel();
-        autosave.lastError = null;
-        savedRevision = remote.document.revision;
-        savedDocument = remote.document;
-        persistedRevision = savedRevision;
-        core.synchronize(merged);
-        repaint();
-        if (merged.revision > savedRevision) {
-          rememberCloudDraft(merged);
-          autosave.schedule(merged);
-        } else setState("saved", savedRevision);
-      } catch (error) {
-        if (active() && !["OFFLINE", "TIMEOUT"].includes(error.code)) {
-          autosave.pause();
-          recoveryError = error;
-          setState("failed", core.getDocument().revision, error);
-        }
-      } finally {
-        syncing = false;
+    if (store.storage === "cloud") revisionSubscription = subscribeProjectEvents({ api: store.api, projectId: rec.id, revision: persistedRevision, onRevision: (event) => {
+      if (!active() || event.revision <= persistedRevision && !event.deleted) return;
+      const notice = $("remote-revision-notice");
+      notice.textContent = event.deleted ? "\u6B64\u9879\u76EE\u5DF2\u5728\u4E91\u7AEF\u79FB\u5230\u56DE\u6536\u7AD9\u3002\u5F53\u524D\u6587\u7A3F\u548C\u6062\u590D\u8349\u7A3F\u4FDD\u7559\u3002" : `\u4E91\u7AEF\u5DF2\u6709\u65B0\u4FEE\u8BA2 r${event.revision}\u3002\u5F53\u524D\u5185\u5BB9\u548C\u8349\u7A3F\u4FDD\u6301\u4E0D\u53D8\uFF1B\u8BF7\u8FD4\u56DE\u5DE5\u4F5C\u53F0\u67E5\u770B\u5386\u53F2\u5DEE\u5F02\uFF0C\u4FDD\u5B58\u51B2\u7A81\u65F6\u53EF\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u3002`;
+      notice.hidden = false;
+    }, onState: (state) => {
+      if (!active()) return;
+      if (state === "access-revoked" || state === "account-changed") {
+        const notice = $("remote-revision-notice");
+        notice.textContent = "\u4E91\u7AEF\u8BBF\u95EE\u5DF2\u5931\u6548\u3002\u5F53\u524D\u5185\u5BB9\u4FDD\u7559\uFF0C\u8BF7\u5BFC\u51FA\u6216\u6062\u590D\u8349\u7A3F\u540E\u91CD\u65B0\u767B\u5F55\u3002";
+        notice.hidden = false;
       }
-    }, 1e3);
+    } });
     return core.getDocument();
   }
   async function openProjectNow(id, { takeover = false } = {}) {
@@ -5594,6 +5954,11 @@ claude mcp list
   }
   async function mutateCard(entry, action, newTitle) {
     if (action === "open") return openEntry(entry);
+    if (action === "share-link") {
+      const selected = library.storeFor(entry);
+      await openShareCenter({ document, api: selected.api, projectId: entry.id, accountId: entry.accountId });
+      return;
+    }
     if (action === "history") {
       const selected = library.storeFor(entry);
       if (entry.source !== "cloud") throw new Error("\u5386\u53F2\u7248\u672C\u76EE\u524D\u652F\u6301\u4E91\u7AEF\u9879\u76EE");
@@ -5625,7 +5990,7 @@ claude mcp list
       await renderProjects();
       return;
     }
-    const projectStore = library.storeFor(entry), id = entry.id, rec = action === "rename" ? entry.record : await projectStore.get(id);
+    const projectStore = library.storeFor(entry), id = entry.id, rec = await projectStore.get(id);
     if (!rec) throw new Error("\u9879\u76EE\u5DF2\u4E0D\u5B58\u5728");
     if (action === "export") return exportProject(id, { projectStore });
     if (action === "share") return exportProject(id, { audience: true, projectStore });
@@ -5640,6 +6005,7 @@ claude mcp list
       await projectStore.create(doc);
     }
     if (action === "rename") {
+      if (rec.document.revision !== entry.record.document.revision) throw new Error("\u9879\u76EE\u5DF2\u6709\u66F4\u65B0\uFF0C\u91CD\u547D\u540D\u51B2\u7A81\uFF1B\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u3002");
       library.storeFor(entry);
       const lease = await projectStore.acquire(id, owner);
       if (!lease) throw new Error("\u9879\u76EE\u6B63\u5728\u53E6\u4E00\u4E2A\u6807\u7B7E\u9875\u7F16\u8F91");
@@ -5749,7 +6115,29 @@ claude mcp list
     $("count").textContent = String(entries.length).padStart(2, "0");
     $("empty").hidden = !!entries.length;
     $("projects").replaceChildren();
-    for (const entry of entries) {
+    const pageSize = 24;
+    libraryPage = Math.min(libraryPage, Math.max(0, Math.ceil(entries.length / pageSize) - 1));
+    const pager = $("project-pages");
+    pager.replaceChildren();
+    pager.hidden = entries.length <= pageSize;
+    if (!pager.hidden) {
+      const previous = document.createElement("button"), next = document.createElement("button"), label = document.createElement("span");
+      previous.textContent = "\u4E0A\u4E00\u9875";
+      next.textContent = "\u4E0B\u4E00\u9875";
+      label.textContent = `\u7B2C ${libraryPage + 1} / ${Math.ceil(entries.length / pageSize)} \u9875`;
+      previous.disabled = libraryPage === 0;
+      next.disabled = (libraryPage + 1) * pageSize >= entries.length;
+      previous.onclick = () => {
+        libraryPage--;
+        renderEntries(result, trash);
+      };
+      next.onclick = () => {
+        libraryPage++;
+        renderEntries(result, trash);
+      };
+      pager.append(previous, label, next);
+    }
+    for (const entry of entries.slice(libraryPage * pageSize, (libraryPage + 1) * pageSize)) {
       const rec = entry.record, doc = rec.document, card = document.createElement("article");
       card.className = "project";
       card.dataset.projectId = entry.id;
@@ -5797,11 +6185,11 @@ claude mcp list
       info.append(title);
       const meta = document.createElement("div");
       meta.className = "project-meta";
-      meta.textContent = `${doc.slides.length} \u9875 \xB7 ${entry.source === "cloud" ? "\u4E91\u7AEF" + (entry.hasDraft ? " \xB7 \u5F85\u6062\u590D\u8349\u7A3F" : "") : entry.syncState === "uploaded" ? "\u5DF2\u4E0A\u4F20\u4E91\u7AEF \xB7 \u672C\u5730\u539F\u4EF6" : entry.syncState === "local-changed" ? "\u4EC5\u672C\u5730 \xB7 \u4E0A\u4F20\u540E\u5DF2\u4FEE\u6539" : "\u4EC5\u672C\u5730"} \xB7 ${new Date(rec.modifiedAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+      meta.textContent = `${rec.slideCount ?? doc.slides.length} \u9875 \xB7 ${entry.source === "cloud" ? "\u4E91\u7AEF" + (entry.hasDraft ? " \xB7 \u5F85\u6062\u590D\u8349\u7A3F" : "") : entry.syncState === "uploaded" ? "\u5DF2\u4E0A\u4F20\u4E91\u7AEF \xB7 \u672C\u5730\u539F\u4EF6" : entry.syncState === "local-changed" ? "\u4EC5\u672C\u5730 \xB7 \u4E0A\u4F20\u540E\u5DF2\u4FEE\u6539" : "\u4EC5\u672C\u5730"} \xB7 ${new Date(rec.modifiedAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
       info.append(meta);
       const actions = document.createElement("div");
       actions.className = "project-actions";
-      const choices = trash ? [["\u6062\u590D", "restore"]] : [["\u91CD\u547D\u540D", "rename"], ["\u590D\u5236", "copy"], ...entry.source === "cloud" ? [["\u5386\u53F2\u7248\u672C", "history"]] : [], ...entry.source === "local" ? [["\u4E0A\u4F20\u4E91\u7AEF", "upload"]] : [], ["\u5907\u4EFD HTML", "export"], ["\u5206\u4EAB HTML", "share"], ["\u5220\u9664", "delete"]];
+      const choices = trash ? [["\u6062\u590D", "restore"]] : [["\u91CD\u547D\u540D", "rename"], ["\u590D\u5236", "copy"], ...entry.source === "cloud" ? [["\u5386\u53F2\u7248\u672C", "history"], ["\u5206\u4EAB\u94FE\u63A5", "share-link"]] : [], ...entry.source === "local" ? [["\u4E0A\u4F20\u4E91\u7AEF", "upload"]] : [], ["\u5907\u4EFD HTML", "export"], ["\u5206\u4EAB HTML", "share"], ["\u5220\u9664", "delete"]];
       for (const [label, action] of choices) {
         const b = document.createElement("button");
         b.textContent = label;
@@ -5929,9 +6317,10 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
     }
     return store.recoverDraft(draft);
   }
-  var $, localStore, owner, store, cloudWorkspace, localThemes, cloudThemes, themeLibrary, projectHistory, library, navigation, listRender, session, closing, drainingEditor, recovering, recoveryFlight, recoveryError, importFlight, importSource, leaseWait, collaborationTimer, navigate, view, core, lock, autosave, editor, persistedRevision, heartbeat, notifyTimer, channel, guard, chooseImport;
+  var $, localStore, owner, store, cloudWorkspace, localThemes, cloudThemes, themeLibrary, projectHistory, library, navigation, listRender, libraryPage, session, closing, drainingEditor, recovering, recoveryFlight, recoveryError, importFlight, importSource, leaseWait, revisionSubscription, navigate, view, core, lock, autosave, editor, persistedRevision, heartbeat, notifyTimer, channel, guard, chooseImport;
   var init_app2 = __esm({
     "web/app.js"() {
+      init_share_center();
       init_five_slides();
       init_document_core();
       init_project_store();
@@ -5940,7 +6329,7 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
       init_project_import();
       init_editor_export();
       init_editor_adapter();
-      init_cloud_collaboration();
+      init_project_events();
       init_cloud_workspace();
       init_workspace_library();
       init_theme_store();
@@ -5962,6 +6351,7 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
       library = new WorkspaceLibrary({ localStore, getCloudStore: () => cloudWorkspace?.getCloudStore() || null });
       navigation = Promise.resolve();
       listRender = 0;
+      libraryPage = 0;
       session = 0;
       closing = false;
       drainingEditor = false;
@@ -5971,7 +6361,7 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
       importFlight = null;
       importSource = null;
       leaseWait = null;
-      collaborationTimer = null;
+      revisionSubscription = null;
       navigate = (fn) => {
         const next = navigation.catch(() => {
         }).then(fn);
@@ -6050,9 +6440,18 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
         await openProject(id, { takeover: true });
         announce();
       });
-      $("search").oninput = guard(renderProjects);
-      $("sort").onchange = guard(renderProjects);
-      $("project-source").onchange = guard(renderProjects);
+      $("search").oninput = guard(() => {
+        libraryPage = 0;
+        return renderProjects();
+      });
+      $("sort").onchange = guard(() => {
+        libraryPage = 0;
+        return renderProjects();
+      });
+      $("project-source").onchange = guard(() => {
+        libraryPage = 0;
+        return renderProjects();
+      });
       document.querySelectorAll("[data-view]").forEach((b) => b.onclick = guard(() => home(b.dataset.view)));
       window.addEventListener("keydown", (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "o") {

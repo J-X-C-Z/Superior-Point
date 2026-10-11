@@ -18,7 +18,7 @@ test('combined workspace routes colliding IDs, title doubleclick, upload login a
   if(path==='/auth/login'||path==='/auth/me')result={user,csrfToken:'csrf'};
   else if(path==='/auth/logout')result={success:true};
   else if(path==='/me/tokens')result=[];
-  else if(path==='/projects'||path==='/projects?trash=true'){if(listGate)await listGate;result=[...docs.values()].filter(doc=>!!doc.deletedAt===path.endsWith('true')).map(doc=>({id:doc.id,updatedAt:doc.metadata.updatedAt,deletedAt:doc.deletedAt}));}
+  else if(path==='/projects'||path==='/projects?trash=true'){if(listGate)await listGate;result=[...docs.values()].filter(doc=>!!doc.deletedAt===path.endsWith('true')).map(doc=>({id:doc.id,title:doc.title,revision:doc.revision,canvas:doc.canvas,slideCount:doc.slides.length,updatedAt:doc.metadata.updatedAt,deletedAt:doc.deletedAt}));}
   else if(path==='/projects/import'){result=structuredClone(body.document);result.id=crypto.randomUUID();result.revision=0;docs.set(result.id,result);}
   else {const id=path.split('/')[2],doc=docs.get(id);assert.ok(doc,'known cloud project '+path);
    if(path.includes('/document'))result=doc;
