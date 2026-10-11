@@ -1,0 +1,15 @@
+✔ timeout after commit replays the exact mutation across store reopen and preserves newer drafts (17.073ms)
+✔ known CAS conflicts are not retried blindly; offline drafts survive connection reopen and isolate accounts and branches (4.946125ms)
+✔ migration uploads a new identity, checks semantic content/readback, and leaves the local original unchanged (2.70525ms)
+✔ busy cloud leases never take over and restore records retain cloud revision/trash identity (0.568042ms)
+✔ CSRF rotation retries only an explicit rejected request; network timeout never retries writes automatically (12.49625ms)
+✔ DOM cloud login, verified migration, batched save, AI handoff/resume, offline recovery and local toggle use one editor workspace (247.815416ms)
+✔ Built standalone HTML boots and persists without module loading (DOM simulation) (360.025625ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7406.899959

@@ -114,6 +114,51 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
 /* Keep the padded mat fixed; size the moving SVG to the actual page, not its letterbox. */
 .cover{container-type:size}
 .cover svg{display:block;width:min(100cqw,calc(100cqh * var(--cover-ratio,1.7777778)));height:auto}
+
+/* Account access is secondary to the project library. */
+header:has(#account-menu){gap:12px}
+header:has(#account-menu) #import-top{margin-left:auto}
+#account-menu{position:relative;flex-shrink:0}
+#account-trigger{display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:10px;background:var(--white);color:var(--ink);border:1px solid var(--line)}
+#account-trigger:hover,#account-trigger[aria-expanded=true]{background:#e8e5db;border-color:var(--ink)}
+#account-avatar{display:grid;place-items:center;width:26px;height:26px;font-size:15px;font-weight:600;line-height:1}
+#account-avatar svg{width:21px;height:21px}
+#cloud-controls.account-panel{position:absolute;right:0;top:calc(100% + 12px);z-index:110;width:344px;max-width:calc(100vw - 40px);max-height:calc(100dvh - 120px);overflow:auto;padding:22px;background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 36px #20221e1a;text-align:left;letter-spacing:normal}
+.account-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.account-panel-header h2{font-size:17px;font-weight:600;margin:0}
+#account-close{width:28px;height:28px;padding:0;font-size:20px;line-height:1;background:transparent;color:var(--muted);border:0;border-radius:6px}
+#account-close:hover{background:#e8e5db;color:var(--ink)}
+.account-identity{font-size:13px;font-weight:600;margin:0 0 14px;overflow-wrap:anywhere}
+#cloud-controls .cloud-mode{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#cloud-controls .cloud-mode strong{width:100%;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:2px}
+#cloud-controls button{font-size:12px;padding:8px 12px;border-radius:7px}
+#cloud-controls #account-close{padding:0}
+#cloud-controls a{font-size:12px;color:var(--ink);text-underline-offset:3px}
+#cloud-controls p{font-size:12px;line-height:1.7;color:var(--muted);margin:14px 0}
+#cloud-login{display:grid;gap:14px;margin-top:18px}
+#cloud-controls label{display:block;font-size:12px;color:var(--ink)}
+#cloud-controls input,#cloud-controls select{display:block;width:100%;min-width:0;margin-top:7px;padding:10px 11px;font-size:13px;border:1px solid var(--line);border-radius:7px;background:var(--white)}
+#cloud-login button{margin-top:2px;width:100%;padding:11px}
+#cloud-migrate,#cloud-draft-controls{border-top:1px solid var(--line);margin-top:18px;padding-top:18px;display:grid;gap:10px}
+#cloud-controls #cloud-error{color:#a53225;margin-bottom:0}
+#cloud-token-settings{border-top:1px solid var(--line);margin-top:18px;padding-top:15px;font-size:12px}
+#cloud-token-settings summary{cursor:pointer;color:var(--ink);line-height:1.5}
+#cloud-controls .token-settings{padding:15px 0 0}
+#cloud-controls .token-settings h2{font-size:15px}
+#cloud-controls .token-row{gap:10px;flex-wrap:wrap}
+#cloud-editor-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:5px 14px;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--white)}
+#cloud-editor-actions button{padding:6px 11px;font-size:11px;border-radius:6px}
+body.editor-open #account-menu{display:none}
+@media(max-width:660px){
+ header:has(#account-menu){gap:9px}
+ #account-trigger{width:38px;height:38px}
+ #cloud-controls.account-panel{max-height:calc(100dvh - 215px);padding:18px}
+}
+#cloud-editor-actions #cloud-draft-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;border:0;padding:0;margin:0}
+#cloud-editor-actions #cloud-draft-controls label{font-size:11px;display:flex;align-items:center;gap:8px}
+#cloud-editor-actions #cloud-draft-controls select{max-width:240px;padding:5px 8px;font-size:11px}
+#cloud-editor-actions:has(#cloud-draft-controls:not([hidden])){background:#ECD9CA;flex-wrap:wrap}
+#cloud-controls:not(.account-authenticated) .cloud-mode{display:none}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
 <main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
@@ -2731,14 +2776,60 @@ function v24OfflineExportBootstrap(width,height){
   function initCloudWorkspace({ getStore, getLocalStore, switchStore: switchStore2, openProject: openProject2, recoverDraft, handoff: handoff2, resume: resume2, notify: notify2 }) {
     const api = new CloudAPI(), main = document.querySelector("main"), panel = document.createElement("section");
     panel.id = "cloud-controls";
-    panel.setAttribute("aria-label", "\u5B58\u50A8\u4F4D\u7F6E\u4E0E\u4E91\u7AEF\u8D26\u53F7");
-    panel.innerHTML = '<div class="cloud-mode"><strong id="storage-mode">\u672C\u5730\u6A21\u5F0F</strong><span id="cloud-account"></span><button id="use-local" class="secondary" type="button">\u4F7F\u7528\u672C\u5730</button><button id="use-cloud" class="secondary" type="button">\u4F7F\u7528\u4E91\u7AEF</button><button id="cloud-logout" class="secondary" type="button" hidden>\u9000\u51FA\u4E91\u7AEF\u8D26\u53F7</button></div><p id="cloud-mode-note">\u672C\u5730\u9879\u76EE\u4FDD\u5B58\u5728\u6B64\u6D4F\u89C8\u5668\uFF1B\u767B\u5F55\u540E\u53EF\u5207\u6362\u5230\u8D26\u53F7\u7684\u4E91\u7AEF\u9879\u76EE\u5E93\u3002</p><form id="cloud-login"><label>\u4E91\u7AEF\u7528\u6237\u540D <input name="username" autocomplete="username" required minlength="3" maxlength="64"></label><label>\u5BC6\u7801 <input name="password" type="password" autocomplete="current-password" required maxlength="1024"></label><button type="submit">\u767B\u5F55\u4E91\u7AEF</button></form><div id="cloud-migrate" hidden><label>\u8FC1\u79FB\u672C\u5730\u9879\u76EE <select id="cloud-local-project" aria-label="\u8981\u8FC1\u79FB\u7684\u672C\u5730\u9879\u76EE"></select></label><button type="button" id="migrate-local">\u590D\u5236\u5230\u4E91\u7AEF\u5E76\u6838\u5BF9</button><span id="migration-result" role="status"></span></div><div id="cloud-draft-controls" hidden><label>\u672C\u5730\u6062\u590D\u8349\u7A3F <select id="cloud-draft" aria-label="\u5F85\u6062\u590D\u7684\u4E91\u7AEF\u8349\u7A3F"></select></label><button type="button" id="recover-cloud-draft">\u6062\u590D\u4E3A\u72EC\u7ACB\u4E91\u7AEF\u9879\u76EE</button><button type="button" id="refresh-cloud-drafts" class="secondary">\u5237\u65B0\u8349\u7A3F</button></div><p id="cloud-error" role="status" hidden></p>';
-    const style = document.createElement("style");
-    style.textContent = "#cloud-controls{margin:0 0 20px;padding:16px 20px;background:#f3f2ed;border:1px solid #dedbd2;border-radius:12px}#cloud-controls .cloud-mode,#cloud-controls form,#cloud-migrate,#cloud-draft-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}#cloud-controls p{font-size:12px;color:#666;margin:10px 0}#cloud-controls label{font-size:12px}#cloud-controls input,#cloud-controls select{max-width:250px;padding:8px;border:1px solid #ccc;background:white;border-radius:5px}#cloud-controls button{padding:8px 12px;font-size:12px}#cloud-controls [hidden]{display:none!important}#cloud-error{color:#a53225!important}";
-    panel.append(style);
-    main.prepend(panel);
+    panel.className = "account-panel";
+    panel.hidden = true;
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "\u8D26\u53F7\u4E0E\u5B58\u50A8");
+    panel.innerHTML = '<div class="account-panel-header"><strong id="account-panel-title">\u767B\u5F55 Superior Point</strong><button id="account-close" class="secondary" type="button" aria-label="\u5173\u95ED\u8D26\u53F7\u9762\u677F">\u5173\u95ED</button></div><div class="account-identity" id="cloud-account"></div><div class="cloud-mode"><strong id="storage-mode">\u672C\u5730\u6A21\u5F0F</strong><button id="use-local" class="secondary" type="button">\u4F7F\u7528\u672C\u5730</button><button id="use-cloud" class="secondary" type="button">\u4F7F\u7528\u4E91\u7AEF</button><button id="cloud-logout" class="secondary" type="button" hidden>\u9000\u51FA\u4E91\u7AEF\u8D26\u53F7</button></div><p id="cloud-mode-note">\u767B\u5F55\u540E\u53EF\u8BBF\u95EE\u4E91\u7AEF\u9879\u76EE\uFF1B\u672C\u5730\u9879\u76EE\u4ECD\u4FDD\u7559\u5728\u6B64\u6D4F\u89C8\u5668\u3002</p><form id="cloud-login"><label>\u4E91\u7AEF\u7528\u6237\u540D <input name="username" autocomplete="username" required minlength="3" maxlength="64"></label><label>\u5BC6\u7801 <input name="password" type="password" autocomplete="current-password" required maxlength="1024"></label><button type="submit">\u767B\u5F55\u4E91\u7AEF</button></form><div id="cloud-migrate" hidden><label>\u8FC1\u79FB\u672C\u5730\u9879\u76EE <select id="cloud-local-project" aria-label="\u8981\u8FC1\u79FB\u7684\u672C\u5730\u9879\u76EE"></select></label><button type="button" id="migrate-local">\u590D\u5236\u5230\u4E91\u7AEF\u5E76\u6838\u5BF9</button><span id="migration-result" role="status"></span></div><div id="cloud-draft-controls" hidden><label>\u672C\u5730\u6062\u590D\u8349\u7A3F <select id="cloud-draft" aria-label="\u5F85\u6062\u590D\u7684\u4E91\u7AEF\u8349\u7A3F"></select></label><button type="button" id="recover-cloud-draft">\u6062\u590D\u4E3A\u72EC\u7ACB\u4E91\u7AEF\u9879\u76EE</button><button type="button" id="refresh-cloud-drafts" class="secondary">\u5237\u65B0\u8349\u7A3F</button></div><p id="cloud-error" role="status" hidden></p>';
+    const menu = document.createElement("div");
+    menu.id = "account-menu";
+    const trigger = document.createElement("button");
+    trigger.id = "account-trigger";
+    trigger.type = "button";
+    trigger.className = "secondary";
+    trigger.setAttribute("aria-label", "\u767B\u5F55\u8D26\u53F7");
+    trigger.setAttribute("aria-haspopup", "dialog");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-controls", "cloud-controls");
+    const avatar = document.createElement("span");
+    avatar.id = "account-avatar";
+    avatar.setAttribute("aria-hidden", "true");
+    trigger.append(avatar);
+    menu.append(trigger, panel);
+    main.querySelector(":scope > header").append(menu);
+    const editorActions = document.createElement("div");
+    editorActions.id = "cloud-editor-actions";
+    editorActions.hidden = true;
+    main.insertBefore(editorActions, document.getElementById("workspace-view"));
     const $2 = (id) => document.getElementById(id);
     let cloud = null, drafts = [];
+    const signedOutIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>';
+    avatar.innerHTML = signedOutIcon;
+    function closeAccount(restoreFocus = true) {
+      const wasOpen = !panel.hidden;
+      panel.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+      $2("cloud-login").elements.password.value = "";
+      if (wasOpen && restoreFocus && !menu.hidden) trigger.focus();
+    }
+    function openAccount() {
+      if (document.body.classList.contains("editor-open")) return;
+      panel.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      (api.user ? $2("account-close") : $2("cloud-login").elements.username).focus();
+    }
+    trigger.onclick = () => panel.hidden ? openAccount() : closeAccount();
+    $2("account-close").onclick = () => closeAccount();
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !panel.hidden && !document.querySelector("dialog[open]")) {
+        event.preventDefault();
+        closeAccount();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!panel.hidden && !document.querySelector("dialog[open]") && !menu.contains(event.target)) closeAccount(false);
+    });
+    let editorReadOnly = true;
     let tokenSettings = null, tokenAccount = null;
     const permissions2 = document.createElement("details");
     permissions2.id = "cloud-token-settings";
@@ -2763,6 +2854,7 @@ function v24OfflineExportBootstrap(width,height){
       } catch (error) {
         $2("cloud-error").textContent = error.message;
         $2("cloud-error").hidden = false;
+        openAccount();
         notify2(error.message, true);
       } finally {
         if (button?.tagName === "BUTTON") button.disabled = false;
@@ -2770,6 +2862,8 @@ function v24OfflineExportBootstrap(width,height){
     };
     async function refresh() {
       const using = getStore()?.storage === "cloud";
+      panel.classList.toggle("account-authenticated", !!api.user);
+      $2("account-panel-title").textContent = api.user ? "\u6211\u7684\u8D26\u53F7" : "\u767B\u5F55 Superior Point";
       permissions2.hidden = !api.user;
       adminLink.hidden = api.user?.role !== "admin";
       if (api.user?.id !== tokenAccount) {
@@ -2778,12 +2872,16 @@ function v24OfflineExportBootstrap(width,height){
         tokenAccount = api.user?.id ?? null;
         tokenSettings = api.user ? await mountTokenSettings({ api, container: tokenContainer }) : null;
       }
+      trigger.setAttribute("aria-label", api.user ? "\u8D26\u53F7\uFF1A" + api.user.username : "\u767B\u5F55\u8D26\u53F7");
+      if (api.user) avatar.textContent = api.user.username.slice(0, 1).toUpperCase();
+      else avatar.innerHTML = signedOutIcon;
+      workspace(editorReadOnly);
       $2("storage-mode").textContent = using ? "\u4E91\u7AEF\u6A21\u5F0F" : "\u672C\u5730\u6A21\u5F0F";
       $2("cloud-account").textContent = api.user ? "\u8D26\u53F7\uFF1A" + api.user.username : "";
       $2("cloud-login").hidden = !!api.user;
       $2("cloud-logout").hidden = !api.user;
       $2("cloud-migrate").hidden = !using;
-      $2("cloud-mode-note").textContent = using ? "\u4E91\u7AEF\u4FDD\u5B58\u4EE5\u670D\u52A1\u5668\u786E\u8BA4\u63D0\u4EA4\u4E3A\u51C6\u3002\u65AD\u7F51\u4FEE\u6539\u53E6\u5B58\u672C\u5730\u6062\u590D\u8349\u7A3F\uFF1B\u672C\u5730\u539F\u9879\u76EE\u4FDD\u6301\u5B8C\u6574\u3002" : "\u9879\u76EE\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u672C\u5730\u4E0E\u4E91\u7AEF\u9879\u76EE\u5E93\u76F8\u4E92\u72EC\u7ACB\uFF0C\u53EF\u968F\u65F6\u5207\u6362\u3002";
+      $2("cloud-mode-note").textContent = !api.user ? "\u767B\u5F55\u540E\u53EF\u8BBF\u95EE\u4E91\u7AEF\u9879\u76EE\uFF1B\u672C\u5730\u9879\u76EE\u4ECD\u4FDD\u7559\u5728\u6B64\u6D4F\u89C8\u5668\u3002" : using ? "\u4E91\u7AEF\u4FDD\u5B58\u4EE5\u670D\u52A1\u5668\u786E\u8BA4\u63D0\u4EA4\u4E3A\u51C6\u3002\u65AD\u7F51\u4FEE\u6539\u53E6\u5B58\u672C\u5730\u6062\u590D\u8349\u7A3F\uFF1B\u672C\u5730\u539F\u9879\u76EE\u4FDD\u6301\u5B8C\u6574\u3002" : "\u9879\u76EE\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002\u672C\u5730\u4E0E\u4E91\u7AEF\u9879\u76EE\u5E93\u76F8\u4E92\u72EC\u7ACB\uFF0C\u53EF\u968F\u65F6\u5207\u6362\u3002";
       document.querySelector(".edition").textContent = using ? "CLOUD WORKSPACE / 01" : "LOCAL WORKSPACE / 01";
       document.querySelector(".local-note").innerHTML = using ? "<i></i> \u79C1\u6709\u4E91\u7AEF\u9879\u76EE<br><small>\u4FDD\u5B58\u4EE5\u670D\u52A1\u5668\u786E\u8BA4\u4E3A\u51C6\u3002<br>\u79BB\u7EBF\u8349\u7A3F\u53EF\u72EC\u7ACB\u6062\u590D\u3002</small>" : "<i></i> \u672C\u5730\u4F18\u5148<br><small>\u9879\u76EE\u4FDD\u5B58\u5728\u5F53\u524D\u6D4F\u89C8\u5668\u3002<br>\u5BFC\u51FA HTML \u53EF\u5E26\u8D70\u5185\u5BB9\u3002</small>";
       document.querySelector(".subtitle").textContent = using ? "\u4ECE\u4E00\u4E2A\u9879\u76EE\u5F00\u59CB\u3002\u5185\u5BB9\u4FDD\u5B58\u5230\u4F60\u7684\u4E91\u7AEF\u8D26\u53F7\uFF0C\u652F\u6301\u6D4F\u89C8\u5668\u4E0E AI \u63A5\u529B\u7F16\u8F91\u3002" : "\u4ECE\u4E00\u4E2A\u9879\u76EE\u5F00\u59CB\u3002\u5185\u5BB9\u4FDD\u5B58\u5728\u672C\u5730\uFF0C\u968F\u65F6\u5BFC\u51FA\u3001\u91CD\u65B0\u6253\u5F00\u3002";
@@ -2814,7 +2912,7 @@ function v24OfflineExportBootstrap(width,height){
     async function useCloud() {
       if (!api.user) {
         $2("cloud-login").hidden = false;
-        $2("cloud-login").elements.username.focus();
+        openAccount();
         return;
       }
       if (!cloud) cloud = new CloudProjectStore({ api });
@@ -2827,6 +2925,7 @@ function v24OfflineExportBootstrap(width,height){
       form.elements.password.value = "";
       cloud = new CloudProjectStore({ api });
       await useCloud();
+      closeAccount();
     });
     $2("use-cloud").onclick = run(useCloud);
     $2("use-local").onclick = run(async () => {
@@ -2855,7 +2954,18 @@ function v24OfflineExportBootstrap(width,height){
       await refreshDrafts();
       notify2("\u6062\u590D\u8349\u7A3F\u5DF2\u6838\u5BF9\u5E76\u4FDD\u5B58\u4E3A\u72EC\u7ACB\u4E91\u7AEF\u9879\u76EE\uFF0C\u539F\u4E91\u7AEF\u6587\u6863\u672A\u88AB\u8986\u76D6\u3002");
     });
-    const row = panel.querySelector(".cloud-mode");
+    const leaveEditor = document.createElement("button");
+    leaveEditor.id = "cloud-leave-editor";
+    leaveEditor.type = "button";
+    leaveEditor.className = "secondary";
+    leaveEditor.textContent = "\u4FDD\u7559\u8349\u7A3F\u5E76\u8FD4\u56DE\u5DE5\u4F5C\u53F0";
+    leaveEditor.hidden = true;
+    leaveEditor.onclick = run(async () => {
+      await switchStore2(getLocalStore());
+      await refresh();
+    });
+    editorActions.append(leaveEditor);
+    const row = editorActions;
     for (const [id, label, action] of [["cloud-handoff", "\u4FDD\u5B58\u5E76\u4EA4\u7ED9 AI", handoff2], ["cloud-resume", "\u53D6\u56DE\u7F16\u8F91", resume2]]) {
       const button = document.createElement("button");
       button.id = id;
@@ -2865,9 +2975,18 @@ function v24OfflineExportBootstrap(width,height){
       row.append(button);
     }
     function workspace(readOnly) {
-      const using = getStore()?.storage === "cloud";
-      $2("cloud-handoff").hidden = !using || readOnly;
-      $2("cloud-resume").hidden = !using || !readOnly;
+      editorReadOnly = readOnly;
+      const editing = document.body.classList.contains("editor-open"), using = getStore()?.storage === "cloud";
+      menu.hidden = editing;
+      if (editing) closeAccount(false);
+      editorActions.hidden = !editing || !using;
+      const recovery = $2("cloud-draft-controls"), needsRecovery = editing && using && document.body.classList.contains("editor-attention");
+      leaveEditor.hidden = !needsRecovery;
+      if (needsRecovery) {
+        if (recovery.parentElement !== editorActions) editorActions.append(recovery);
+      } else if (recovery.parentElement !== panel) panel.insertBefore(recovery, permissions2);
+      $2("cloud-handoff").hidden = !editing || !using || readOnly;
+      $2("cloud-resume").hidden = !editing || !using || !readOnly;
     }
     return { api, refresh, refreshDrafts, workspace, async initialize() {
       if (cloudRequested(globalThis.window?.location)) {
@@ -2879,6 +2998,7 @@ function v24OfflineExportBootstrap(width,height){
           if (error.code !== "UNAUTHENTICATED") {
             $2("cloud-error").textContent = error.message;
             $2("cloud-error").hidden = false;
+            notify2(error.message, true);
           }
         }
       }
@@ -3529,6 +3649,7 @@ function v24OfflineExportBootstrap(width,height){
   async function homeNow(next) {
     await releaseCurrent();
     document.body.classList.remove("editor-open");
+    cloudWorkspace?.workspace(!lock);
     view = next;
     $("workspace-view").hidden = true;
     $("home-view").hidden = false;
@@ -3545,6 +3666,7 @@ function v24OfflineExportBootstrap(width,height){
         await releaseCurrent();
       } catch (error) {
         if (store.storage !== "cloud" || !core) throw error;
+        if (editor?.getRejectedSnapshot?.()) throw new Error("\u7F16\u8F91\u5668\u8FD8\u6709\u672A\u786E\u8BA4\u7684\u5185\u5BB9\uFF0C\u8BF7\u5148\u5BFC\u51FA JSON \u5907\u4EFD\u6216\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u3002");
         const previous = store;
         closing = true;
         setEditorReadOnly(true);

@@ -93,3 +93,48 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
 /* Keep the padded mat fixed; size the moving SVG to the actual page, not its letterbox. */
 .cover{container-type:size}
 .cover svg{display:block;width:min(100cqw,calc(100cqh * var(--cover-ratio,1.7777778)));height:auto}
+
+/* Account access is secondary to the project library. */
+header:has(#account-menu){gap:12px}
+header:has(#account-menu) #import-top{margin-left:auto}
+#account-menu{position:relative;flex-shrink:0}
+#account-trigger{display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:10px;background:var(--white);color:var(--ink);border:1px solid var(--line)}
+#account-trigger:hover,#account-trigger[aria-expanded=true]{background:#e8e5db;border-color:var(--ink)}
+#account-avatar{display:grid;place-items:center;width:26px;height:26px;font-size:15px;font-weight:600;line-height:1}
+#account-avatar svg{width:21px;height:21px}
+#cloud-controls.account-panel{position:absolute;right:0;top:calc(100% + 12px);z-index:110;width:344px;max-width:calc(100vw - 40px);max-height:calc(100dvh - 120px);overflow:auto;padding:22px;background:var(--white);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 36px #20221e1a;text-align:left;letter-spacing:normal}
+.account-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.account-panel-header h2{font-size:17px;font-weight:600;margin:0}
+#account-close{width:28px;height:28px;padding:0;font-size:20px;line-height:1;background:transparent;color:var(--muted);border:0;border-radius:6px}
+#account-close:hover{background:#e8e5db;color:var(--ink)}
+.account-identity{font-size:13px;font-weight:600;margin:0 0 14px;overflow-wrap:anywhere}
+#cloud-controls .cloud-mode{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#cloud-controls .cloud-mode strong{width:100%;font-size:11px;font-weight:500;color:var(--muted);margin-bottom:2px}
+#cloud-controls button{font-size:12px;padding:8px 12px;border-radius:7px}
+#cloud-controls #account-close{padding:0}
+#cloud-controls a{font-size:12px;color:var(--ink);text-underline-offset:3px}
+#cloud-controls p{font-size:12px;line-height:1.7;color:var(--muted);margin:14px 0}
+#cloud-login{display:grid;gap:14px;margin-top:18px}
+#cloud-controls label{display:block;font-size:12px;color:var(--ink)}
+#cloud-controls input,#cloud-controls select{display:block;width:100%;min-width:0;margin-top:7px;padding:10px 11px;font-size:13px;border:1px solid var(--line);border-radius:7px;background:var(--white)}
+#cloud-login button{margin-top:2px;width:100%;padding:11px}
+#cloud-migrate,#cloud-draft-controls{border-top:1px solid var(--line);margin-top:18px;padding-top:18px;display:grid;gap:10px}
+#cloud-controls #cloud-error{color:#a53225;margin-bottom:0}
+#cloud-token-settings{border-top:1px solid var(--line);margin-top:18px;padding-top:15px;font-size:12px}
+#cloud-token-settings summary{cursor:pointer;color:var(--ink);line-height:1.5}
+#cloud-controls .token-settings{padding:15px 0 0}
+#cloud-controls .token-settings h2{font-size:15px}
+#cloud-controls .token-row{gap:10px;flex-wrap:wrap}
+#cloud-editor-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:5px 14px;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--white)}
+#cloud-editor-actions button{padding:6px 11px;font-size:11px;border-radius:6px}
+body.editor-open #account-menu{display:none}
+@media(max-width:660px){
+ header:has(#account-menu){gap:9px}
+ #account-trigger{width:38px;height:38px}
+ #cloud-controls.account-panel{max-height:calc(100dvh - 215px);padding:18px}
+}
+#cloud-editor-actions #cloud-draft-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;border:0;padding:0;margin:0}
+#cloud-editor-actions #cloud-draft-controls label{font-size:11px;display:flex;align-items:center;gap:8px}
+#cloud-editor-actions #cloud-draft-controls select{max-width:240px;padding:5px 8px;font-size:11px}
+#cloud-editor-actions:has(#cloud-draft-controls:not([hidden])){background:#ECD9CA;flex-wrap:wrap}
+#cloud-controls:not(.account-authenticated) .cloud-mode{display:none}
