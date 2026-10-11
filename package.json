@@ -1,6 +1,6 @@
 {
   "name": "superior-point-framework",
-  "version": "0.0.1",
+  "version": "0.1.0-alpha",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,15 +12,29 @@
     "start": "node tools/serve.js",
     "build": "node tools/build.js",
     "test:browser": "python3 tests/browser-framework.py",
-    "test:offline": "python3 tests/html-offline.py"
+    "test:offline": "python3 tests/html-offline.py",
+    "service:start": "node --import tsx server/start.ts",
+    "service:migrate": "node --import tsx server/db/migrate.ts",
+    "service:bootstrap": "node --import tsx server/bootstrap-admin.ts",
+    "typecheck:service": "tsc -p tsconfig.server.json",
+    "test:service": "node --import tsx --test --test-concurrency=1 tests/service/*.test.ts",
+    "mcp:bridge": "node mcp/bridge/server.js",
+    "service:backup": "node --import tsx server/backup.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "argon2": "^0.44.0",
+    "fastify": "^5.12.5",
+    "pg": "^8.23.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
     "esbuild": "^0.28.2",
     "fake-indexeddb": "^6.2.5",
-    "jsdom": "^30.1.2"
+    "jsdom": "^30.1.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
   }
 }

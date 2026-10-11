@@ -23,6 +23,12 @@ test('integrated candidate simulation: native add/text edit -> Core -> save -> H
  try{
   await import('../web/app.js?candidate-workflow');await wait(()=>w.SPFramework?.ready);app=w.SPFramework;
   const created=await app.newProject('可编辑候选');let child=w.document.querySelector('iframe').__window;
+  assert.ok(w.document.body.classList.contains('editor-integrated'));
+  assert.ok(!w.document.body.classList.contains('editor-attention'));
+  await wait(()=>child.document.querySelector('#save-status').textContent.includes('已保存到本地'));
+  child.document.querySelector('[data-action="sp-workspace-json"]').click();
+  await wait(()=>blobs.length===1);
+  assert.deepEqual(JSON.parse(await blobs[0].text()),app.getDocument());
   child.document.querySelector('[data-action="add-text"]').click();await wait(()=>app.getDocument().slides[0].elements.length===1);await wait(()=>!child.SPEditorCandidate.getState().pending);
   const object=child.document.querySelector('#stage-mount .slide-object');object.dispatchEvent(new child.MouseEvent('dblclick',{bubbles:true}));
   const text=child.document.querySelector('#stage-mount .editing');assert.ok(text,'native text editing should open');text.textContent='通过原编辑器输入并保存';

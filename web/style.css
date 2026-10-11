@@ -14,3 +14,82 @@ body.editor-open .sp-legacy-editor-frame{min-height:540px!important}
 body.editor-open .recovery-note,body.editor-open .import-status{margin:4px 0;padding:6px 10px;font-size:11px}
 
 .export-privacy-note{margin:4px 0 7px;font-size:11px;color:#795a30}
+
+/* Normal editing uses one native header. Recovery controls remain outside the read-only frame. */
+body.editor-open.editor-integrated{height:100dvh;min-height:0;overflow:hidden}
+body.editor-open.editor-integrated main{display:flex;flex-direction:column;padding:0;min-height:0}
+body.editor-integrated #workspace-view{display:flex;flex-direction:column;flex:1;min-height:0}
+body.editor-integrated #editor-mount{flex:1;height:auto;min-height:0}
+body.editor-integrated .sp-legacy-editor-frame{min-height:0!important}
+body.editor-integrated .document-toolbar,body.editor-integrated .export-privacy-note,
+body.editor-integrated .recovery-note,body.editor-integrated:not(.editor-attention) .save-row{display:none}
+body.editor-integrated.editor-attention .save-row{padding:7px 12px;background:#ECD9CA;color:#703717;border-bottom:1px solid #D0D5CC}
+body.editor-integrated.editor-attention .document-toolbar{display:flex;padding:5px 12px 0;background:#ECD9CA}
+body.editor-integrated.editor-attention .document-toolbar>:not(#back-home){display:none}
+body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11px}
+
+/* Creation feedback lives inside the create control. */
+.new-card{position:relative}
+.home-dots{position:absolute;right:24px;top:25px;width:82px;height:48px;pointer-events:none;color:#75804b}
+.home-dots i{position:absolute;width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.32}
+.new-card b{display:flex;align-items:center;gap:10px}
+@media(hover:hover) and (pointer:fine){
+ .home-dots i{transition:transform 180ms cubic-bezier(.23,1,.32,1),opacity 180ms ease}
+ .new-card:hover .home-dots i{transform:translate(var(--slide-x),var(--slide-y));opacity:.9}
+}
+.new-card:focus-visible .home-dots i{transform:translate(var(--slide-x),var(--slide-y));opacity:.9;transition:none}
+@media(prefers-reduced-motion:reduce){.home-dots i{transition:none!important;transform:translate(var(--slide-x),var(--slide-y))}}
+@media(max-width:660px){.home-dots{right:13px;top:21px;transform:scale(.65);transform-origin:top right}}
+
+/* The whole card previews its open action while keeping secondary actions in place. */
+.project{position:relative}
+.cover{overflow:hidden}
+.cover-open-hint{position:absolute;right:12px;bottom:12px;padding:7px 10px;background:var(--ink);color:var(--white);font-size:10px;opacity:0;pointer-events:none;transform:translateY(4px)}
+.project:has(.cover:focus-visible){border-color:var(--accent)}
+.cover:focus-visible .cover-open-hint{opacity:1;transform:none}
+@media(hover:hover) and (pointer:fine){
+ .project{transition:transform 160ms cubic-bezier(.23,1,.32,1),border-color 160ms ease,box-shadow 160ms ease}
+ .cover svg{transition:transform 180ms cubic-bezier(.23,1,.32,1)}
+ .cover-open-hint{transition:opacity 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1)}
+ .project:has(.cover:not(:disabled)):hover{border-color:var(--accent);box-shadow:0 6px 16px #20221e0d}
+ .project:has(.cover:not(:disabled)):hover .cover svg{transform:scale(1.025)}
+ .project:has(.cover:not(:disabled)):hover .cover-open-hint{opacity:1;transform:none}
+ .project:hover .project-actions button{color:var(--ink)}
+ .project .project-actions button:hover{color:var(--accent)}
+}
+@media(prefers-reduced-motion:reduce){
+ .project,.cover svg,.cover-open-hint{transition:none!important;transform:none!important}
+}
+
+/* Home controls share quiet feedback; emphasis follows navigation or action intent. */
+body:not(.editor-open){--control-hover:#e8e5db;--danger:#a02f34;--feedback-time:160ms}
+body:not(.editor-open) nav button{position:relative}
+body:not(.editor-open) nav button::before{content:"";position:absolute;left:-9px;top:16px;bottom:16px;width:2px;background:var(--accent);opacity:0;pointer-events:none}
+body:not(.editor-open) nav button:focus-visible{background:var(--control-hover)}
+body:not(.editor-open) nav button:focus-visible::before{opacity:1}
+body:not(.editor-open) .project-actions button{text-decoration:underline;text-decoration-color:transparent;text-underline-offset:4px}
+body:not(.editor-open) .project-actions button:focus-visible{text-decoration-color:currentColor}
+body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible{color:var(--danger)}
+@media(hover:hover) and (pointer:fine){
+ body:not(.editor-open) :is(nav button,.brand,header button,.new-card,.framework-note button,.import-status button,dialog button,#search,#sort,.project-actions button){transition:background-color var(--feedback-time) ease,border-color var(--feedback-time) ease,color var(--feedback-time) ease,text-decoration-color var(--feedback-time) ease}
+ body:not(.editor-open) nav button::before{transition:opacity var(--feedback-time) ease}
+ body:not(.editor-open) nav button:not(:disabled):hover{background:var(--control-hover);color:var(--ink);border-bottom-color:var(--accent)}
+ body:not(.editor-open) nav button:not(:disabled):hover::before{opacity:1}
+ body:not(.editor-open) .brand:hover{color:var(--accent)}
+ body:not(.editor-open) :is(header button,.framework-note button,.import-status button,dialog .secondary):not(:disabled):hover{background:var(--control-hover);color:var(--ink);border-color:var(--accent)}
+ body:not(.editor-open) dialog button[type=submit]:not(:disabled):hover{background:#34443a;border-color:#34443a}
+ body:not(.editor-open) :is(#search,#sort):hover{border-color:var(--accent);background:var(--white)}
+ body:not(.editor-open) .project-actions button:not(:disabled):hover{background:transparent;color:var(--accent);text-decoration-color:currentColor}
+ body:not(.editor-open) .project-actions button[data-action=delete]:not(:disabled):hover{color:var(--danger)}
+}
+@media(prefers-reduced-motion:reduce){
+ body:not(.editor-open) :is(nav button,.brand,header button,.new-card,.framework-note button,.import-status button,dialog button,#search,#sort,.project-actions button),body:not(.editor-open) nav button::before{transition:none}
+}
+@media(hover:hover) and (pointer:fine){
+ .cover.card-tilting svg{will-change:transform;box-shadow:0 9px 18px #20221e19;backface-visibility:hidden}
+}
+@media(prefers-reduced-motion:reduce){.cover.card-tilting svg{transform:none!important;will-change:auto;box-shadow:none}}
+
+/* Keep the padded mat fixed; size the moving SVG to the actual page, not its letterbox. */
+.cover{container-type:size}
+.cover svg{display:block;width:min(100cqw,calc(100cqh * var(--cover-ratio,1.7777778)));height:auto}

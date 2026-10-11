@@ -1,0 +1,6 @@
+{"secondActualCaddyClientStatus":401,"certificateValidation":true}
+
+
+Only SP app restarted to clear synthetic in-memory login counters
+
+remote_exit 0

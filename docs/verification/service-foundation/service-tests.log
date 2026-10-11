@@ -1,0 +1,34 @@
+
+> superior-point-framework@0.0.1 test:service
+> node --import tsx --test tests/service/*.test.ts
+
+✔ HTTP login/session, CSRF+Origin, owner isolation and no forged role/owner acceptance (1490.434417ms)
+✔ HTTP document edit/retry/lease/CAS/trash roundtrip persists through a new app instance (1019.362708ms)
+✔ HTTP login throttles uniformly and production cookies are Secure without token in JSON (486.925542ms)
+✔ auth stores Argon2id and only hashes of session secrets; failures are uniform and audited (1693.605042ms)
+✔ RBAC, disable, session revocation and expiry recheck current persisted state (1132.469792ms)
+✔ concurrent bootstrap and last-admin changes serialize; audit failures roll back mutations (883.25675ms)
+✔ admin transactions reject captured actors after logout, revocation or session expiry (977.793625ms)
+✔ concurrent logout/admin mutation and mutual admin revocation avoid lock cycles (852.637166ms)
+✔ real PostgreSQL migration replay, checksum drift refusal, rollback and rebuild (242.585ms)
+✔ PostgreSQL transaction failure does not leave partial schema/data (121.166ms)
+✔ real HTTP service process restart preserves PostgreSQL document and sessions (1590.901625ms)
+✔ bootstrap CLI consumes stdin only, initializes once, and never prints the password (822.279291ms)
+✔ PostgreSQL CRUD preserves unknown data, returns metadata only, and bumps trash/restore revisions (219.806ms)
+✔ owner isolation applies to every project operation, including administrators (154.360709ms)
+✔ concurrent CAS commits one writer; matching receipts replay original result without duplicate commits (73.07625ms)
+✔ leases require actor-owned unexpired tokens, forbid takeover, and gate snapshots and regular writes (123.882375ms)
+✔ disabled users are rechecked on reads, writes, receipts, and leases; MCP scopes remain bounded (57.603709ms)
+✔ invalid batches and database audit failure roll back document, revision, and mutation receipt together (93.731875ms)
+✔ rename, trash and restore honor lease tokens and bind receipts to the supplied token (105.709625ms)
+✔ service boundaries enforce title and encoded document limits without committing partial data (402.58175ms)
+✔ captured actors cannot reuse revoked, expired, or differently bound sessions, including receipt replay (72.122208ms)
+✔ an in-flight write holds its session lock until commit; waiting revocation blocks every later write (75.706666ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5761.705375

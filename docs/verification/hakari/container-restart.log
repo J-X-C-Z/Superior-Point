@@ -1,0 +1,28 @@
+Before restart project fingerprints: [{"id":"fbcafb4f-1e9d-4c8a-b559-c5849c51f890","revision":"2","fingerprint":"760cbc55502cd1d28a861f257e117835"}]
+App/DB restart preserved complete project fingerprints: [{"id":"fbcafb4f-1e9d-4c8a-b559-c5849c51f890","revision":"2","fingerprint":"760cbc55502cd1d28a861f257e117835"}]
+Id=nginx.service
+ActiveState=active
+MainPID=25721
+NRestarts=0
+
+Id=postgresql@18-main.service
+ActiveState=active
+MainPID=153229
+NRestarts=0
+
+Id=hindsight.service
+ActiveState=active
+MainPID=7525
+NRestarts=0
+
+Id=hindsight-ui.service
+ActiveState=active
+MainPID=137426
+NRestarts=0
+
+Id=hbrclient.service
+ActiveState=active
+MainPID=2016
+NRestarts=0
+
+remote_exit 0

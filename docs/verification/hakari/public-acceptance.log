@@ -1,0 +1,1 @@
+{"ok":true,"origin":"https://sp.jxcz.top","checks":{"adminLoginRecentCsrf":true,"syntheticUsersCreated":2,"ownerCoreCas":true,"otherUserReadExportAdminDenied":true,"adminPrivateContentDenied":true,"patBearerReadWriteAndLease":true,"ownerReadBackRevision":2,"patRevoked":true,"auditReadback":true,"syntheticMarker":"spaccept-d47bf3c1a04b"},"retainedSyntheticData":true}

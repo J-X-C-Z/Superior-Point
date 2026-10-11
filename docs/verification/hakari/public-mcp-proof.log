@@ -1,0 +1,52 @@
+{
+  "ok": true,
+  "origin": "https://sp.jxcz.top",
+  "projectId": "e9e206fa-1cde-4fb1-a617-5682800b3154",
+  "title": "Hakari MCP 公网接力验收 20261011",
+  "transport": "SDK Client/StdioClientTransport -> mcp/bridge/server.js -> HTTPS sp.jxcz.top -> production API",
+  "checks": {
+    "httpsSecureCookieReauthCsrf": true,
+    "sdkStdioPublicHttps": true,
+    "allowHttpUnset": true,
+    "allowlistOtherOwnerProjectDenied": {
+      "code": "FORBIDDEN",
+      "status": 403
+    },
+    "createScopeDenied": {
+      "code": "FORBIDDEN",
+      "status": 403
+    },
+    "mcpCasRevision": 1,
+    "validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "revision": 1,
+      "renderCompatibility": {
+        "hasKnownGaps": false,
+        "warnings": [],
+        "scope": "Known generic-renderer gaps only; not a complete visual-fidelity check",
+        "limitations": [
+          "Generic framework preview only; the authoritative editor adapter is not integrated.",
+          "Plain multiline text and system fonts; rich text, custom fonts, crop, groups, arbitrary SVG and complex charts are unsupported.",
+          "Basic rectangles, ellipses, lines/connectors, raster images, plain tables and bar charts only.",
+          "Reveal page navigation/transitions and ordered appear fragments only; complex timelines and triggers are preserved but not played."
+        ]
+      }
+    },
+    "webAndMcpSameDocument": true,
+    "export": {
+      "revision": 1,
+      "bytes": 169765,
+      "sha256": "39a5332c9796144a1990c24ef9f26af78c4834014ab5d475b6773561a615342d",
+      "file": "/Users/jxcz/.codex/.chatgpt-projects/g-p-6acaf26c67908191983e413a278752ce/Superior-Point/work/deployment/mcp-exports/public-mcp-proof.html"
+    },
+    "fixtureRetainedForBrowser": true,
+    "patRevoked": true,
+    "revokedSdkReadDenied": {
+      "code": "UNAUTHENTICATED",
+      "status": 401
+    },
+    "sdkClosed": true
+  }
+}

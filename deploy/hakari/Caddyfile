@@ -1,0 +1,13 @@
+{
+	auto_https disable_redirects
+}
+
+https://{$SP_DOMAIN} {
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+	encode zstd gzip
+	reverse_proxy app:3000
+}

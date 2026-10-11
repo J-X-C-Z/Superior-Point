@@ -1,0 +1,573 @@
+openapi: 3.1.0
+info:
+  title: Superior Point Service API
+  version: 0.0.1
+  description: >-
+    Contract for routes currently registered by server/app.ts and
+    server/routes/admin-routes.ts. This is an Alpha candidate API, not a
+    production release. OAuth/OIDC is not implemented.
+servers:
+  - url: https://sp.example.invalid
+    description: Replace with the configured service origin.
+tags:
+  - name: Public
+  - name: Auth
+  - name: Projects
+  - name: Tokens
+  - name: Admin
+paths:
+  /health/live:
+    get:
+      tags: [Public]
+      summary: Liveness probe
+      responses:
+        '200': {description: Process is live}
+  /health/ready:
+    get:
+      tags: [Admin]
+      summary: Authenticated database readiness probe
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Database query succeeded}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/public/config:
+    get:
+      tags: [Public]
+      summary: Read public site settings
+      responses:
+        '200': {description: Public settings}
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Create a browser session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username: {type: string, minLength: 3, maxLength: 64}
+                password: {type: string, minLength: 1, maxLength: 1024, format: password}
+      responses:
+        '200': {description: User, CSRF token, and session cookie}
+        '401': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Read the current account
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Current user}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/csrf:
+    post:
+      tags: [Auth]
+      summary: Rotate browser CSRF token
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: New CSRF token}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/reauth:
+    post:
+      tags: [Auth]
+      summary: Reauthenticate the current user
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [password], properties: {password: {type: string, format: password}}}
+      responses:
+        '200': {description: Reauthentication accepted}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/password:
+    post:
+      tags: [Auth]
+      summary: Change the current password
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [currentPassword, newPassword], properties: {currentPassword: {type: string, format: password}, newPassword: {type: string, minLength: 12, maxLength: 1024, format: password}}}
+      responses:
+        '200': {description: Password changed}
+        '400': {$ref: '#/components/responses/Error'}
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: End the current session
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Session ended and cookie cleared}
+  /api/v1/me/tokens:
+    get:
+      tags: [Tokens]
+      summary: List the current user's personal access tokens
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Token metadata; secret values are not returned}
+    post:
+      tags: [Tokens]
+      summary: Create a personal access token
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name]
+              properties:
+                name: {type: string}
+                scopes:
+                  type: array
+                  uniqueItems: true
+                  maxItems: 6
+                  items: {type: string, enum: [projects:read, projects:create, projects:write, projects:delete, projects:export, assets:write]}
+                projectAllowlist:
+                  oneOf:
+                    - {type: 'null'}
+                    - {type: array, uniqueItems: true, maxItems: 1000, items: {type: string}}
+                expiresAt: {type: string, maxLength: 64}
+      responses:
+        '201': {description: Token metadata and one-time secret value}
+        '400': {$ref: '#/components/responses/Error'}
+  /api/v1/me/tokens/{id}:
+    delete:
+      tags: [Tokens]
+      summary: Revoke one of the current user's tokens
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Token revoked}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects:
+    get:
+      tags: [Projects]
+      summary: List the current user's projects
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters:
+        - {name: trash, in: query, schema: {type: boolean}, description: Include or select trashed projects}
+      responses:
+        '200': {description: Project summaries}
+    post:
+      tags: [Projects]
+      summary: Create a project
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                title: {type: string, maxLength: 500}
+                canvas: {type: object, additionalProperties: false, required: [width, height], properties: {width: {type: number, exclusiveMinimum: 0}, height: {type: number, exclusiveMinimum: 0}}}
+      responses:
+        '201': {description: Created project}
+        '400': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/import:
+    post:
+      tags: [Projects]
+      summary: Import a document as a new project
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [document, clientMutationId], properties: {document: {type: object}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '201': {description: Imported project}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      tags: [Projects]
+      summary: Read a project summary/document
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      responses:
+        '200': {description: Project document and revision}
+        '404': {$ref: '#/components/responses/Error'}
+    patch:
+      tags: [Projects]
+      summary: Rename a project
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Updated project}
+        '409': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Projects]
+      summary: Move a project to trash
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Updated project}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/document:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      tags: [Projects]
+      summary: Read a project document
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{name: trash, in: query, schema: {type: boolean}}]
+      responses:
+        '200': {description: Document and revision}
+    patch:
+      tags: [Projects]
+      summary: Apply document operations
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId, operations], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string}, operations: {type: array, minItems: 1, maxItems: 1000, items: {type: object}}}}
+      responses:
+        '200': {description: Updated document}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/snapshot:
+    put:
+      tags: [Projects]
+      summary: Replace document with a full snapshot under an active lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId, leaseToken, document], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string}, document: {type: object}}}
+      responses:
+        '200': {description: Snapshot saved}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/slides:
+    get:
+      tags: [Projects]
+      summary: List slides
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Slides and project revision}
+  /api/v1/projects/{id}/slides/{slideId}:
+    get:
+      tags: [Projects]
+      summary: Read one slide
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}, {name: slideId, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: Slide and project revision}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/slides/{slideId}/render:
+    get:
+      tags: [Projects]
+      summary: Render a static SVG preview
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}, {name: slideId, in: path, required: true, schema: {type: string}}]
+      responses:
+        '200': {description: SVG string, MIME type, revision, compatibility report, and limitations}
+  /api/v1/projects/{id}/validate:
+    get:
+      tags: [Projects]
+      summary: Validate a project document
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Validation findings and render compatibility}
+  /api/v1/projects/{id}/exports:
+    post:
+      tags: [Projects]
+      summary: Export editable or audience HTML
+      security: [{sessionCookie: []}, {personalAccessToken: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [expectedRevision, format], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, format: {type: string, enum: [editable-html, audience-html]}}}
+      responses:
+        '200': {description: HTML, MIME type, revision, and compatibility report}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /api/v1/projects/{id}/restore:
+    post:
+      tags: [Projects]
+      summary: Restore a trashed project
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Restored project}
+  /api/v1/projects/{id}/lease:
+    post:
+      tags: [Projects]
+      summary: Acquire a short-lived write lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [holder], properties: {holder: {type: string, minLength: 1}}}
+      responses:
+        '200': {description: Lease token and expiration}
+        '409': {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Projects]
+      summary: Release a write lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [leaseToken], properties: {leaseToken: {type: string}}}
+      responses:
+        '200': {description: Lease released}
+  /api/v1/projects/{id}/lease/renew:
+    post:
+      tags: [Projects]
+      summary: Renew a write lease
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [leaseToken], properties: {leaseToken: {type: string}}}
+      responses:
+        '200': {description: Lease expiration renewed}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Read administration dashboard metrics
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Dashboard data}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/health:
+    get:
+      tags: [Admin]
+      summary: Check administrator access and database readiness
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Ready}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/users:
+    get:
+      tags: [Admin]
+      summary: List users
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/limit'}, {$ref: '#/components/parameters/offset'}]
+      responses:
+        '200': {description: Paginated users}
+    post:
+      tags: [Admin]
+      summary: Create a user
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [username, password], properties: {username: {type: string, minLength: 3, maxLength: 64}, password: {type: string, minLength: 12, maxLength: 1024, format: password}, role: {type: string, enum: [admin, user]}}}
+      responses:
+        '201': {description: Created user}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/users/{id}/status:
+    patch:
+      tags: [Admin]
+      summary: Enable or disable a user
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [status], properties: {status: {type: string, enum: [active, disabled]}}}
+      responses:
+        '200': {description: Updated user}
+  /api/v1/admin/users/{id}/role:
+    patch:
+      tags: [Admin]
+      summary: Change a user's role
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [role], properties: {role: {type: string, enum: [admin, user]}}}
+      responses:
+        '200': {description: Updated user}
+  /api/v1/admin/users/{id}/sessions:
+    delete:
+      tags: [Admin]
+      summary: Revoke a user's sessions
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Sessions revoked}
+  /api/v1/admin/users/{id}/reset-password:
+    post:
+      tags: [Admin]
+      summary: Set a user's password
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [password], properties: {password: {type: string, minLength: 12, maxLength: 1024, format: password}}}
+      responses:
+        '200': {description: Password reset}
+  /api/v1/admin/projects:
+    get:
+      tags: [Admin]
+      summary: List projects across users
+      security: [{sessionCookie: []}]
+      parameters:
+        - {$ref: '#/components/parameters/limit'}
+        - {$ref: '#/components/parameters/offset'}
+        - {name: trash, in: query, schema: {type: string, enum: ['true', 'false']}}
+      responses:
+        '200': {description: Paginated project records}
+  /api/v1/admin/projects/{id}/transfer:
+    post:
+      tags: [Admin]
+      summary: Transfer project ownership
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [newOwnerId, expectedRevision, clientMutationId], properties: {newOwnerId: {type: string, format: uuid}, expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}}}
+      responses:
+        '200': {description: Project ownership transferred}
+        '409': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/projects/{id}/trash:
+    post:
+      tags: [Admin]
+      summary: Move any project to trash
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Project trashed}
+  /api/v1/admin/projects/{id}/restore:
+    post:
+      tags: [Admin]
+      summary: Restore any project from trash
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {$ref: '#/components/requestBodies/Mutation'}
+      responses:
+        '200': {description: Project restored}
+  /api/v1/admin/mcp/tokens:
+    get:
+      tags: [Admin]
+      summary: List personal access token metadata
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/limit'}, {$ref: '#/components/parameters/offset'}]
+      responses:
+        '200': {description: Paginated token records}
+  /api/v1/admin/mcp/tokens/{id}/revoke:
+    post:
+      tags: [Admin]
+      summary: Revoke a token after recent reauthentication
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses:
+        '200': {description: Token revoked}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/audit:
+    get:
+      tags: [Admin]
+      summary: List audit events
+      security: [{sessionCookie: []}]
+      parameters: [{$ref: '#/components/parameters/limit'}, {$ref: '#/components/parameters/offset'}]
+      responses:
+        '200': {description: Paginated audit events}
+  /api/v1/admin/settings:
+    get:
+      tags: [Admin]
+      summary: Read service settings
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Settings}
+    patch:
+      tags: [Admin]
+      summary: Update service settings
+      security: [{sessionCookie: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, properties: {siteName: {type: string, minLength: 1, maxLength: 100}, announcement: {type: string, maxLength: 2000}, maxUploadBytes: {type: integer, minimum: 1, maximum: 33554432}, publicRegistration: {const: false}, maintenanceMode: {type: boolean}}}
+      responses:
+        '200': {description: Settings updated}
+  /api/v1/admin/backups:
+    get:
+      tags: [Admin]
+      summary: List configured backups
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Backup metadata}
+        '503': {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Admin]
+      summary: Start a backup (requires recent reauthentication)
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Backup operation result}
+        '503': {$ref: '#/components/responses/Error'}
+  /api/v1/admin/backups/restore-check:
+    post:
+      tags: [Admin]
+      summary: Run configured restore checks (requires recent reauthentication)
+      security: [{sessionCookie: []}]
+      responses:
+        '200': {description: Restore-check results}
+        '503': {$ref: '#/components/responses/Error'}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sp-session
+      description: Development cookie; production uses __Host-sp-session.
+    personalAccessToken:
+      type: http
+      scheme: bearer
+      description: Personal token; available scopes are enforced per route.
+  parameters:
+    id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    limit: {name: limit, in: query, schema: {type: string, pattern: '^[0-9]{1,3}$'}, description: Pagination limit string; default and maximum enforced by server}
+    offset: {name: offset, in: query, schema: {type: string, pattern: '^[0-9]{1,16}$'}, description: Pagination offset string}
+  schemas:
+    Revision: {type: integer, minimum: 0, maximum: 9007199254740991}
+    ClientMutationId: {type: string, minLength: 1, maxLength: 128}
+    Error:
+      type: object
+      properties:
+        error: {type: string}
+        code: {type: string}
+        message: {type: string}
+  requestBodies:
+    Mutation:
+      required: true
+      content:
+        application/json:
+          schema: {type: object, additionalProperties: false, required: [expectedRevision, clientMutationId], properties: {expectedRevision: {$ref: '#/components/schemas/Revision'}, clientMutationId: {$ref: '#/components/schemas/ClientMutationId'}, leaseToken: {type: string}}}
+  responses:
+    Error:
+      description: Request failed with a service error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}

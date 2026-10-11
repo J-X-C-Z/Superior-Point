@@ -6,7 +6,9 @@ import {exportHTML,renderSlideSVG,inspectRenderCompatibility} from '../io/html.j
 import {readImportFile,createImportDocument,importErrorMessage} from '../io/project-import.js';
 import {exportEditorHTML} from '../io/editor-export.js';
 import {mountEditor,registerEditorAdapter,getEditorAdapter} from './editor-adapter.js';
-const $=id=>document.getElementById(id), store=new ProjectStore(),owner=crypto.randomUUID();
+import {initCloudWorkspace} from './cloud-workspace.js';
+const $=id=>document.getElementById(id),localStore=new ProjectStore(),owner=crypto.randomUUID();
+let store=localStore,cloudWorkspace=null;
 let navigation=Promise.resolve(),listRender=0,session=0,closing=false,drainingEditor=false,recovering=false,recoveryFlight=null,recoveryError=null;
 let importFlight=null,importSource=null;
 let leaseWait=null;
@@ -15,6 +17,13 @@ let view='home',core=null,lock=null,autosave=null,editor=null,persistedRevision=
 const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('sp-framework-changes'):null;
 function notify(text,error=false){$('notification').textContent=text;$('notification').classList.toggle('error',error);$('notification').hidden=false;clearTimeout(notifyTimer);notifyTimer=setTimeout(()=>$('notification').hidden=true,6500);}
 const guard=fn=>(...args)=>{try{return Promise.resolve(fn(...args)).catch(e=>{console.error(e);notify(e.message,true);});}catch(e){console.error(e);notify(e.message,true);}};
+function syncWorkspaceChrome(failed=false){
+ const attention=!!core&&(!lock||failed||!!autosave?.lastError||!!recoveryError||recovering);
+ document.body.classList.toggle('editor-integrated',!!editor?.setWorkspaceState);
+ document.body.classList.toggle('editor-attention',attention);
+ editor?.setWorkspaceState?.({text:$('save-state').textContent,failed:attention,revision:core?.getDocument().revision,details:[$('recovery-note').textContent,$('import-note').textContent].filter(Boolean).join(' ')});
+ cloudWorkspace?.workspace(!lock);
+}
 function refreshRecoveryControls(failed=false){
  $('backup-json').hidden=false;
  $('recover-project').hidden=!core||(!failed&&!!lock&&!autosave?.lastError&&!recoveryError);
@@ -22,11 +31,13 @@ function refreshRecoveryControls(failed=false){
  $('recover-project').textContent=recovering?'正在保存恢复副本…':'恢复为独立项目';
  $('retry-save').disabled=recovering||!lock;
  $('takeover').disabled=recovering;
+ syncWorkspaceChrome(failed);
 }
 function setState(state,revision,error){
  const latest=core?.getDocument().revision;
  if(state==='saved'&&revision===latest)recoveryError=null;
- $('save-state').textContent=state==='saved'&&revision===latest?`已保存到本地 · 修订 ${revision}`:state==='failed'?`保存失败 · ${error?.message||'请重试或恢复为独立项目'}`:state==='saving'?'正在保存…':'等待保存…';
+ $('save-state').textContent=state==='saved'&&revision===latest?`已保存到${store.storage==='cloud'?'云端':'本地'} · 修订 ${revision}`:state==='failed'?`${store.storage==='cloud'?'云端未确认保存':'保存失败'} · ${error?.message||'请重试或恢复为独立项目'}`:state==='saving'?'正在保存…':store.storage==='cloud'?'云端尚未保存 · 正在保留本地恢复草稿…':'等待保存…';
+ if(store.storage==='cloud')cloudWorkspace?.refreshDrafts().catch(()=>{});
  $('retry-save').hidden=state!=='failed';
  refreshRecoveryControls(state==='failed');
 }
@@ -42,7 +53,7 @@ function cleanLeaseWait(waiting){
 }
 async function hasWaitingDraft(){
  // Do not replace an adapter's rejected snapshot, even if it never reached Core.
- try{return !!(editor?.getRejectedSnapshot?.()||await editor?.getRecoveryDocument?.());}
+ try{return !!(editor?.getRejectedSnapshot?.()||await editor?.getRecoveryDocument?.()||(store.storage==='cloud'&&(await store.drafts.list(store.accountId,core.getDocument().id)).length));}
  catch{return true;}
 }
 function scheduleLeaseWait(waiting){
@@ -73,7 +84,7 @@ function retryWaitingLease(waiting){
    if(!acquired){scheduleLeaseWait(waiting);return;}
    const record=await store.get(waiting.id);
    if(!current()||await preserveDraft()||!current()){stopLeaseWait(waiting);return;}
-   if(!record||record.deletedAt){stopLeaseWait(waiting);$('save-state').textContent='只读 · 项目已不存在或已移入回收站，当前内容仍可导出备份。';return;}
+   if(!record||record.deletedAt){stopLeaseWait(waiting);$('save-state').textContent='只读 · 项目已不存在或已移入回收站，当前内容仍可导出备份。';syncWorkspaceChrome();return;}
    new DocumentCore(record.document); // Validate before retiring the visible snapshot.
    stopLeaseWait(waiting);clearCurrent();
    const lease=acquired;acquired=null;activating=true; // activateProject owns the new lease from here.
@@ -81,7 +92,7 @@ function retryWaitingLease(waiting){
    notify('写入权已恢复，已读取最新保存的内容。');
   }catch(error){
    if(activating)notify('写入权已取得，但重新打开项目失败，请返回工作台重试：'+error.message,true);
-   else if(current()){$('save-state').textContent='只读 · 暂时无法检查写入权，稍后重试；可主动接管。';scheduleLeaseWait(waiting);}
+   else if(current()){$('save-state').textContent=store.storage==='cloud'?'只读 · 暂时无法检查云端写入权，稍后重试；不会抢占。':'只读 · 暂时无法检查写入权，稍后重试；可主动接管。';syncWorkspaceChrome();scheduleLeaseWait(waiting);}
    else if(leaseWait===waiting)stopLeaseWait(waiting);
   }finally{if(acquired)await store.release(acquired).catch(()=>{});}
  });
@@ -89,7 +100,7 @@ function retryWaitingLease(waiting){
 }
 function loseLock(){
  stopLeaseWait();
- lock=null;setEditorReadOnly(true);$('project-title').disabled=true;$('takeover').hidden=false;
+ lock=null;setEditorReadOnly(true);$('project-title').disabled=true;$('takeover').hidden=store.storage==='cloud';
  setState('failed',core?.getDocument().revision,new Error('写入权已失效，改动仍保留。请恢复为独立项目，或导出 JSON 备份。'));
  clearInterval(heartbeat);
 }
@@ -104,10 +115,12 @@ async function renewCurrentLock(){
  }
 }
 function startHeartbeat(){clearInterval(heartbeat);if(lock)heartbeat=setInterval(renewCurrentLock,5000);}
-function repaint(){const doc=core.getDocument();$('project-title').value=doc.title;$('revision').textContent=`r${doc.revision} / ${doc.slides.length} 页`;try{editor?.update?.(doc);}catch(error){notify('编辑器预览更新失败，文档仍保留：'+error.message,true);}}
-function edit(operations,expectedRevision=core?.getDocument().revision){if(closing&&!drainingEditor)throw new Error('项目正在切换，当前编辑已停止');if(!core||!lock)throw new Error('当前项目只读，请先获取写入权');const result=core.edit(operations,{expectedRevision});autosave.schedule(core.getDocument());repaint();return result;}
+function repaint(){const doc=core.getDocument();$('project-title').value=doc.title;$('revision').textContent=`r${doc.revision} / ${doc.slides.length} 页`;try{editor?.update?.(doc);syncWorkspaceChrome();}catch(error){notify('编辑器预览更新失败，文档仍保留：'+error.message,true);}}
+function rememberCloudDraft(doc){if(store.storage==='cloud')store.captureDraft(doc,persistedRevision).then(()=>cloudWorkspace?.refreshDrafts()).catch(error=>notify('本地恢复草稿未保存，请保留当前页面并导出备份：'+error.message,true));}
+function edit(operations,expectedRevision=core?.getDocument().revision){if(closing&&!drainingEditor)throw new Error('项目正在切换，当前编辑已停止');if(!core||!lock)throw new Error('当前项目只读，请先获取写入权');const result=core.edit(operations,{expectedRevision});rememberCloudDraft(result);autosave.schedule(core.getDocument());repaint();return result;}
 function clearCurrent(){
  stopLeaseWait();
+ document.body.classList.remove('editor-integrated','editor-attention');
  clearInterval(heartbeat);
  // Invalidate callbacks before calling a potentially re-entrant adapter destroy().
  session++;
@@ -140,8 +153,8 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
   },
   onState:(...args)=>{if(active())setState(...args);}
  });
- document.body.classList.add('editor-open');$('home-view').hidden=true;$('workspace-view').hidden=false;$('project-title').disabled=!lock||closing;$('takeover').hidden=!!lock;$('retry-save').hidden=true;
- $('save-state').textContent=lock?`已保存到本地 · 修订 ${persistedRevision}`:waitForLease?'只读 · 写入权暂被占用，等待释放；可主动接管。':'只读 · 暂未取得写入权，可主动接管或恢复为独立项目。';
+ document.body.classList.add('editor-open');$('home-view').hidden=true;$('workspace-view').hidden=false;$('project-title').disabled=!lock||closing;$('takeover').hidden=store.storage==='cloud'||!!lock;$('retry-save').hidden=true;
+ $('save-state').textContent=lock?`已保存到${store.storage==='cloud'?'云端':'本地'} · 修订 ${persistedRevision}`:store.storage==='cloud'?(waitForLease?'只读 · 云端写入权被占用，等待释放；不会抢占。':'只读 · 请先恢复本地草稿，或取回云端编辑。'):waitForLease?'只读 · 写入权暂被占用，等待释放；可主动接管。':'只读 · 暂未取得写入权，可主动接管或恢复为独立项目。';
  const origin=rec.document.metadata.spRecovery;
  const isRecovery=origin?.type==='independent-project'&&typeof origin.source?.title==='string';
  $('recovery-note').hidden=!isRecovery;
@@ -152,17 +165,19 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
  refreshRecoveryControls();
  let editorValid=true;
  const scoped=fn=>(...args)=>{if(!editorValid||!active()||(closing&&!drainingEditor))throw new Error('编辑器会话已失效');return fn(...args);};
- try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:()=>exportProject(),onHome:()=>home(),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
+ try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:format=>format==='json'?exportJSONBackup():exportProject(undefined,{audience:format==='audience'}),onHome:()=>home(),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
  catch(error){editorValid=false;$('editor-mount').textContent='编辑器加载失败，项目仍保留，可导出备份。'+error.message;editor=null;notify('编辑器加载失败：'+error.message,true);}
  repaint();startHeartbeat();if(waitForLease&&!lock)startLeaseWait();return core.getDocument();
 }
 async function openProjectNow(id,{takeover=false}={}){
  await releaseCurrent();
- const lease=await store.acquire(id,owner,{takeover});
+ const hasDraft=store.storage==='cloud'&&(await store.drafts.list(store.accountId,id)).length>0;
+ const lease=hasDraft?null:await store.acquire(id,owner,{takeover});
  let rec;
  try{rec=await store.get(id);if(!rec||rec.deletedAt)throw new Error('项目不存在或已在回收站');await store.markOpened(id);}
  catch(error){await store.release(lease).catch(()=>{});throw error;}
- return activateProject(rec,lease,{waitForLease:!takeover&&!lease});
+ if(hasDraft)notify('此项目有本地恢复草稿。已读取云端版本，请先将草稿恢复为独立项目。');
+ return activateProject(rec,lease,{waitForLease:!takeover&&!lease&&!hasDraft});
 }
 function recoverProject(){
  // Multiple clicks share one operation, even while queued behind navigation.
@@ -220,13 +235,13 @@ async function recoverProjectNow(){
   if(core){$('project-title').disabled=!lock;setEditorReadOnly(!lock);startHeartbeat();refreshRecoveryControls(!!recoveryError||!!autosave?.lastError);}
  }
 }
-function undo(){if(closing)throw new Error('项目正在切换');if(!lock)throw new Error('当前项目只读');const doc=core.undo({expectedRevision:core.getDocument().revision});autosave.schedule(core.getDocument());repaint();return doc;}
-function redo(){if(closing)throw new Error('项目正在切换');if(!lock)throw new Error('当前项目只读');const doc=core.redo({expectedRevision:core.getDocument().revision});autosave.schedule(core.getDocument());repaint();return doc;}
+function undo(){if(closing)throw new Error('项目正在切换');if(!lock)throw new Error('当前项目只读');const doc=core.undo({expectedRevision:core.getDocument().revision});rememberCloudDraft(doc);autosave.schedule(core.getDocument());repaint();return doc;}
+function redo(){if(closing)throw new Error('项目正在切换');if(!lock)throw new Error('当前项目只读');const doc=core.redo({expectedRevision:core.getDocument().revision});rememberCloudDraft(doc);autosave.schedule(core.getDocument());repaint();return doc;}
 function exportJSONBackup(){if(!core)throw new Error('请先打开项目');let rejected;try{rejected=editor?.getRecoveryDocument?.();}catch(error){const raw=editor?.getRejectedSnapshot?.();if(raw){notify('候选数据未通过Core校验，已导出原始编辑器JSON，请保留该文件。',true);return downloadJSONBackup(raw);}throw error;}if(rejected)return downloadJSONBackup(rejected);if(editor?.flush)return flushEditor().then(()=>downloadJSONBackup(core.getDocument()));return downloadJSONBackup(core.getDocument());}
 function downloadJSONBackup(doc){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}));a.download='SP-backup-'+(doc.id||'editor-recovery')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);return doc;}
 function download(html,title){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));a.download=(title.replace(/[\\/:*?"<>|]/g,'_').slice(0,100)||'SP')+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-async function exportProject(id){if(!id)await flushEditor();const doc=id?(await store.get(id)).document:core.getDocument();if(!id&&editor?.renderLegacyHTML){download(await exportEditorHTML(doc,await editor.renderLegacyHTML()),doc.title);notify('已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。浏览器与复杂动效仍需验收。');return;}const report=inspectRenderCompatibility(doc);download(await exportHTML(doc),doc.title);notify(!report.hasKnownGaps?'已生成可重新编辑版HTML，包含备注与批注，请勿直接作为公开分享版。':`已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。基础渲染另有 ${report.warnings.length} 项样式仅保留数据。`);}
-async function newProject(title,ratio='16:9'){const doc=createDocument({title,slides:[{id:crypto.randomUUID(),elements:[],animations:[]}],canvas:ratio==='4:3'?{width:960,height:720}:{width:1280,height:720}});await store.create(doc);await openProject(doc.id);announce();return doc;}
+async function exportProject(id,{audience=false}={}){if(!id)await flushEditor();const doc=id?(await store.get(id)).document:core.getDocument();if(!id&&editor?.renderLegacyHTML){download(await exportEditorHTML(doc,await editor.renderLegacyHTML(),{audience}),doc.title+(audience?'-分享':''));notify(audience?'已导出观众分享 HTML，仅含可见页面与放映内容，不含编辑项目数据。':'已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。浏览器与复杂动效仍需验收。');return;}const report=inspectRenderCompatibility(doc);if(audience&&report.hasKnownGaps)throw new Error('基础渲染无法完整分享此项目的样式或动效，请打开项目后使用原渲染器分享。');download(await exportHTML(doc,{audience}),doc.title+(audience?'-分享':''));notify(audience?`已导出观众分享 HTML（基础渲染），不含编辑项目数据。`:!report.hasKnownGaps?'已生成可重新编辑版HTML，包含备注与批注，请勿直接作为公开分享版。':`已导出可重新编辑版，包含备注与批注，请勿直接作为公开分享版。基础渲染另有 ${report.warnings.length} 项样式仅保留数据。`);}
+async function newProject(title,ratio='16:9'){const doc=createDocument({title,slides:[{id:crypto.randomUUID(),elements:[],animations:[]}],canvas:ratio==='4:3'?{width:960,height:720}:{width:1280,height:720}});const record=await store.create(doc);const opened=await openProject(record.id);announce();return opened;}
 function showImportStatus(message,error=false,projectId=null){
  $('import-status').hidden=false;$('import-status').classList.toggle('error',error);
  $('import-message').textContent=message;$('import-go-home').hidden=!projectId;
@@ -275,22 +290,27 @@ async function importFileNow(file){
   if(core){$('project-title').disabled=!lock;setEditorReadOnly(!lock);startHeartbeat();}
  }
 }
-async function mutateCard(id,action){const rec=await store.get(id);if(!rec)throw new Error('项目已不存在');if(action==='open')return openProject(id);if(action==='export')return exportProject(id);
+async function mutateCard(id,action){const rec=await store.get(id);if(!rec)throw new Error('项目已不存在');if(action==='open')return openProject(id);if(action==='export')return exportProject(id);if(action==='share')return exportProject(id,{audience:true});
  if(action==='copy'){const doc=structuredClone(rec.document);doc.id=crypto.randomUUID();doc.title+=' · 副本';doc.revision=0;doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;await store.create(doc);}
  if(action==='rename'){const title=prompt('项目名称',rec.document.title);if(title===null||!title.trim())return;const lease=await store.acquire(id,owner);if(!lease)throw new Error('项目正在另一个标签页编辑');try{const c=new DocumentCore(rec.document);c.edit([{type:'updateProject',properties:{title:title.trim()}}],{expectedRevision:rec.document.revision});await store.save(c.getDocument(),{expectedRevision:rec.document.revision,lock:lease});}finally{await store.release(lease);}}
  if(action==='delete'||action==='restore'){await store.setDeleted(id,action==='delete',{owner});notify(action==='delete'?'已移入回收站，可随时恢复。':'项目已恢复。');}
  announce();await renderProjects();
 }
-async function renderProjects(){const ticket=++listRender,trash=view==='trash';let records=await store.list({trash});if(ticket!==listRender)return;const search=$('search').value.trim().toLowerCase();records=records.filter(r=>r.document.title.toLowerCase().includes(search));records.sort($('sort').value==='title'?(a,b)=>a.document.title.localeCompare(b.document.title):(a,b)=>(view==='recent'?b.openedAt-a.openedAt:b.modifiedAt-a.modifiedAt));$('list-title').firstChild.textContent=trash?'回收站 ':view==='recent'?'最近使用 ':'我的项目 ';$('count').textContent=String(records.length).padStart(2,'0');$('empty').hidden=!!records.length;$('projects').replaceChildren();for(const rec of records){const doc=rec.document,card=document.createElement('article');card.className='project';card.dataset.projectId=doc.id;const cover=document.createElement('button');cover.className='cover';cover.setAttribute('aria-label','打开 '+doc.title);if(doc.slides.length){try{cover.innerHTML=renderSlideSVG(doc,doc.slides[0].id);}catch{cover.textContent='预览暂不可用';}}else{const mark=document.createElement('span');mark.className='empty-cover';mark.textContent='SUPERIOR POINT';cover.append(mark);}cover.disabled=trash;cover.onclick=guard(()=>openProject(doc.id));card.append(cover);const info=document.createElement('div');info.className='project-info';const title=document.createElement('h3');title.className='project-title';title.textContent=doc.title;info.append(title);const meta=document.createElement('div');meta.className='project-meta';meta.textContent=`${doc.slides.length} 页 · 本地 · ${new Date(rec.modifiedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;info.append(meta);const actions=document.createElement('div');actions.className='project-actions';for(const [label,action] of trash?[['恢复','restore']]:[['重命名','rename'],['复制','copy'],['导出','export'],['删除','delete']]){const b=document.createElement('button');b.textContent=label;if(action==='export')b.title='可重新编辑版：包含备注与批注，请勿直接作为公开分享版';b.dataset.action=action;b.onclick=guard(()=>mutateCard(doc.id,action));actions.append(b);}info.append(actions);card.append(info);$('projects').append(card);}}
+async function renderProjects(){const ticket=++listRender,trash=view==='trash';let records=await store.list({trash});if(ticket!==listRender)return;const search=$('search').value.trim().toLowerCase();records=records.filter(r=>r.document.title.toLowerCase().includes(search));records.sort($('sort').value==='title'?(a,b)=>a.document.title.localeCompare(b.document.title):(a,b)=>(view==='recent'?b.openedAt-a.openedAt:b.modifiedAt-a.modifiedAt));$('list-title').firstChild.textContent=trash?'回收站 ':view==='recent'?'最近使用 ':'我的项目 ';$('count').textContent=String(records.length).padStart(2,'0');$('empty').hidden=!!records.length;$('projects').replaceChildren();for(const rec of records){const doc=rec.document,card=document.createElement('article');card.className='project';card.dataset.projectId=doc.id;const cover=document.createElement('button');cover.className='cover';cover.style.setProperty('--cover-ratio',String(doc.canvas.width/doc.canvas.height));cover.setAttribute('aria-label','打开 '+doc.title);if(doc.slides.length){try{cover.innerHTML=renderSlideSVG(doc,doc.slides[0].id);}catch{cover.textContent='预览暂不可用';}}else{const mark=document.createElement('span');mark.className='empty-cover';mark.textContent='SUPERIOR POINT';cover.append(mark);}if(!trash){const hint=document.createElement('span');hint.className='cover-open-hint';hint.setAttribute('aria-hidden','true');hint.textContent='打开编辑 ↗';cover.append(hint);}cover.disabled=trash;cover.onclick=guard(()=>openProject(doc.id));card.append(cover);const info=document.createElement('div');info.className='project-info';const title=document.createElement('h3');title.className='project-title';title.textContent=doc.title;info.append(title);const meta=document.createElement('div');meta.className='project-meta';meta.textContent=`${doc.slides.length} 页 · ${rec.storage==='cloud'?'云端':'本地'} · ${new Date(rec.modifiedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;info.append(meta);const actions=document.createElement('div');actions.className='project-actions';for(const [label,action] of trash?[['恢复','restore']]:[['重命名','rename'],['复制','copy'],['备份 HTML','export'],['分享 HTML','share'],['删除','delete']]){const b=document.createElement('button');b.textContent=label;if(action==='export')b.title='可重新编辑版：包含备注与批注，请勿直接作为公开分享版';b.dataset.action=action;b.onclick=guard(()=>mutateCard(doc.id,action));actions.append(b);}info.append(actions);card.append(info);$('projects').append(card);}}
 function home(next=view){return navigate(()=>homeNow(next));}
 async function homeNow(next){await releaseCurrent();document.body.classList.remove('editor-open');view=next;$('workspace-view').hidden=true;$('home-view').hidden=false;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));await renderProjects();}
-$('open-example').onclick=guard(async()=>{const doc=fiveSlideDocument();doc.id=crypto.randomUUID();doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;await store.create(doc);await openProject(doc.id);});
+$('open-example').onclick=guard(async()=>{const doc=fiveSlideDocument();doc.id=crypto.randomUUID();doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;const record=await store.create(doc);await openProject(record.id);});
 $('new-project').onclick=()=>{$('new-dialog').showModal();$('new-title').select();};$('cancel-new').onclick=()=>$('new-dialog').close();$('new-form').onsubmit=guard(async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;try{await newProject($('new-title').value.trim()||'未命名演示文稿',$('new-ratio').value);$('new-dialog').close();}finally{button.disabled=false;}});
 const chooseImport=()=>{if(!importFlight)$('file-input').click();};
-$('import-top').onclick=chooseImport;$('file-input').onchange=guard(async e=>{try{await importFile(e.target.files[0]);}finally{e.target.value='';}});$('import-go-home').onclick=guard(()=>{$('search').value='';return home('home');});$('back-home').onclick=guard(()=>home());$('project-title').onchange=guard(e=>edit([{type:'updateProject',properties:{title:e.target.value.trim()||'未命名演示文稿'}}]));$('export-project').onclick=guard(()=>exportProject());$('retry-save').onclick=guard(()=>autosave?.flush());$('backup-json').onclick=guard(exportJSONBackup);$('recover-project').onclick=guard(recoverProject);$('takeover').onclick=guard(async()=>{const id=core.getDocument().id;if(autosave?.pending)throw new Error('请先恢复为独立项目以保存当前改动，再接管原项目。');await openProject(id,{takeover:true});announce();});$('search').oninput=guard(renderProjects);$('sort').onchange=guard(renderProjects);document.querySelectorAll('[data-view]').forEach(b=>b.onclick=guard(()=>home(b.dataset.view)));
+$('import-top').onclick=chooseImport;$('file-input').onchange=guard(async e=>{try{await importFile(e.target.files[0]);}finally{e.target.value='';}});$('import-go-home').onclick=guard(()=>{$('search').value='';return home('home');});$('back-home').onclick=guard(()=>home());$('project-title').onchange=guard(e=>edit([{type:'updateProject',properties:{title:e.target.value.trim()||'未命名演示文稿'}}]));$('export-project').onclick=guard(()=>exportProject());$('share-project').onclick=guard(()=>exportProject(undefined,{audience:true}));$('retry-save').onclick=guard(()=>autosave?.flush());$('backup-json').onclick=guard(exportJSONBackup);$('recover-project').onclick=guard(recoverProject);$('takeover').onclick=guard(async()=>{const id=core.getDocument().id;if(autosave?.pending)throw new Error('请先恢复为独立项目以保存当前改动，再接管原项目。');await openProject(id,{takeover:true});announce();});$('search').oninput=guard(renderProjects);$('sort').onchange=guard(renderProjects);document.querySelectorAll('[data-view]').forEach(b=>b.onclick=guard(()=>home(b.dataset.view)));
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='o'){e.preventDefault();chooseImport();}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();guard(()=>autosave?.flush())();}});
 window.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();document.body.classList.add('dragging');}});window.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('dragging');});window.addEventListener('drop',guard(async e=>{e.preventDefault();document.body.classList.remove('dragging');await importFile(e.dataTransfer.files[0]);}));
 window.addEventListener('beforeunload',e=>{if(importFlight||recovering||autosave?.pending||autosave?.running){e.preventDefault();e.returnValue='';}});window.addEventListener('pagehide',()=>{store.release(lock).catch(()=>{});});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')autosave?.flush().catch(()=>{});});
 channel?.addEventListener('message',async e=>{if(e.data.owner===owner)return;if(!core)await renderProjects();else if(lock&&e.data.projectId===core.getDocument().id)await renewCurrentLock();});
-window.SPFramework={ready:false,store,newProject,openProject,edit,undo,redo,flush:()=>autosave?.flush(),getDocument:()=>core?.getDocument(),getState:()=>({readOnly:!lock,persistedRevision,saveError:autosave?.lastError?.message,recoveryError:recoveryError?.message,recovering,importing:!!importFlight,pending:!!autosave?.pending,saving:!!autosave?.running}),recoverProject,exportJSONBackup,importFile,home,exportProject,registerEditorAdapter};
-store.open().then(()=>home()).then(()=>window.SPFramework.ready=true).catch(e=>{notify('无法打开本地存储：'+e.message,true);$('save-state').textContent='存储不可用';});
+async function switchStore(next){return navigate(async()=>{if(store===next){await next.open();return;}try{await releaseCurrent();}catch(error){if(store.storage!=='cloud'||!core)throw error;const previous=store;closing=true;setEditorReadOnly(true);$('project-title').disabled=true;try{await previous.captureDraft(core.getDocument(),persistedRevision);autosave.pause();await autosave.waitForIdle();autosave.cancel();await previous.release(lock).catch(()=>{});clearCurrent();notify('云端未确认的修改已保留为本地恢复草稿。');}finally{closing=false;if(core){$('project-title').disabled=!lock;setEditorReadOnly(!lock);}}}store=next;await store.open();await localStore.open();await homeNow('home');syncWorkspaceChrome();});}
+function handoff(){return navigate(async()=>{if(store.storage!=='cloud'||!core||!lock)throw new Error('请先打开可编辑的云端项目');await flushEditor();closing=true;setEditorReadOnly(true);try{await autosave.flush();await store.release(lock);lock=null;clearInterval(heartbeat);$('project-title').disabled=true;$('save-state').textContent='已保存到云端 · 已释放写入权，可交给 AI；当前只读。';syncWorkspaceChrome();notify('云端保存已确认，写入权已释放。');}finally{closing=false;setEditorReadOnly(!lock);}});}
+async function resume(){if(!core||store.storage!=='cloud')throw new Error('请先打开云端项目');if((await store.drafts.list(store.accountId,core.getDocument().id)).length)throw new Error('请先将本地草稿恢复为独立项目，再取回原项目编辑。');return openProject(core.getDocument().id);}
+async function recoverCloudDraft(draft){if(store.storage!=='cloud'||draft.accountId!==store.accountId)throw new Error('请登录草稿所属云端账号');if(core?.getDocument().id===draft.projectId&&(autosave?.pending||autosave?.running||autosave?.lastError||recoveryError)){const selected=store,document=await recoverProject();await selected.drafts.remove(selected.accountId,draft.key);return {id:document.id,alreadyOpened:true};}return store.recoverDraft(draft);}
+window.SPFramework={ready:false,get store(){return store;},newProject,openProject,edit,undo,redo,flush:()=>autosave?.flush(),getDocument:()=>core?.getDocument(),getState:()=>({storage:store.storage||'local',readOnly:!lock,persistedRevision,saveError:autosave?.lastError?.message,recoveryError:recoveryError?.message,recovering,importing:!!importFlight,pending:!!autosave?.pending,saving:!!autosave?.running}),recoverProject,exportJSONBackup,importFile,home,exportProject,registerEditorAdapter,switchStore,handoff,resume};
+cloudWorkspace=initCloudWorkspace({getStore:()=>store,getLocalStore:()=>localStore,switchStore,openProject,recoverDraft:recoverCloudDraft,handoff,resume,notify});
+cloudWorkspace.initialize().then(async selected=>{store=selected;await localStore.open();await store.open();await home();await cloudWorkspace.refresh();window.SPFramework.ready=true;}).catch(e=>{notify('无法打开项目存储：'+e.message,true);$('save-state').textContent='存储不可用';});

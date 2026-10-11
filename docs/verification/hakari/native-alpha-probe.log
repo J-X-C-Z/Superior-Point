@@ -1,0 +1,4 @@
+{"version":"0.1.0-alpha","node":"v22.23.3","platform":"linux","arch":"x64","nodeELF":true,"argon2Verify":true}
+sha256:681e1721fced48859d00d799e1c971eb6d1c2b6b39cb2dd96829d4dbba2e959c linux/amd64
+
+remote_exit 0

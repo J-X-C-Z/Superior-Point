@@ -5,11 +5,14 @@
   let spBridgeStarted=false,spBridgeReadOnly=true,spBridgeRevision=0,spBridgeEpoch=0;
   let spBridgeBaseline=null,spBridgeLatest='',spBridgeSending=null,spBridgeQueue=[],spBridgeSequence=0;
   let spBridgeFailure=null,spBridgeCapturing=false;
+  let v15Dragging=null;
   let spBridgeWaiters=[],spBridgeCommandSerial=Promise.resolve();
   const spBridgeClone=value=>JSON.parse(JSON.stringify(value));
   const spBridgePost=(type,data={})=>parent.postMessage({spCandidate:1,channel:spBridgeChannel,type,...data},'*');
   function spBridgeStatus(){
     if(!spBridgeStarted)return;
+    // End the gesture at its current draft; cancelling would discard recovery data.
+    if(spBridgeReadOnly&&(drag||timingDrag||v15Dragging)){drag=null;timingDrag=null;v15Dragging=null;renderCanvas();renderTimeline();}
     const pending=!!spBridgeSending||spBridgeQueue.length>0;
     window.__SPEmbeddedGate.locked=spBridgeReadOnly||pending;
     const status=$('#save-status');if(status)status.textContent=spBridgeFailure?'修改未提交 · 已保留恢复数据':spBridgeReadOnly?'只读 · 写入权由工作台管理':pending?'正在提交修改…':'修改已交给工作台 · 保存状态见上方';

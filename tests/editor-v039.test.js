@@ -139,3 +139,26 @@ test('v039 input-event simulation: rejecting the first snapshot preserves later 
   const blocked=new h.window.InputEvent('beforeinput',{bubbles:true,cancelable:true,data:'x'});notes.dispatchEvent(blocked);assert.equal(blocked.defaultPrevented,true,'actual read-only state must still gate edits');
  }finally{h.close();}
 });
+
+test('workspace menus route backup and audience formats, while parent reports persistence',async()=>{
+ const h=await candidateHarness(project());
+ try{
+  const doc=h.window.document;
+  assert.ok(doc.querySelector('.sp-workspace-share'));
+  for(const [action,format] of [['sp-workspace-json','json'],['sp-workspace-audience','audience']]){
+   doc.querySelector(`[data-action="${action}"]`).click();
+   await h.until(()=>h.messages.some(m=>m.type==='export'&&m.format===format));
+  }
+  h.send('workspaceState',{state:{text:'已保存到本地 · 修订 0',failed:false,revision:0}});
+  assert.equal(doc.querySelector('#save-status').textContent,'已保存到本地 · 修订 0');
+  h.send('workspaceState',{state:{text:'保存失败 · 磁盘空间不足',failed:true,revision:0,details:'恢复副本保留原项目。'}});
+  assert.equal(doc.querySelector('#save-status').textContent,'保存失败 · 磁盘空间不足');
+  assert.equal(doc.querySelector('#save-status').dataset.failed,'true');
+  assert.equal(doc.querySelector('.sp-workspace-details').textContent,'恢复副本保留原项目。');
+  assert.equal(doc.querySelector('.sp-workspace-details').hidden,false);
+  doc.querySelector('[data-tab="文件"]').click();
+  for(const action of ['save-json','sp-workspace-json','sp-workspace-audience','export-reveal','open'])assert.ok(doc.querySelector(`#ribbon [data-action="${action}"]`));
+  assert.equal(doc.querySelector('#notes-panel').classList.contains('collapsed'),true);
+  assert.equal(edits(h).length,0);assert.deepEqual(h.errors,[]);
+ }finally{h.close();}
+});

@@ -1,7 +1,7 @@
 {
   "source": "editor-v038.source.html",
   "sourceSHA256": "6bb7bd26656e3af3650f5aed638978148fa0d990747fae1c0b259d56fe56de1e",
-  "candidateSHA256": "b0c517c510c265dba50f5f10d1adb75ff57d08f4a84ca37657d5cc9a8aff1f0d",
+  "candidateSHA256": "e8c9c5e59ab04cf916f8847494ec958cefdb10208a7f8f10289f22a16ea1f825",
   "patches": [
     "embedded CSP + early interaction gate",
     "isolated preference storage",
@@ -29,6 +29,7 @@
     "guard async picture insertion",
     "guard async picture replacement",
     "stage picture batch before one commit",
+    "bridge-owned timeline gesture",
     "explicit parent initialization",
     "candidate visible identity"
   ],

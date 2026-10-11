@@ -20,7 +20,7 @@ function replace(label,needle,replacement){
  html=html.replace(needle,()=>replacement);patches.push(label);
 }
 const csp="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'";
-const gate=`window.__SPEmbeddedGate={locked:true};for(const kind of ['click','dblclick','pointerdown','pointerup','mousedown','mouseup','keydown','beforeinput','input','change','paste','cut','drop','dragstart'])window.addEventListener(kind,e=>{if(window.__SPEmbeddedGate.locked){e.preventDefault();e.stopImmediatePropagation();}},true);`;
+const gate=`window.__SPEmbeddedGate={locked:true};for(const kind of ['click','dblclick','pointerdown','pointermove','pointerup','mousedown','mouseup','keydown','beforeinput','input','change','paste','cut','drop','dragstart'])window.addEventListener(kind,e=>{if(window.__SPEmbeddedGate.locked){e.preventDefault();e.stopImmediatePropagation();}},true);`;
 const escapeScript=s=>s.replace(/<\/script/gi,'<\\/script');
 replace('embedded CSP + early interaction gate','<head>\n<meta charset="utf-8">',`<head>\n<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><script>${gate}</script><style id="sp-candidate-reveal-css">${revealCSS}</style><script id="sp-candidate-reveal-code">${escapeScript(revealJS)}</script>`);
 // Editor UI preferences remain local to this embedded session, not host origin storage.
@@ -53,6 +53,8 @@ patches.push('parent undo controls');
 replace('guard async picture insertion',sourceBetween('  async function addPicture(file,at=null,options={}){','  // Export editable PowerPoint.'),'async function addPicture(file,at=null,options={}){return spBridgeInsertPicture(file,at,options); }');
 replace('guard async picture replacement',sourceBetween('  async function replacePicture(file){','  async function addPicture(file,at=null,options={}){'),'async function replacePicture(file){return spBridgeReplacePicture(file); }');
 replace('stage picture batch before one commit',sourceBetween("    $('#picture-upload').addEventListener('change',async e=>{","    $('#media-upload').addEventListener('change',"),"$('#picture-upload').addEventListener('change',e=>{const files=[...(e.target.files||[])].slice(0,6);e.target.value='';spBridgeInsertPictures(files);});");
+// Let the bridge end the timeline gesture when its writer session ends.
+replace('bridge-owned timeline gesture','    let v15Dragging=null;','');
 const bridge=await read('tools/editor-v038-bridge.inc.js');
 const pictures=await read('tools/editor-v038-image.inc.js');
 // Reuse the canonical raster byte inspector rather than a divergent iframe copy.

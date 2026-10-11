@@ -1,0 +1,25 @@
+✖ deployment roles: actual initializer, independent migrations, app DML without DDL, and non-superuser public-schema backup restore (1175.492167ms)
+ℹ Error: Test "deployment roles: actual initializer, independent migrations, app DML without DDL, and non-superuser public-schema backup restore" at tests/service/deployment-roles.test.ts:1:652 generated asynchronous activity after the test ended. This activity created the error "error: terminating connection due to administrator command" and would have caused the test to fail, but instead triggered an uncaughtException event.
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1440.169417
+
+✖ failing tests:
+
+test at tests/service/deployment-roles.test.ts:1:652
+✖ deployment roles: actual initializer, independent migrations, app DML without DDL, and non-superuser public-schema backup restore (1175.492167ms)
+  error: terminating connection due to administrator command
+      at parseErrorMessage (/Users/jxcz/.codex/.chatgpt-projects/g-p-6acaf26c67908191983e413a278752ce/Superior-Point/node_modules/pg-protocol/dist/parser.js:306:11)
+      at Parser.handlePacket (/Users/jxcz/.codex/.chatgpt-projects/g-p-6acaf26c67908191983e413a278752ce/Superior-Point/node_modules/pg-protocol/dist/parser.js:143:27)
+      at Parser.parse (/Users/jxcz/.codex/.chatgpt-projects/g-p-6acaf26c67908191983e413a278752ce/Superior-Point/node_modules/pg-protocol/dist/parser.js:37:38)
+      at Socket.<anonymous> (/Users/jxcz/.codex/.chatgpt-projects/g-p-6acaf26c67908191983e413a278752ce/Superior-Point/node_modules/pg-protocol/dist/index.js:12:42)
+      at Socket.emit (node:events:514:20)
+      at addChunk (node:internal/streams/readable:575:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:526:3)
+      at Readable.push (node:internal/streams/readable:406:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:189:23)
