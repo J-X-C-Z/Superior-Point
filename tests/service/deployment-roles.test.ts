@@ -39,7 +39,11 @@ test('deployment roles: actual initializer, independent migrations, app DML with
   await backup.start(actor);await backup.waitForIdle();const result=await backup.list(actor);assert.equal(result.jobs[0].status,'verified',JSON.stringify(result));const check=await backup.restoreChecks(actor);assert.equal(check.projectCount,1);assert.equal(check.assetCount,1);
   assert.deepEqual((await projects.get(actor,document.id)).extensions,{unknownData:{preserved:[1,'x']}});
  }finally{
-  await Promise.all(pools.map(pool=>pool.end()));if(created)await control.query(`DROP DATABASE "${database}" WITH (FORCE)`);
+  await Promise.all(pools.map(async pool=>{
+   // pg-pool end() resolves before client sockets close; wait for their remove events before dropping the database.
+   const disconnected=new Promise<void>(resolve=>{let remaining=pool.totalCount;if(!remaining)resolve();else pool.on('remove',()=>{if(--remaining===0)resolve();});});
+   await pool.end();await disconnected;
+  }));if(created)await control.query(`DROP DATABASE "${database}"`);
   for(const role of roles){assert.match(role,/^sp_roles_(app|migrator|restore)_[a-f0-9]{32}$/);await control.query(`DROP ROLE IF EXISTS "${role}"`);}
   await control.end();await rm(root,{recursive:true,force:true});
  }
