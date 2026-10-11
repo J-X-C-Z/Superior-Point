@@ -40,3 +40,23 @@ body.editor-integrated.editor-attention #back-home{padding:5px 9px;font-size:11p
 .new-card:focus-visible .home-dots i{transform:translate(var(--slide-x),var(--slide-y));opacity:.9;transition:none}
 @media(prefers-reduced-motion:reduce){.home-dots i{transition:none!important;transform:translate(var(--slide-x),var(--slide-y))}}
 @media(max-width:660px){.home-dots{right:13px;top:21px;transform:scale(.65);transform-origin:top right}}
+
+/* The whole card previews its open action while keeping secondary actions in place. */
+.project{position:relative}
+.cover{overflow:hidden}
+.cover-open-hint{position:absolute;right:12px;bottom:12px;padding:7px 10px;background:var(--ink);color:var(--white);font-size:10px;opacity:0;pointer-events:none;transform:translateY(4px)}
+.project:has(.cover:focus-visible){border-color:var(--accent)}
+.cover:focus-visible .cover-open-hint{opacity:1;transform:none}
+@media(hover:hover) and (pointer:fine){
+ .project{transition:transform 160ms cubic-bezier(.23,1,.32,1),border-color 160ms ease,box-shadow 160ms ease}
+ .cover svg{transition:transform 180ms cubic-bezier(.23,1,.32,1)}
+ .cover-open-hint{transition:opacity 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1)}
+ .project:has(.cover:not(:disabled)):hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 6px 16px #20221e0d}
+ .project:has(.cover:not(:disabled)):hover .cover svg{transform:scale(1.025)}
+ .project:has(.cover:not(:disabled)):hover .cover-open-hint{opacity:1;transform:none}
+ .project:hover .project-actions button{color:var(--ink)}
+ .project .project-actions button:hover{color:var(--accent)}
+}
+@media(prefers-reduced-motion:reduce){
+ .project,.cover svg,.cover-open-hint{transition:none!important;transform:none!important}
+}
