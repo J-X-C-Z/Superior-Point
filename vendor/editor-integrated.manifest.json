@@ -1,7 +1,7 @@
 {
   "source": "editor-v039.source.html",
   "sourceSHA256": "74ae7d23c75e294d0821a2a89de1ee9068395f3dd050c27e1621c2ec62e76a6b",
-  "candidateSHA256": "a2b25042342c5cbff710b1b51a1c3f2de593f6aac6c831251693475a48841c8a",
+  "candidateSHA256": "1c9bc9812d1f99da9e402863ef5108744ff277ef67fcfaa7c7e53c5d7af99f1f",
   "patches": [
     "shared object animation library",
     "directional page transition library",

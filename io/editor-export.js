@@ -27,7 +27,7 @@ export async function exportEditorHTML(input,renderedHTML,{domDocument=globalThi
   reveal.querySelectorAll('aside.notes,[data-v18-marker],style,script').forEach(node=>node.remove());
   template.content.replaceChildren(reveal);
  }
- const playbackAttributes=new Set('data-slide-id data-transition data-transition-speed data-background-transition data-background-color data-click-advance data-autoslide data-auto-animate data-auto-animate-duration data-auto-animate-easing data-auto-animate-id data-auto-animate-restart data-auto-animate-target data-fragment-index data-id data-v15-object-id data-v15-fx data-v15-kind data-v15-effect data-v15-trigger data-v15-delay data-v15-duration data-v15-easing'.split(' '));
+ const playbackAttributes=new Set('data-slide-id data-sp-transition-exit data-transition data-transition-speed data-background-transition data-background-color data-click-advance data-autoslide data-auto-animate data-auto-animate-duration data-auto-animate-easing data-auto-animate-id data-auto-animate-restart data-auto-animate-target data-fragment-index data-id data-v15-object-id data-v15-fx data-v15-kind data-v15-effect data-v15-trigger data-v15-delay data-v15-duration data-v15-easing'.split(' '));
  const allowed=new Set('style div section article span p br b strong i em u s small h1 h2 h3 h4 h5 h6 ul ol li table thead tbody tr th td img svg g defs path rect circle ellipse line polyline polygon text tspan marker clippath lineargradient radialgradient stop pattern use a video audio source'.split(' '));
  for(const el of [...template.content.querySelectorAll('*')]){
   if(!allowed.has(el.localName.toLowerCase())){el.remove();continue;}

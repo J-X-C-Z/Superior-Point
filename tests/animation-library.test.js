@@ -11,11 +11,11 @@ const catalog=runInNewContext(between(source,'  const V15_EFFECTS={','  const V1
 const editor=runInNewContext(between(source,'  function v15Frames(f,base=1){','  function v15StopPreview(){')+'v15Frames;');
 const playback=runInNewContext(between(source,'      function styleFrames(m,alpha){','      function sync(sec){')+'styleFrames;');
 const plain=value=>JSON.parse(JSON.stringify(value));
-function sample(kind,effect,time,reduce=false){
+function sample(kind,effect,time,reduce=false,tracks=null){
   const f={kind,effect,duration:1000,easing:'linear'},obj={id:'o',opacity:.8};
   const node={dataset:{id:'o'},style:{opacity:'.8',translate:'',scale:'',rotate:'',filter:'',clipPath:''}};
   const context={clamp:(n,min,max)=>Math.max(min,Math.min(max,n)),v15StopPreview(){},v36PreviewFrame:0,
-    cancelAnimationFrame(){},v24Schedule:()=>({max:2000,rows:[{o:obj,effect:f,start:0}]}),
+    cancelAnimationFrame(){},v24Schedule:()=>({max:3000,rows:tracks?tracks.map(track=>({o:obj,effect:{duration:1000,easing:'linear',...track.effect},start:track.start})):[{o:obj,effect:f,start:0}]}),
     v36MotionStyles:new WeakMap(),v36StyleKeys:['opacity','translate','scale','rotate','filter','clipPath'],
     curSlide:()=>({objects:[obj]}),matchMedia:()=>({matches:reduce}),$$:sel=>sel==='#stage-mount .slide-object'?[node]:[],$:()=>null};
   runInNewContext(between(source,'  function v36MotionEase(f,raw){','  function v24Stop(){')+
@@ -50,7 +50,7 @@ test('editor and self-contained exported player use identical frames for every c
 
 test('timeline samples the same directional, opacity and shake frames, and reduced motion settles',()=>{
   for(const kind of ['entrance','exit']){
-    for(const [effect] of catalog[kind]){
+    for(const [effect] of catalog[kind].filter(([id])=>['fade','float','zoom','fade-left','fade-right','wipe','fade-up','fade-down','wipe-left','wipe-right','wipe-top','wipe-bottom'].includes(id))){
       const frames=editor({kind,effect},.8),middle=sample(kind,effect,500);
       assert.equal(Number(middle.opacity),.4,`${kind}/${effect} opacity`);
       const first=frames[0],last=frames.at(-1);
@@ -68,6 +68,49 @@ test('timeline samples the same directional, opacity and shake frames, and reduc
   assert.equal(Number(sample('emphasis','blink',1000).opacity),.8);
   for(const [time,x] of [[0,0],[250,-15],[500,15],[750,-8],[1000,0]])assert.equal(sample('emphasis','shake',time).translate,`${x.toFixed(2)}px 0.00px`);
   assert.equal(sample('emphasis','highlight-red',500).filter,'drop-shadow(0 0 15.00px #d75c3c)');
+});
+
+test('PowerPoint-inspired additions have distinct frames and their timeline samples match',()=>{
+  assert.equal(catalog.entrance.length,20);assert.equal(catalog.exit.length,19);assert.equal(catalog.emphasis.length,7);
+  for(const kind of ['entrance','exit'])for(const effect of ['split-h','split-v','stretch-h','stretch-v','bounce','swivel','grow-turn']){
+    const frames=editor({kind,effect},.8);
+    for(const time of [0,125,250,500,800,1000]){
+      const phase=time/1000*(frames.length-1),i=Math.min(Math.floor(phase),frames.length-2),p=phase-i,a=frames[i],b=frames[i+1];
+      const mix=(x,y)=>x+(y-x)*p,style=sample(kind,effect,time);
+      assert.ok(Math.abs(Number(style.opacity)-mix(a.opacity??.8,b.opacity??.8))<1e-9,`${kind}/${effect}/${time} opacity`);
+      const xy=frame=>String(frame.translate||'0 0').split(' ').map(parseFloat),x=xy(a),y=xy(b);
+      assert.equal(style.translate,`${mix(x[0],y[0]).toFixed(2)}px ${mix(x[1],y[1]).toFixed(2)}px`);
+      const scale=frame=>{const v=String(frame.scale??1).split(' ').map(Number);return [v[0],v[1]??v[0]];};
+      const sa=scale(a),sb=scale(b),expected=[mix(sa[0],sb[0]),mix(sa[1],sb[1])];
+      const actual=style.scale.split(' ').map(Number);assert.ok(Math.abs(actual[0]-expected[0])<1e-9);assert.ok(Math.abs((actual[1]??actual[0])-expected[1])<1e-9);
+      if(a.clipPath){const ca=a.clipPath.match(/[\d.]+/g).map(Number),cb=b.clipPath.match(/[\d.]+/g).map(Number);
+        assert.equal(style.clipPath,'inset('+ca.map((v,n)=>mix(v,cb[n]).toFixed(3)+'%').join(' ')+')');}
+      if(a.rotate){const ra=a.rotate.split(' '),rb=b.rotate.split(' '),axis=ra.length>1?ra[0]+' ':'';
+        assert.equal(style.rotate,axis+mix(parseFloat(ra.at(-1)),parseFloat(rb.at(-1))).toFixed(2)+'deg');}
+    }
+    const reduced=sample(kind,effect,250,true),last=frames.at(-1);
+    assert.equal(Number(reduced.opacity),last.opacity??.8);
+  }
+  for(const time of [0,1,250,999,1000]){
+    assert.equal(Number(sample('entrance','appear',time).opacity),.8);
+    assert.equal(Number(sample('exit','disappear',time).opacity),0);
+  }
+  assert.equal(editor({kind:'entrance',effect:'appear'})[0].easing,'steps(1,start)');
+  assert.equal(editor({kind:'exit',effect:'disappear'})[0].easing,'steps(1,start)');
+  for(const [time,angle] of [[0,0],[200,-8],[400,8],[600,-4],[800,4],[1000,0]])assert.equal(sample('emphasis','teeter',time).rotate,angle.toFixed(2)+'deg');
+  assert.notDeepEqual(plain(editor({kind:'entrance',effect:'split-h'})),plain(editor({kind:'entrance',effect:'split-v'})));
+  assert.notDeepEqual(plain(editor({kind:'entrance',effect:'stretch-h'})),plain(editor({kind:'entrance',effect:'zoom'})));
+});
+
+test('rotation axis follows the current rotating track after a completed swivel',()=>{
+  const swivel={effect:{kind:'entrance',effect:'swivel'},start:0};
+  for(const [effect,angle] of [['spin',72],['teeter',-8]]){
+    const tracks=[swivel,{effect:{kind:'emphasis',effect},start:1000}];
+    const style=sample('entrance','swivel',1200,false,tracks);
+    assert.equal(style.rotate,angle.toFixed(2)+'deg',effect+' rotates around Z');
+  }
+  const noRotate=[swivel,{effect:{kind:'entrance',effect:'fade'},start:1000}];
+  assert.equal(sample('entrance','swivel',1200,false,noRotate).rotate,'y 0.00deg','non-rotating track does not change axis');
 });
 
 test('transparent objects stay transparent and delayed entrances keep their initial frame',()=>{
