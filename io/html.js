@@ -1,6 +1,7 @@
 import {inspectRasterDataURL} from './image-assets.js';
 import { importDocument } from '../core/document-core.js';
 import { revealJS, revealCSS } from '../vendor/reveal-bundle.js';
+import {hiddenElementIds} from './visibility.js';
 
 export const RENDERER_LIMITATIONS = Object.freeze([
   'Generic framework preview only; the authoritative editor adapter is not integrated.',
@@ -18,7 +19,8 @@ const transition = v => ['none','fade','slide','convex','concave','zoom'].includ
 export function inspectRenderCompatibility(document) {
  const doc=importDocument(document),warnings=[];
  const add=(slide,el,properties,message)=>warnings.push({code:'RENDER_UNSUPPORTED',slideId:slide.id,elementId:el.id,properties,message});
- for(const slide of doc.slides)for(const el of slide.elements){
+ for(const slide of doc.slides){const hidden=hiddenElementIds(slide);for(const el of slide.elements){
+  if(hidden.has(el.id))continue;
   if(!['text','shape','image','connector','line','table','chart'].includes(el.type))add(slide,el,['type'],'Generic preview shows a placeholder for '+el.type);
   if(el.type==='image'){
    const props=[];if(Array.isArray(el.crop)&&el.crop.some(v=>v!==0))props.push('crop');
@@ -31,7 +33,8 @@ export function inspectRenderCompatibility(document) {
   if(el.motionEffects?.length)add(slide,el,['motionEffects'],'Legacy motion effects require the authoritative animation runtime');
   const textProps=[];if(el.runs?.length)textProps.push('runs');if(el.fontFamily&&!['Arial','sans-serif'].includes(el.fontFamily))textProps.push('fontFamily');if(el.align&&el.align!=='left')textProps.push('align');if(el.bold&&el.fontWeight===undefined)textProps.push('bold');if(textProps.length)add(slide,el,textProps,'Text formatting needs the authoritative editor renderer');
  }
- for(const slide of doc.slides)for(const animation of slide.animations||[])if(!['appear','fragment','fade-in'].includes(animation.type)||animation.trigger!=='click'||animation.delay>0)add(slide,{id:animation.targetId},['animations'],'Only ordered click/appear fragments are supported');
+ for(const animation of slide.animations||[])if(!hidden.has(animation.targetId)&&(!['appear','fragment','fade-in'].includes(animation.type)||animation.trigger!=='click'||animation.delay>0))add(slide,{id:animation.targetId},['animations'],'Only ordered click/appear fragments are supported');
+ }
  return {hasKnownGaps:warnings.length>0,warnings,scope:'Known generic-renderer gaps only; not a complete visual-fidelity check',limitations:[...RENDERER_LIMITATIONS]};
 }
 
@@ -97,8 +100,9 @@ function elementSVG(doc,el,fragmentIndex) {
   return `<g opacity="${Math.max(0,Math.min(1,num(el.opacity,1)))}" data-element-id="${esc(el.id)}"${fragmentIndex == null?'':` class="fragment" data-fragment-index="${fragmentIndex}"`}${el.rotation?` transform="rotate(${num(el.rotation)} ${x+w/2} ${y+h/2})"`:''}>${body}</g>`;
 }
 function slideSVG(doc,slide,fragments=false) {
+  const hidden=hiddenElementIds(slide);
   const animations=(slide.animations||[]).filter(a=>['appear','fragment','fade-in'].includes(a.type));
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${doc.canvas.width}" height="${doc.canvas.height}" viewBox="0 0 ${doc.canvas.width} ${doc.canvas.height}" role="img" aria-label="${esc(slide.title||doc.title)}"><title>${esc(slide.title||doc.title)}</title><desc>${esc(RENDERER_LIMITATIONS.join(' '))}</desc><defs><marker id="sp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5272a1"/></marker></defs><rect width="100%" height="100%" fill="${color(typeof slide.background==='string'?slide.background:slide.background?.color??slide.bg,'#ffffff')}"/>${slide.elements.map(el=>{const a=animations.find(a=>(a.targetId??a.targetElementId??a.elementId??a.target)===el.id);return elementSVG(doc,el,fragments ? (el.fragment===true?num(el.fragmentIndex,0):a?num(a.order,animations.indexOf(a)):null):null);}).join('')}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${doc.canvas.width}" height="${doc.canvas.height}" viewBox="0 0 ${doc.canvas.width} ${doc.canvas.height}" role="img" aria-label="${esc(slide.title||doc.title)}"><title>${esc(slide.title||doc.title)}</title><desc>${esc(RENDERER_LIMITATIONS.join(' '))}</desc><defs><marker id="sp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5272a1"/></marker></defs><rect width="100%" height="100%" fill="${color(typeof slide.background==='string'?slide.background:slide.background?.color??slide.bg,'#ffffff')}"/>${slide.elements.filter(el=>!hidden.has(el.id)).map(el=>{const a=animations.find(a=>(a.targetId??a.targetElementId??a.elementId??a.target)===el.id);return elementSVG(doc,el,fragments ? (el.fragment===true?num(el.fragmentIndex,0):a?num(a.order,animations.indexOf(a)):null):null);}).join('')}</svg>`;
 }
 export function renderSlideSVG(document,slideId) {
   const doc=importDocument(document);assertSafeResources(doc);

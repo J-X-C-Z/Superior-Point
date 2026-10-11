@@ -1,5 +1,6 @@
 import {importDocument} from '../core/document-core.js';
 import {exportHTML} from './html.js';
+import {hiddenElementIds} from './visibility.js';
 import {revealJS,revealCSS} from '../vendor/reveal-bundle.js';
 import {legacyPlaybackBootstrap,legacyPresentationCSS} from '../vendor/editor-integrated-playback.js';
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -24,6 +25,10 @@ export async function exportEditorHTML(input,renderedHTML,{domDocument=globalThi
   for(const node of [...slides.childNodes])if(node.nodeType!==1||node.localName!=='section')node.remove();
   const visible=new Set(doc.slides.filter(slide=>!slide.hidden).map(slide=>slide.id));
   for(const section of slides.children)if(!visible.has(section.dataset.slideId))section.remove();
+  for(const section of slides.children){
+   const hidden=hiddenElementIds(doc.slides.find(slide=>slide.id===section.dataset.slideId));
+   for(const node of section.querySelectorAll('[data-id],[data-element-id],[data-v15-object-id]'))if(['data-id','data-element-id','data-v15-object-id'].some(key=>hidden.has(node.getAttribute(key))))node.remove();
+  }
   reveal.querySelectorAll('aside.notes,[data-v18-marker],style,script').forEach(node=>node.remove());
   template.content.replaceChildren(reveal);
  }
