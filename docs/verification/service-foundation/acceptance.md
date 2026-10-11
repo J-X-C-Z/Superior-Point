@@ -2,7 +2,7 @@
 
 ## 验收对象
 
-Superior Point服务路线图v1.0第一批SP-001～006，补充SP-007的本地管理员初始化/用户创建API。基线提交 `a10a4e3cb54d55023a40f5ea6ecf4d754b14615c`。本次全部新增实现位于隔离副本，原工作目录及用户IndexedDB项目未修改。
+Superior Point服务路线图v1.0第一批SP-001～006，补充SP-007的本地管理员初始化/用户创建API。基线提交 `a10a4e3cb54d55023a40f5ea6ecf4d754b14615c`。实现代码提交 `c9fb9d39537079c93c1f6ea45a8262498ba35ed0`；后续仅整理路线图引用副本格式和补录验收提交。测试对应此提交的实现文件。本次全部新增实现位于隔离副本，原工作目录及用户IndexedDB项目未修改。
 
 工作目录：`/Users/jxcz/.codex/.chatgpt-projects/g-p-6acaf26c67908191983e413a278752ce/Superior-Point`。
 
