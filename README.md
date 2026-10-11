@@ -2,7 +2,7 @@
 
 演示文稿工作台，集成 v0.39 编辑器。`0.1.0-alpha` 是可试用的预发布候选，不代表稳定版或完整路线图交付；产品版本与内部编辑器版本分别编号。
 
-当前 v1.1 服务开发分支新增原生 Streamable HTTP MCP、OAuth 授权码 + PKCE S256，以及管理员工具调用和资源统计；共享云端 MCP 现为 20 个工具，新增历史列表、修订读取、结构化差异和租约保护的 CAS 恢复；这是待部署开发能力，不能据此推断 Hakari 已上线。OAuth 授权仅用于 MCP，外部 REST API 继续使用 PAT。原生 HTTP MCP 采用无状态 JSON 响应，尚无 SSE 通知；stdio 完整调用统计、第三方客户端、真实浏览器授权和 Hakari 整机采集仍待验收。见 [远程 MCP](docs/mcp/http.md)、[OAuth](docs/mcp/oauth.md)、[运行统计](docs/deployment/observability.md)。
+2026-10-11，v1.1 非编辑器服务批次已部署 Hakari（源码 `93ebf03`）。包括统一工作台与主题、历史恢复、固定修订分享、原生 Streamable HTTP MCP、OAuth PKCE S256、SSE 修订提示、配额/会话治理和真实主机监控。共享云端 MCP 为20工具；OAuth仅用于MCP，外部REST继续使用PAT。验收范围、准确CI结果和延期项见 [本批次生产验收](docs/acceptance/v11-services-hakari.md)。
 
 ## Alpha 候选已部署
 
@@ -10,11 +10,11 @@ Alpha 候选已部署到 [sp.jxcz.top](https://sp.jxcz.top/)，管理入口为 [
 
 生产浏览器验收包含真实 MCP 接力后在浏览器回读，以及同一 Chrome profile 的完整进程重启后恢复会话和项目内容；编辑器 Chrome/Firefox 主路径也完成独立进程重启验收。Node 22 的 CI 已通过：48 项 service 测试、193 项常规测试通过，1 项原有有意跳过，严格类型检查与构建通过。详见 [Alpha 验收记录](docs/verification/alpha/acceptance.md)、[Chrome/Firefox 编辑器验收](docs/acceptance/sp016-frozen-browser-mainpaths.md) 和 [Hakari 生产验收记录](docs/verification/hakari/acceptance.md)。
 
-生产每日备份和离机备份/恢复演练由用户明确延期，**目前不作为已完成的生产备份保障**。未执行整机重启，以免影响主机现有业务；应用和数据库进程的重启恢复已有实测通过记录。OAuth/OIDC、远程 HTTP MCP 尚未实现，属于 v0.2 范围。
+生产每日备份和离机备份/恢复演练由用户明确延期，**目前不作为已完成的生产备份保障**。未执行整机重启，以免影响主机现有业务；应用和数据库进程的重启恢复已有实测通过记录。MCP OAuth与远程HTTP MCP已随本批次上线；外部OIDC登录未实现。实际旧版回滚演练按用户决定延期。
 
 服务环境、首次管理员初始化、迁移和隔离测试参数见 [服务与运维指南](docs/admin/service-operations.md)；面向用户的账号、项目和 Bridge 使用说明见 [用户指南](docs/user/service-guide.md)。完整接口以 [OpenAPI](docs/api/openapi.yaml) 为准。
 
-本仓库当前工作区还包含独立主题库和项目历史接口；本次未执行线上部署，因此不能据此认定生产站点已更新。主题创建、编辑、版本、导入导出和应用说明见[主题库指南](docs/THEMES.md)，兼容性范围见[主题验收记录](docs/acceptance/theme-compatibility.md)。
+独立主题库和项目历史接口已随本批次部署。主题创建、编辑、版本、导入导出和应用说明见[主题库指南](docs/THEMES.md)，兼容性范围见[主题验收记录](docs/acceptance/theme-compatibility.md)。
 
 ## 最快查看
 
@@ -66,7 +66,7 @@ node mcp/server.js --project-root /absolute/path/to/your/sp-projects
 
 ## 候选限制
 
-Chrome/Firefox 编辑器主路径和完整浏览器进程重启证据见 [SP-016 验收记录](docs/acceptance/sp016-frozen-browser-mainpaths.md)；生产云端与 Edge 验收见 [Alpha 验收记录](docs/verification/alpha/acceptance.md)。单文件预览仍是本地模式，不能据此推断云端连接或 IndexedDB 迁移。复杂 PPTX 保真、完整高级时间线与录制、实时多人协同均不在本次承诺范围；远程 HTTP MCP/OAuth 属于 v0.2。外部网络资源不加载，ZIP 项目包入口暂不接入。媒体数据可保留，但当前安全 HTML 导出仍拒绝音视频和未支持的活动资源。嵌套 Core 组合和组合整体动画会明确拒绝接入，不改原始项目；复杂 native 动画保留原字段与运行时，不宣称与 Core 简化动画完全等价。
+Chrome/Firefox 编辑器主路径和完整浏览器进程重启证据见 [SP-016 验收记录](docs/acceptance/sp016-frozen-browser-mainpaths.md)；生产云端与 Edge 验收见 [Alpha 验收记录](docs/verification/alpha/acceptance.md)。单文件预览仍是本地模式，不能据此推断云端连接或 IndexedDB 迁移。复杂 PPTX 保真、完整高级时间线与录制、实时多人协同均不在本次承诺范围；远程 HTTP MCP/OAuth 已上线，第三方终端用户账号连接未验收。外部网络资源不加载，ZIP 项目包入口暂不接入。媒体数据可保留，但当前安全 HTML 导出仍拒绝音视频和未支持的活动资源。嵌套 Core 组合和组合整体动画会明确拒绝接入，不改原始项目；复杂 native 动画保留原字段与运行时，不宣称与 Core 简化动画完全等价。
 
 详见 `docs/editor-candidate-bridge.md`。候选错误时请保留 JSON 备份；导入执行文件本身不会运行其中脚本。
 
