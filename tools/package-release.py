@@ -15,7 +15,8 @@ def include(name):
 with zipfile.ZipFile(out/f'{artifact}_Source.zip','w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
     for name in sorted(filter(include,filter(None,files))):
         info=zipfile.ZipInfo(f'{artifact}/'+name,date_time=(2026,10,11,0,0,0))
-        info.compress_type=zipfile.ZIP_DEFLATED;info.external_attr=0o100644<<16
+        info.compress_type=zipfile.ZIP_DEFLATED
+        info.external_attr=(0o100755 if (root/name).stat().st_mode & 0o111 else 0o100644)<<16
         z.writestr(info,(root/name).read_bytes())
 shutil.copyfile(root/f'dist/{artifact}.html',out/f'{artifact}.html')
 shutil.copyfile(root/'examples/five-slides.html',out/f'{artifact}_Demo.html')

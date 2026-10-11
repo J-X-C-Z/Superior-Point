@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "origin": "https://sp.jxcz.top",
+  "projectId": "61169552-28db-45df-8576-1c6eb607360a",
+  "title": "Hakari Chrome 保存与重启验收 · 浏览器已保存 · AI接力完成",
+  "transport": "SDK stdio -> public HTTPS -> production API",
+  "checks": {
+    "browserSavedContentReadViaPublicMcp": true,
+    "beforeRevision": 3,
+    "mcpHandoffCasRevision": 4,
+    "browserTextPreserved": true,
+    "validationValid": true,
+    "webAndMcpIdentical": true,
+    "patRevoked": true,
+    "sdkClosed": true
+  }
+}

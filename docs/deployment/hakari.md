@@ -1,6 +1,8 @@
 # Hakari deployment package
 
-This package prepares a single-host deployment of the Alpha service. It has not been deployed or accepted on Hakari. The current host snapshot reports 1,735 MiB total RAM, 459 MiB available, and 22 GiB free disk; port 80 is already used by Nginx for Paperclip, Docker and Caddy are absent, port 443 is free, and `sp.jxcz.top` did not resolve in the local check. Recheck these facts on the server before publishing. DNS and certificate issuance are not verified.
+As of 2026-10-11, the Alpha service is running on Hakari at `https://sp.jxcz.top`. DNS-only A record `8.138.195.143` and the Let's Encrypt certificate are active. Docker 29.9 and Compose 5.6 are installed; ingress added a TCP 443 security-group rule, and the existing services retained their PIDs. Public API acceptance passed (`work/deployment/public-acceptance.log`), SDK stdio → HTTPS → PostgreSQL MCP acceptance passed (`work/deployment/public-mcp-proof.log`), and Chrome read back MCP-written cloud text. Restarting the app and database containers preserved the project fingerprints (`work/deployment/container-restart.log`). These checks do not constitute a full host reboot rehearsal or final product release acceptance.
+
+The running source is `61c9438d460e57be874180aebedb07da967a6a5a`, packaged at `/opt/superior-point/releases/61c9438`, with image `superior-point-app:61c9438` (`sha256:681e1721fced48859d00d799e1c971eb6d1c2b6b39cb2dd96829d4dbba2e959c`). Each versioned release contains code and deployment files; its `data` and `deploy/hakari/.env` links point to shared persistent state at `/opt/superior-point/shared/data` and `/opt/superior-point/shared/.env`. PostgreSQL, assets, backups directory, and Caddy state live under shared data, so application releases can change without moving that state.
 
 The app listens on port 3000 inside Compose only. PostgreSQL 18 has no published port. Caddy is an optional `https` profile that binds only 443/TCP and UDP; its ACME issuer uses TLS-ALPN and disables HTTP-01 and HTTP redirects because Nginx owns port 80. ACME TLS-ALPN still requires public traffic on port 443 and correct public DNS. Caddy's challenge behavior follows its [official TLS issuer documentation](https://caddyserver.com/docs/caddyfile/directives/tls) and [Automatic HTTPS guidance](https://caddyserver.com/docs/caddyfile/options).
 
@@ -8,15 +10,15 @@ The app image builds on Linux from the repository files and runs `npm ci` there,
 
 PostgreSQL creates four distinct identities on first initialization: `sp_pg_admin` is the database-container initialization superuser, `sp_migrator` owns the application database/schema and is used only by the one-shot migration service, `sp_app` has runtime DML rights, and `sp_restore` can create isolated restore-check databases. The app never receives the PostgreSQL initialization superuser credential. The initialization script runs only when `data/postgres` is empty; it does not retrofit an existing data directory. Do not delete an existing database directory to force initialization.
 
-Image memory caps are 384 MiB for the app and 128 MiB for PostgreSQL, with PostgreSQL tuned for a small host. These are limits, not proof the workload fits; the recorded 459 MiB available leaves little room for the OS, Docker, and Caddy. Measure actual memory pressure before treating the host as deployable.
+Image memory caps are 384 MiB for the app and 128 MiB for PostgreSQL, with PostgreSQL tuned for a small host. These are limits, not proof the workload fits. A pre-deployment snapshot recorded 459 MiB available; recheck actual memory pressure before final acceptance.
 
 ## Prepare and start
 
-On Hakari, copy the repository to `/opt/superior-point`, then use that directory as the working directory. Keep its `.env` private and outside source control:
+Run these commands from the versioned release directory (currently `/opt/superior-point/releases/61c9438`), not the deployment root. Its `data` and `.env` links must target the shared paths described above. Preserve the existing `/opt/superior-point/shared/.env`; copy the example only when creating the shared environment file for a fresh installation:
 
 ```sh
-cp deploy/hakari/.env.example deploy/hakari/.env
-chmod 600 deploy/hakari/.env
+test -e /opt/superior-point/shared/.env || cp deploy/hakari/.env.example /opt/superior-point/shared/.env
+chmod 600 /opt/superior-point/shared/.env
 openssl rand -hex 32
 ```
 
@@ -31,47 +33,64 @@ Review the host prerequisites and rendered Compose configuration:
 
 ```sh
 ./scripts/preflight.sh
-docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml build app
-docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml up -d db
-docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml --profile ops run --rm migrate
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml build app
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml up -d db
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml --profile ops run --rm migrate
 ```
 
-The database service has no host port mapping and uses a separate data directory, so this package does not bind, stop, or change the existing PostgreSQL service on port 5432. The role-init script only runs for a fresh `data/postgres` directory. Changing password variables in `.env` does not rotate roles in an existing data directory. The migration command runs as `sp_migrator`, not as the database superuser or runtime app user; it is explicit and does not run on every application restart. Before later schema upgrades, run and verify a backup.
+The database service has no host port mapping and uses a separate data directory, so this package does not bind, stop, or change the existing PostgreSQL service on port 5432. The role-init script only runs for a fresh `data/postgres` directory. Changing password variables in `.env` does not rotate roles in an existing data directory. The migration command runs as `sp_migrator`, not as the database superuser or runtime app user; it is explicit and does not run on every application restart. Production backups are deferred by user decision, so every schema migration must remain compatible with both the current and immediately preceding app release; app rollback does not undo a database migration.
 
 Create the first administrator through the existing stdin-only bootstrap CLI. It rejects a password supplied as a command argument. Run this from an interactive shell and use a strong, unique password:
 
 ```sh
 read -r -s -p 'Administrator password: ' SP_ADMIN_PASSWORD
 printf '\n'
-printf '%s\n' "$SP_ADMIN_PASSWORD" | docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml run --rm -T -e SP_BOOTSTRAP_USERNAME=admin app npm run service:bootstrap
+printf '%s\n' "$SP_ADMIN_PASSWORD" | docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml run --rm -T -e SP_BOOTSTRAP_USERNAME=admin app npm run service:bootstrap
 unset SP_ADMIN_PASSWORD
 ```
 
 Start the app and confirm internal liveness before enabling ingress:
 
 ```sh
-docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml up -d app
-docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml ps
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml up -d app
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml ps
 ```
 
 The public `sp.jxcz.top` DNS record and inbound TCP/UDP 443 must be confirmed before starting Caddy. Then review the Caddyfile and enable its profile:
 
 ```sh
-docker compose --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml --profile https up -d caddy
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml --profile https up -d caddy
 ./scripts/health-check.sh
 ```
 
-The Caddy profile does not take over port 80. It cannot issue or renew a certificate through TLS-ALPN until the domain resolves publicly to this host and port 443 is reachable from the internet.
+The Caddy profile does not take over port 80. It uses TLS-ALPN for certificate issuance and renewal; the current certificate has been issued successfully.
 
-## Scheduled and off-site backups
+## Application rollback
 
-The scheduled backup command runs the existing `npm run service:backup` entry in a one-shot app container. It writes a database dump, assets, and a manifest below `data/backups`; files are mode-restricted and remain on the Hakari disk. Enable a daily run in the deployment operator's crontab (for example, 03:17 server time):
+Keep each release directory and its matching image tag available until the new release is accepted. To roll back application code, select a previously verified release and its matching local image, then run Compose from that release directory. First confirm the release links still point to shared state and the image ID matches the recorded digest:
 
-```cron
-17 3 * * * cd /opt/superior-point && ./scripts/backup.sh >> /var/log/superior-point-backup.log 2>&1
+```sh
+PREVIOUS_RELEASE='<verified-release-id>'
+PREVIOUS_IMAGE_TAG='<matching-image-tag>'
+cd "/opt/superior-point/releases/$PREVIOUS_RELEASE"
+test "$(readlink -f data)" = /opt/superior-point/shared/data
+test "$(readlink -f deploy/hakari/.env)" = /opt/superior-point/shared/.env
+docker image inspect "superior-point-app:$PREVIOUS_IMAGE_TAG" --format '{{.Id}}'
 ```
 
-`scripts/backup.sh` prevents overlapping runs with `flock`. It returns failure if the local backup fails. For an encrypted off-site copy, install and configure Restic on the host, initialize its remote repository, then set `RESTIC_REPOSITORY` and `RESTIC_PASSWORD_FILE` in the scheduler environment; keep the password file and any backend credentials outside this repository with root-only access. The script runs `restic backup` only when that repository is configured. Without it, the script reports that the backup is local-only. Verify the remote repository with `restic check` as a separate scheduled maintenance task and alert on either local or remote failures. This package does not choose a provider or include credentials.
+After confirming the printed image ID against the saved digest for that release, recreate only the app with the existing Compose project name; leave PostgreSQL, Caddy, and shared data in place:
+
+```sh
+SP_IMAGE_TAG="$PREVIOUS_IMAGE_TAG" docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml up -d --no-deps app
+docker compose -p superior-point --env-file deploy/hakari/.env -f deploy/hakari/compose.yaml ps app db caddy
+curl --fail https://sp.jxcz.top/health/live
+```
+
+Do not delete, replace, or restore `/opt/superior-point/shared/data` during an application rollback. Do not roll the app back across a schema change unless that migration was designed to remain compatible with the previous release. The production backup and restore path has not been accepted, so there is no documented database rollback procedure.
+
+## Backups deferred
+
+Production backups are deferred by the current user decision (“先不备份”). Do not install or enable a scheduler, invoke the backup runtime, or configure Restic for this deployment. No backup or restore acceptance is claimed; revisit the backup decision before relying on production recovery or performing future data-risking operations.
 
 ## Health and operations
 
@@ -81,6 +100,8 @@ PostgreSQL data, assets, backups, and Caddy state persist below `data/`. The app
 
 `SP_RESTORE_DATABASE_URL` is optional and must use the dedicated `sp_restore` role, which has `CREATEDB` but is not a PostgreSQL superuser. Its form is `postgresql://sp_restore:<SP_RESTORE_DB_PASSWORD>@db:5432/superior_point`. Keep it empty during normal operations; set it only when enabling the isolated restore verifier, then recreate the app container and clear it after the check. Do not substitute the initialization superuser URL. The web UI does not accept a target database URL.
 
-Before a public cutover, verify actual host RAM/PSI under the running stack, firewall and 443 reachability, DNS A/AAAA, certificate issuance, login, a database-backed request, persistent restart behavior, and a tested backup restore. Keep the current Nginx service intact while checking the separate 443 route.
+Before final production acceptance, verify actual host RAM/PSI under the running stack and complete a full host reboot rehearsal. A tested production backup restore remains unaccepted by user decision; the Alpha pre-release retains these unaccepted scope items. Keep the current Nginx service intact.
 
 The Compose app explicitly enables `SP_TRUST_PROXY_HOPS=1` to count login attempts by the client forwarded by Caddy. The current Fastify version requires a custom one-hop callback; the default remains no proxy trust. This setting is valid only while the app has no public host port and all external requests enter through Caddy, which replaces untrusted forwarded headers.
+
+The stable operator path `/opt/superior-point/current` points to the running version. The previous app image `superior-point-app:4cb41ea` is retained for an app-only rollback. The current Alpha app and previous image use the same migrations; no production schema migration or backup ran during this version cutover.

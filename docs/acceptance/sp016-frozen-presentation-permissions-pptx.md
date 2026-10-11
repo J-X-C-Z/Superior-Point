@@ -37,12 +37,12 @@
 
 ## 原始证据
 
-证据根目录：`output/playwright/sp016-frozen/`（独立编辑仓库下，不是冻结源码目录）。
+证据根目录：`/Users/jxcz/Documents/Codex/2026-10-11/task-2/Superior-Point/output/playwright/sp016-frozen/`。原始证据保留在独立编辑工作树，本公开源代码包未复制原始浏览器工作目录。下表列出该工作树内的实际相对路径。
 
 | 证据 | 文件 |
 | --- | --- |
-| 放映原始记录、命令与读回 | [presentation/raw.md](../../output/playwright/sp016-frozen/presentation/raw.md)、[commands.log](../../output/playwright/sp016-frozen/presentation/commands.log)、[readbacks.json](../../output/playwright/sp016-frozen/presentation/readbacks.json)、[identity.json](../../output/playwright/sp016-frozen/presentation/identity.json) |
-| 实际离线导出物与数据 | [audience.html](../../output/playwright/sp016-frozen/presentation/audience.html)、[backup.html](../../output/playwright/sp016-frozen/presentation/backup.html)、[backup-document.json](../../output/playwright/sp016-frozen/presentation/backup-document.json)、[summary.json](../../output/playwright/sp016-frozen/presentation/summary.json) |
-| 权限/PPTX 原始报告 | [permissions-pptx/report.md](../../output/playwright/sp016-frozen/permissions-pptx/report.md)、[commands.log](../../output/playwright/sp016-frozen/permissions-pptx/commands.log)、[served-identity.json](../../output/playwright/sp016-frozen/permissions-pptx/served-identity.json)、[pptx-zip-inspection.json](../../output/playwright/sp016-frozen/permissions-pptx/pptx-zip-inspection.json) |
+| 放映原始记录、命令与读回 | `output/playwright/sp016-frozen/presentation/raw.md`、`output/playwright/sp016-frozen/presentation/commands.log`、`output/playwright/sp016-frozen/presentation/readbacks.json`、`output/playwright/sp016-frozen/presentation/identity.json` |
+| 实际离线导出物与数据 | `output/playwright/sp016-frozen/presentation/audience.html`、`output/playwright/sp016-frozen/presentation/backup.html`、`output/playwright/sp016-frozen/presentation/backup-document.json`、`output/playwright/sp016-frozen/presentation/summary.json` |
+| 权限/PPTX 原始报告 | `output/playwright/sp016-frozen/permissions-pptx/report.md`、`output/playwright/sp016-frozen/permissions-pptx/commands.log`、`output/playwright/sp016-frozen/permissions-pptx/served-identity.json`、`output/playwright/sp016-frozen/permissions-pptx/pptx-zip-inspection.json` |
 
 截图、console 和 snapshots 保留在各证据目录及 `.playwright-cli/`。观众 HTML SHA256 为 `10375bbf38acd24536c50412abda617890d778b8c8f30d1eaadd24067b59f2eb`；备份为 `a73b1111a18868d519a405691804c6c98a7b51684dd7dfeb53dbf188996a9718`。本文只整合既有证据，没有重跑浏览器或新增实现。

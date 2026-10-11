@@ -1,0 +1,124 @@
+### Page
+- Page URL: https://sp.jxcz.top/app
+- Page Title: Superior Point v0.0.1 · 本地工作台
+### Snapshot
+```yaml
+- generic [active] [ref=e1]:
+  - complementary [ref=e2]:
+    - link "SP SUPERIOR POINT CLOUD WORKSPACE / 01" [ref=e45] [cursor=pointer]:
+      - /url: "#home"
+      - generic [ref=e4]: SP
+      - text: SUPERIORPOINT
+      - generic [ref=e5]: CLOUD WORKSPACE / 01
+    - navigation [ref=e6]:
+      - button "工作台 01" [ref=e7] [cursor=pointer]:
+        - text: 工作台
+        - generic [ref=e8]: "01"
+      - button "最近使用 02" [ref=e9] [cursor=pointer]:
+        - text: 最近使用
+        - generic [ref=e10]: "02"
+      - button "我的幻灯片 03" [ref=e11] [cursor=pointer]:
+        - text: 我的幻灯片
+        - generic [ref=e12]: "03"
+      - button "回收站 04" [ref=e13] [cursor=pointer]:
+        - text: 回收站
+        - generic [ref=e14]: "04"
+    - generic [ref=e15]:
+      - text: 私有云端项目
+      - generic [ref=e47]: 保存以服务器确认为准。离线草稿可独立恢复。
+  - main [ref=e18]:
+    - region "存储位置与云端账号" [ref=e48]:
+      - generic [ref=e49]:
+        - strong [ref=e50]: 云端模式
+        - generic [ref=e51]: 账号：admin
+        - button "使用本地" [ref=e52] [cursor=pointer]
+        - button "使用云端" [ref=e53] [cursor=pointer]
+        - button "退出云端账号" [ref=e54] [cursor=pointer]
+        - link "管理后台 ↗" [ref=e55] [cursor=pointer]:
+          - /url: /admin
+      - paragraph [ref=e56]: 云端保存以服务器确认提交为准。断网修改另存本地恢复草稿；本地原项目保持完整。
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - text: 迁移本地项目
+          - combobox "要迁移的本地项目" [ref=e59]
+        - button "复制到云端并核对" [disabled] [ref=e60]
+        - status
+      - group [ref=e61]:
+        - generic "Agent授权与账号设置" [ref=e62]
+    - generic [ref=e19]:
+      - generic [ref=e20]: WORKSPACE / 我的幻灯片
+      - button "打开本地文件 ↗" [ref=e21] [cursor=pointer]
+    - paragraph [ref=e22]: 打开 SP 导出的 HTML 或 JSON 备份，最多 25 MiB。导入会保留原文件并创建独立项目。
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - paragraph [ref=e26]: SUPERIOR POINT / PRESENTATION STUDIO
+          - heading [level=1] [ref=e27]:
+            - text: 让想法，
+            - emphasis [ref=e28]: 有序呈现。
+          - paragraph [ref=e29]: 从一个项目开始。内容保存到你的云端账号，支持浏览器与 AI 接力编辑。
+        - button "＋ 新建演示文稿 空白项目 · 16:9 / 4:3 开始创作 ↗" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: ＋
+          - strong [ref=e32]: 新建演示文稿
+          - generic [ref=e33]: 空白项目 · 16:9 / 4:3
+          - generic [ref=e34]: 开始创作 ↗
+      - generic [ref=e35]:
+        - heading "我的项目 03" [level=2] [ref=e63]
+        - generic [ref=e37]:
+          - searchbox "搜索项目" [ref=e38]
+          - combobox "项目排序" [ref=e39]:
+            - option "最近修改" [selected]
+            - option "按名称"
+      - generic [ref=e64]:
+        - article [ref=e65]:
+          - button "打开 Hakari Chrome 保存与重启验收 · 浏览器已保存" [ref=e66] [cursor=pointer]:
+            - img "Hakari Chrome 保存与重启验收 · 浏览器已保存" [ref=e67]:
+              - generic [ref=e69]: 公网浏览器与 PostgreSQL 保存一致
+            - generic [aria-hidden]: 打开编辑 ↗
+          - generic [ref=e71]:
+            - heading "Hakari Chrome 保存与重启验收 · 浏览器已保存" [level=3] [ref=e72]
+            - generic [ref=e73]: 1 页 · 云端 · 10/11 17:07
+            - generic [ref=e74]:
+              - button "重命名" [ref=e75] [cursor=pointer]
+              - button "复制" [ref=e76] [cursor=pointer]
+              - button "备份 HTML" [ref=e77] [cursor=pointer]
+              - button "分享 HTML" [ref=e78] [cursor=pointer]
+              - button "删除" [ref=e79] [cursor=pointer]
+        - article [ref=e80]:
+          - button "打开 Hakari MCP 公网接力验收 20261011" [ref=e81] [cursor=pointer]:
+            - img "公网 MCP 接力验收" [ref=e82]:
+              - generic [ref=e84]: 真实 SDK MCP 经公网 HTTPS 保存，浏览器从 PostgreSQL 回读。
+            - generic [aria-hidden]: 打开编辑 ↗
+          - generic [ref=e86]:
+            - heading "Hakari MCP 公网接力验收 20261011" [level=3] [ref=e87]
+            - generic [ref=e88]: 1 页 · 云端 · 10/11 17:06
+            - generic [ref=e89]:
+              - button "重命名" [ref=e90] [cursor=pointer]
+              - button "复制" [ref=e91] [cursor=pointer]
+              - button "备份 HTML" [ref=e92] [cursor=pointer]
+              - button "分享 HTML" [ref=e93] [cursor=pointer]
+              - button "删除" [ref=e94] [cursor=pointer]
+        - article [ref=e95]:
+          - button "打开 Hakari 公网验收 20261011" [ref=e96] [cursor=pointer]:
+            - img "Hakari 公网验收 20261011" [ref=e97]:
+              - generic [ref=e99]: 双击编辑文字
+            - generic [aria-hidden]: 打开编辑 ↗
+          - generic [ref=e101]:
+            - heading "Hakari 公网验收 20261011" [level=3] [ref=e102]
+            - generic [ref=e103]: 1 页 · 云端 · 10/11 17:02
+            - generic [ref=e104]:
+              - button "重命名" [ref=e105] [cursor=pointer]
+              - button "复制" [ref=e106] [cursor=pointer]
+              - button "备份 HTML" [ref=e107] [cursor=pointer]
+              - button "分享 HTML" [ref=e108] [cursor=pointer]
+              - button "删除" [ref=e109] [cursor=pointer]
+      - generic [ref=e40]:
+        - text: v0.0.1 开发预览
+        - button "试用五页示例 ↗" [ref=e41] [cursor=pointer]
+        - text: 已集成 v0.39 编辑器，保存由工作台统一管理。此为早期预览版，验证范围见发布说明。
+    - generic [ref=e42]:
+      - generic [ref=e43]: SP / LOCAL FIRST
+      - generic [ref=e44]: 你的内容，你的文件。
+```
+
+

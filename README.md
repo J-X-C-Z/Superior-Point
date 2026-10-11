@@ -1,16 +1,20 @@
-# Superior Point (SP) v0.0.1
+# Superior Point (SP) 0.1.0 Alpha
 
-本地优先的演示文稿工作台，集成 v0.39 编辑器。此版本是可试用的早期预览版（pre-release），不是功能完整或生产稳定版。发布版本 v0.0.1 与内部编辑器版本 v0.39 分别编号。
+演示文稿工作台，集成 v0.39 编辑器。`0.1.0-alpha` 是可试用的预发布候选，不代表稳定版或完整路线图交付；产品版本与内部编辑器版本分别编号。
 
-## Alpha 候选（未生产发布）
+## Alpha 候选已部署
 
-当前工作树包含 Alpha 候选服务：TypeScript/Fastify/PostgreSQL API、账号与会话、管理员页面、项目云端存储、个人访问令牌和同库 MCP Bridge。它仍是待验收候选，**尚未生产发布**；本轮不调整框架版本号 `0.0.1`，也不宣称生产可用。生产 DNS、容器部署和离机备份/恢复仍待实际环境验收。现有 `npm start` 单文件演示工作台仍按本地 IndexedDB 运行，服务端 API 与旧文件 MCP 不会自动接管其数据。
+Alpha 候选已部署到 [sp.jxcz.top](https://sp.jxcz.top/)，管理入口为 [/admin](https://sp.jxcz.top/admin)。部署包括 API、PostgreSQL、云端工作台、PAT、连接同一 PostgreSQL 的 stdio MCP Bridge、单写者租约、CAS 草稿与恢复、独立 Admin。此版本作为 **pre-release 候选**发布，不是 Stable，也不代表路线图全部完成。
 
-服务环境、首次管理员初始化、迁移和隔离测试参数见 [服务与运维指南](docs/admin/service-operations.md)；面向用户的账号、项目和 Bridge 使用说明见 [用户指南](docs/user/service-guide.md)。完整接口以 [OpenAPI](docs/api/openapi.yaml) 为准。OAuth/OIDC 尚未实现，也不在当前契约中。
+生产浏览器验收包含真实 MCP 接力后在浏览器回读，以及同一 Chrome profile 的完整进程重启后恢复会话和项目内容；编辑器 Chrome/Firefox 主路径也完成独立进程重启验收。Node 22 的 CI 已通过：48 项 service 测试、193 项常规测试通过，1 项原有有意跳过，严格类型检查与构建通过。详见 [Alpha 验收记录](docs/verification/alpha/acceptance.md)、[Chrome/Firefox 编辑器验收](docs/acceptance/sp016-frozen-browser-mainpaths.md) 和 [Hakari 生产验收记录](docs/verification/hakari/acceptance.md)。
+
+生产每日备份和离机备份/恢复演练由用户明确延期，**目前不作为已完成的生产备份保障**。未执行整机重启，以免影响主机现有业务；应用和数据库进程的重启恢复已有实测通过记录。OAuth/OIDC、远程 HTTP MCP 尚未实现，属于 v0.2 范围。
+
+服务环境、首次管理员初始化、迁移和隔离测试参数见 [服务与运维指南](docs/admin/service-operations.md)；面向用户的账号、项目和 Bridge 使用说明见 [用户指南](docs/user/service-guide.md)。完整接口以 [OpenAPI](docs/api/openapi.yaml) 为准。
 
 ## 最快查看
 
-打开 `dist/SuperiorPoint_v0.0.1.html` 可尝试单文件工作台。不同浏览器对 `file://` 下 IndexedDB 的支持有差异；推荐以下本地服务方式，使用固定端口维持同一存储来源。
+打开 `dist/SuperiorPoint_v0.1.0-alpha.html` 可尝试单文件工作台。该文件运行**本地模式**并使用浏览器 IndexedDB；它不会连接生产云端，也不会自动迁移已有浏览器项目。云端模式请访问 [sp.jxcz.top](https://sp.jxcz.top/)。不同浏览器对 `file://` 下 IndexedDB 的支持有差异；推荐以下本地服务方式，使用固定端口维持同一存储来源。
 
 需要 Node.js 22+：
 
@@ -53,11 +57,11 @@ node mcp/server.js --project-root /absolute/path/to/your/sp-projects
 
 第一次运行会创建该目录。请选专用目录，不要给整个个人文件夹。详见 `docs/MCP.md`。本包验证的是 SDK 客户端与服务器的真实 stdio 协议，不是用户 Codex/Claude 账号已连接。
 
-MCP 文件库与浏览器 IndexedDB 是两个存储位置，第一版通过可编辑 HTML 交换文档，**没有实时浏览器同步**。
+旧式本地 stdio MCP 使用独立文件项目库，与浏览器 IndexedDB 分开，通过可编辑 HTML 交换文档；它不会自动同步或接管浏览器数据。生产云端 stdio MCP Bridge 则通过 PAT 接入与云端工作台相同的 PostgreSQL，并遵循单写者租约与版本冲突检查。远程 HTTP MCP/OAuth 尚未实现。
 
 ## 候选限制
 
-Chrome 已实测新建、文字/形状编辑、自动保存、重开、导出重导入、放映、五页内嵌图片及多标签单写。本机新增 IAB 保存重开与恢复、Edge 本地 PNG 插入/拖动/西北手柄缩放/撤销重做验收。完整进程重启与 file:// 放映仍待验收。候选在隔离 iframe 中运行，剪贴板、录制和弹窗能力可能受限；外部网络资源不加载，ZIP 项目包入口暂不接入；PPTX 沿用原导出但本轮未验收其格式兼容。媒体数据保留，但当前安全 HTML 导出仍拒绝音视频和未支持的活动资源，不能将缺失资源默默当成成功。嵌套 Core 组合和组合整体动画会明确拒绝接入，不改原始项目。复杂 native 动画保留原字段与运行时，不宣称与 Core 简化动画完全等价。
+Chrome/Firefox 编辑器主路径和完整浏览器进程重启证据见 [SP-016 验收记录](docs/acceptance/sp016-frozen-browser-mainpaths.md)；生产云端与 Edge 验收见 [Alpha 验收记录](docs/verification/alpha/acceptance.md)。单文件预览仍是本地模式，不能据此推断云端连接或 IndexedDB 迁移。复杂 PPTX 保真、完整高级时间线与录制、实时多人协同均不在本次承诺范围；远程 HTTP MCP/OAuth 属于 v0.2。外部网络资源不加载，ZIP 项目包入口暂不接入。媒体数据可保留，但当前安全 HTML 导出仍拒绝音视频和未支持的活动资源。嵌套 Core 组合和组合整体动画会明确拒绝接入，不改原始项目；复杂 native 动画保留原字段与运行时，不宣称与 Core 简化动画完全等价。
 
 详见 `docs/editor-candidate-bridge.md`。候选错误时请保留 JSON 备份；导入执行文件本身不会运行其中脚本。
 
@@ -84,8 +88,10 @@ npm test
 - `examples/`：五页示例、生成器
 - `tests/`：核心、文件、协议、存储、DOM 与浏览器验收脚本
 
-v0.0.1发布版不包含主题系统、账号、云同步、PPTX新能力、实时MCP配对或独立 `.sp` 文件格式；未发布服务基础进度见上方说明。
+0.1.0 Alpha 提供云端账号、工作台与同库 MCP Bridge；不包含远程 HTTP MCP/OAuth、复杂 PPTX 能力、完整高级时间线录制、实时多人协作或独立 `.sp` 文件格式。它是预发布候选，不是 Stable。
 
 ## 许可
 
 此仓库尚未为项目原创代码指定开源许可证。公开可见不等于授予任意使用、修改或再分发许可。第三方 Reveal.js 的 MIT 许可证保留在 `vendor/REVEAL-LICENSE`。
+
+冻结编辑器的额外实测范围见 [放映、权限与 PPTX 验收](docs/acceptance/sp016-frozen-presentation-permissions-pptx.md)：窗口放映和独立 file:// 下 Reveal HTML 呈现已通过；集成全屏、媒体录制未通过，工作台 PPTX 导入未接入，PPTX 导出只验过结构子集，同对象脉冲等复杂动画未认证。

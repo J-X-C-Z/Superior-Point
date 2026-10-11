@@ -12,6 +12,7 @@ deploy/hakari/backups/
 .sp-backups/
 .sp-assets/
 work/
+output/
 .playwright-cli/
 .sp-secrets/
 data/

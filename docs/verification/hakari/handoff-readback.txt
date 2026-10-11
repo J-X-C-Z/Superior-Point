@@ -1,0 +1,205 @@
+### Page
+- Page URL: https://sp.jxcz.top/app
+- Page Title: Superior Point v0.0.1 · 本地工作台
+### Snapshot
+```yaml
+- main [ref=f3e18]:
+  - region "存储位置与云端账号" [ref=f3e45]:
+    - generic [ref=f3e46]:
+      - strong [ref=f3e47]: 云端模式
+      - generic [ref=f3e57]: 账号：admin
+      - button "使用本地" [ref=f3e48] [cursor=pointer]
+      - button "使用云端" [ref=f3e49] [cursor=pointer]
+      - button "退出云端账号" [ref=f3e58] [cursor=pointer]
+      - link "管理后台 ↗" [ref=f3e59] [cursor=pointer]:
+        - /url: /admin
+      - button "保存并交给 AI" [ref=f3e60] [cursor=pointer]
+    - paragraph [ref=f3e50]: 云端保存以服务器确认提交为准。断网修改另存本地恢复草稿；本地原项目保持完整。
+    - generic [ref=f3e61]:
+      - generic [ref=f3e62]:
+        - text: 迁移本地项目
+        - combobox "要迁移的本地项目" [ref=f3e63]
+      - button "复制到云端并核对" [disabled] [ref=f3e64]
+      - status
+    - group [ref=f3e65]:
+      - generic "Agent授权与账号设置" [ref=f3e66]
+  - iframe [ref=f3e69]:
+    - generic [ref=f4e2]:
+      - banner [ref=f4e3]:
+        - button "返回工作台" [ref=f4e4] [cursor=pointer]: ←
+        - generic "快速访问" [ref=f4e5]:
+          - button "撤销" [disabled] [ref=f4e6]
+          - button "重做" [disabled] [ref=f4e9]
+        - generic [ref=f4e12]:
+          - textbox "演示文稿名称" [ref=f4e13]: Hakari Chrome 保存与重启验收 · 浏览器已保存 · AI接力完成
+          - generic "已保存到云端 · 修订 4" [ref=f4e16]
+        - button "切换界面明暗模式" [ref=f4e17] [cursor=pointer]: ◐
+        - group [ref=f4e18]:
+          - generic "分享 ↗" [ref=f4e19] [cursor=pointer]
+        - generic "文件和演示快捷操作" [ref=f4e20]:
+          - button "搜索功能" [ref=f4e21] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f4e22]: ⌕
+          - button [ref=f4e23] [cursor=pointer]
+      - navigation "功能选项卡" [ref=f4e27]:
+        - button "文件" [ref=f4e28] [cursor=pointer]
+        - button "开始" [ref=f4e29] [cursor=pointer]
+        - button "插入" [ref=f4e30] [cursor=pointer]
+        - button "设计" [ref=f4e31] [cursor=pointer]
+        - button "切换" [ref=f4e32] [cursor=pointer]
+        - button "动画" [ref=f4e33] [cursor=pointer]
+        - button "幻灯片放映" [ref=f4e34] [cursor=pointer]
+        - button "录制" [ref=f4e35] [cursor=pointer]
+        - button "审阅" [ref=f4e36] [cursor=pointer]
+        - button "视图" [ref=f4e37] [cursor=pointer]
+        - button "绘图" [ref=f4e38] [cursor=pointer]
+        - button "帮助与快捷键" [ref=f4e39] [cursor=pointer]
+      - group "编辑功能区" [ref=f4e43]:
+        - region "功能区" [ref=f4e44]:
+          - group "剪贴板与编辑" [ref=f4e45]:
+            - generic [ref=f4e46]:
+              - generic [ref=f4e47]:
+                - button "撤销" [disabled] [ref=f4e48]
+                - button "重做" [disabled] [ref=f4e51]
+                - button "复制" [disabled] [ref=f4e54]
+                - button "剪切" [disabled] [ref=f4e58]
+              - generic [ref=f4e63]:
+                - button "粘贴" [ref=f4e64] [cursor=pointer]
+                - button "格式刷" [disabled] [ref=f4e68]
+                - button "查找" [ref=f4e74] [cursor=pointer]
+          - group "幻灯片" [ref=f4e77]:
+            - generic [ref=f4e78]:
+              - button "新建" [ref=f4e79] [cursor=pointer]
+              - button "复制页" [ref=f4e83] [cursor=pointer]
+              - generic [ref=f4e88]:
+                - generic [ref=f4e89]: 按版式新建
+                - combobox "按版式新建幻灯片" [ref=f4e90]:
+                  - option "选择版式…" [selected]
+                  - option "封面页"
+                  - option "标题与正文"
+                  - option "左右双栏"
+                  - option "章节过渡页"
+          - group "字体" [ref=f4e91]:
+            - generic [ref=f4e92]:
+              - generic [ref=f4e93]:
+                - generic [ref=f4e94]:
+                  - generic [ref=f4e95]: 字体
+                  - combobox "字体" [disabled] [ref=f4e96]:
+                    - option "选择字体" [disabled] [selected]
+                    - option "Arial"
+                    - option "Helvetica Neue"
+                    - option "Microsoft YaHei"
+                    - option "PingFang SC"
+                    - option "Aptos"
+                    - option "Georgia"
+                    - option "Times New Roman"
+                    - option "Verdana"
+                    - option "Inter"
+                - generic [ref=f4e97]:
+                  - generic [ref=f4e98]: 字号
+                  - spinbutton "字号" [disabled] [ref=f4e99]
+                - button "放大字号" [disabled] [ref=f4e100]
+                - button "缩小字号" [disabled] [ref=f4e103]
+              - generic [ref=f4e105]:
+                - button "粗体" [disabled] [ref=f4e106]
+                - button "斜体" [disabled] [ref=f4e109]
+                - button "下划线" [disabled] [ref=f4e112]
+                - button "删除线" [disabled] [ref=f4e115]
+                - generic "文字颜色" [ref=f4e118] [cursor=pointer]:
+                  - textbox "文字颜色" [disabled] [ref=f4e119]: "#161715"
+                  - generic [ref=f4e120]: 颜色
+          - group "段落" [ref=f4e121]:
+            - generic [ref=f4e122]:
+              - generic [ref=f4e123]:
+                - button "左对齐" [disabled] [ref=f4e124]
+                - button "居中" [disabled] [ref=f4e127]
+                - button "右对齐" [disabled] [ref=f4e130]
+                - button "项目符号" [disabled] [ref=f4e134]
+                - button "编号" [disabled] [ref=f4e137]
+              - generic [ref=f4e140]:
+                - generic [ref=f4e141]:
+                  - text: 行距
+                  - combobox "文本行距" [disabled] [ref=f4e142]:
+                    - option "1.0" [selected]
+                    - option "1.18"
+                    - option "1.3"
+                    - option "1.5"
+                    - option "2.0"
+                - button "增加缩进" [disabled] [ref=f4e143]
+                - button "减少缩进" [disabled] [ref=f4e146]
+                - button "清除编号" [disabled] [ref=f4e149]
+          - group "快速插入" [ref=f4e152]:
+            - generic [ref=f4e153]:
+              - button "文本框" [ref=f4e154] [cursor=pointer]
+              - button "图片" [ref=f4e158] [cursor=pointer]
+              - button "形状" [ref=f4e164] [cursor=pointer]
+          - group "排列" [ref=f4e168]:
+            - generic [ref=f4e169]:
+              - generic [ref=f4e170]:
+                - button "置顶" [disabled] [ref=f4e171]
+                - button "置底" [disabled] [ref=f4e174]
+                - button "组合" [disabled] [ref=f4e177]
+                - button "取消组合" [disabled] [ref=f4e182]
+              - generic [ref=f4e187]:
+                - button "水平居中" [disabled] [ref=f4e188]
+                - button "垂直居中" [disabled] [ref=f4e191]
+                - button "水平分布" [disabled] [ref=f4e194]
+                - button "垂直分布" [disabled] [ref=f4e197]
+          - group "高级操作" [ref=f4e200]:
+            - button "更多" [ref=f4e201] [cursor=pointer]:
+              - text: 更多
+              - generic [aria-hidden] [ref=f4e202]: ⋯
+        - separator "调整功能区高度" [ref=f4e203]
+      - main [ref=f4e204]:
+        - complementary [ref=f4e205]:
+          - generic "幻灯片缩略图列表" [ref=f4e206]:
+            - option "01 公网浏览器与 PostgreSQL 保存一致 公网浏览器与 PostgreSQL 保存一致" [selected] [ref=f4e207] [cursor=pointer]:
+              - generic [ref=f4e208]: "01"
+              - generic [ref=f4e209]:
+                - generic [ref=f4e210]: 公网浏览器与 PostgreSQL 保存一致
+                - generic [ref=f4e211]: 公网浏览器与 PostgreSQL 保存一致
+          - generic [ref=f4e213]: 缩略图：Shift 连选 / Ctrl 多选 · 支持批量拖动
+        - generic [ref=f4e222]:
+          - generic [ref=f4e223]:
+            - generic [ref=f4e224]:
+              - generic [ref=f4e225]: WORKSPACE / 普通视图
+              - generic [ref=f4e226]: 幻灯片 1 / 1
+            - generic [ref=f4e227]:
+              - generic [ref=f4e228]: 未选择对象
+              - button "◷ 动画" [ref=f4e229] [cursor=pointer]:
+                - text: ◷
+                - generic [ref=f4e230]: 动画
+              - button "☷ 格式" [ref=f4e231] [cursor=pointer]:
+                - text: ☷
+                - generic [ref=f4e232]: 格式
+              - button "更多画布工具" [ref=f4e233] [cursor=pointer]: ···
+          - generic "幻灯片编辑画布" [ref=f4e234]: 公网浏览器与 PostgreSQL 保存一致
+          - generic:
+            - separator "调整备注面板高度" [ref=f4e240]
+            - generic [ref=f4e241]:
+              - generic [ref=f4e246]: 演讲者备注
+              - generic [ref=f4e247]: 此内容仅供演讲者查看，不会出现在幻灯片中
+            - textbox "在这里记录讲解思路、发言提示或重要信息…" [ref=f4e248]
+          - generic [ref=f4e249]:
+            - generic [ref=f4e250]:
+              - generic [ref=f4e251]: 准备就绪
+              - generic [ref=f4e256]: 1 张幻灯片 · 1 个对象
+              - button [ref=f4e257] [cursor=pointer]
+              - generic "Reveal.js 离线候选演示引擎" [ref=f4e262]: REVEAL.JS · OFFLINE
+              - generic [ref=f4e263]: 画布
+              - button "上手指南" [ref=f4e264] [cursor=pointer]
+            - generic [ref=f4e265]:
+              - button "缩小" [ref=f4e266] [cursor=pointer]
+              - generic "方向键每次移动的像素数" [ref=f4e269]:
+                - text: 步长
+                - combobox "对象方向键移动步长" [ref=f4e270]:
+                  - option "1px" [selected]
+                  - option "2px"
+                  - option "5px"
+                  - option "10px"
+              - slider "画布缩放" [ref=f4e271]: "100"
+              - button "100%" [ref=f4e272] [cursor=pointer]
+              - button "适合窗口" [ref=f4e273] [cursor=pointer]
+        - separator "调整幻灯片列表宽度" [ref=f4e277]
+```
+
+

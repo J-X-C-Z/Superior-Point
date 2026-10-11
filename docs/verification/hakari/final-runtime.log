@@ -1,0 +1,61 @@
+NAME                     IMAGE                        COMMAND                  SERVICE   CREATED          STATUS                    PORTS
+superior-point-app-1     superior-point-app:4cb41ea   "docker-entrypoint.s…"   app       31 minutes ago   Up 24 minutes (healthy)   3000/tcp
+superior-point-caddy-1   caddy:2                      "caddy run --config …"   caddy     21 minutes ago   Up 21 minutes             80/tcp, 2019/tcp, 0.0.0.0:443->443/tcp, 0.0.0.0:443->443/udp, [::]:443->443/tcp, [::]:443->443/udp
+superior-point-db-1      postgres:18-bookworm         "docker-entrypoint.s…"   db        32 minutes ago   Up 24 minutes (healthy)   5432/tcp
+superior-point-caddy-1 31.71MiB / 1.695GiB 0.14%
+superior-point-app-1 65.11MiB / 384MiB 0.38%
+superior-point-db-1 29.71MiB / 128MiB 0.17%
+/superior-point-app-1 OOM=false restarts=0 policy=unless-stopped
+/superior-point-db-1 OOM=false restarts=0 policy=unless-stopped
+/superior-point-caddy-1 OOM=false restarts=0 policy=unless-stopped
+enabled
+Id=nginx.service
+ActiveState=active
+MainPID=25721
+NRestarts=0
+
+Id=postgresql@18-main.service
+ActiveState=active
+MainPID=153229
+NRestarts=0
+
+Id=hindsight.service
+ActiveState=active
+MainPID=7525
+NRestarts=0
+
+Id=hindsight-ui.service
+ActiveState=active
+MainPID=137426
+NRestarts=0
+
+Id=hbrclient.service
+ActiveState=active
+MainPID=2016
+NRestarts=0
+
+Id=mihomo.service
+ActiveState=active
+MainPID=37005
+NRestarts=0
+State  Recv-Q Send-Q Local Address:Port Peer Address:Port
+LISTEN 0      4096         0.0.0.0:443       0.0.0.0:*   
+LISTEN 0      200        127.0.0.1:5432      0.0.0.0:*   
+LISTEN 0      511          0.0.0.0:80        0.0.0.0:*   
+LISTEN 0      200        127.0.1.1:5432      0.0.0.0:*   
+LISTEN 0      4096            [::]:443          [::]:*   
+LISTEN 0      511             [::]:80           [::]:*   
+issuer=C=US, O=Let's Encrypt, CN=YE1
+subject=CN=sp.jxcz.top
+notBefore=Oct 11 07:55:57 2026 GMT
+notAfter=Jan  9 07:55:56 2027 GMT
+sha256 Fingerprint=BD:99:21:77:43:A8:E2:3D:53:F5:37:01:94:76:0A:98:7C:DB:E8:67:84:58:7E:CB:9B:76:76:0F:11:13:D7:42
+{"status":"healthy","database":"connected","db_acquire_ms":1.1,"db_pool_waiting":0,"db_pool_in_use":0,"db_pool_max":8,"db_pool_idle":3}Hindsight UI HTTP 307
+Preexisting Paperclip HTTP 502
+               total        used        free      shared  buff/cache   available
+Mem:            1735        1066         191         138         785         668
+Swap:           4095        1632        2463
+some avg10=5.21 avg60=1.54 avg300=0.60 total=1072451515
+full avg10=4.44 avg60=1.27 avg300=0.47 total=878027443
+
+remote_exit 0
