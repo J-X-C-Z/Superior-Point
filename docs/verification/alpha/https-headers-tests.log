@@ -1,0 +1,53 @@
+{"requestId":"3ea36e82-9a8f-4f26-8da5-73615f560584","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":126}
+{"requestId":"8786fa2e-6d8f-49cc-b48f-5a52829b1ec5","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":128}
+{"requestId":"5817244f-d06e-4821-8dd0-391d8435488c","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":120}
+{"requestId":"7fa4cde5-b0aa-4b85-aca8-2f34112dd783","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":121}
+{"requestId":"7661996c-d212-47bd-82a1-29f37f970771","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":142}
+{"requestId":"6c4af7b6-5b07-4aee-94ac-6d36e56c1554","method":"GET","route":"/api/v1/projects","status":401,"durationMs":2}
+{"requestId":"2ce4db24-ce2d-413c-9f1d-cc2a6050631e","method":"POST","route":"/api/v1/projects","status":403,"durationMs":0}
+{"requestId":"226d5283-3468-42f1-b2dd-048ad5e5d607","method":"POST","route":"/api/v1/projects","status":403,"durationMs":1}
+{"requestId":"cff2a90a-1e47-42e1-a918-f6400e8c5fa5","method":"POST","route":"/api/v1/projects","status":400,"durationMs":3}
+{"requestId":"49b976bf-bf98-4a69-9bf6-1fafb014d360","method":"POST","route":"/api/v1/projects","status":201,"durationMs":4}
+{"requestId":"9ccb1baa-cb58-4398-b914-c7cff78aaa5f","method":"GET","route":"/api/v1/projects/:id","status":404,"durationMs":1}
+{"requestId":"cadf778a-621b-4779-b731-5b6ce6eafbc9","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":1}
+{"requestId":"824a757b-19af-43f2-8c75-a33915022b23","method":"GET","route":"/api/v1/projects/:id","status":404,"durationMs":1}
+{"requestId":"c9ed89b8-7148-46a2-b245-fdd209d47b65","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":1}
+{"requestId":"f2c2cd24-c95d-448d-9f6a-955c010006fc","method":"GET","route":"/api/v1/projects","status":200,"durationMs":1}
+{"requestId":"b8f0f5b5-1df1-4b97-8ccd-51921cab83f0","method":"GET","route":"/api/v1/admin/users","status":403,"durationMs":1}
+{"requestId":"0764c054-6dbd-4937-a6d5-f57dbbafd10b","method":"GET","route":"/health/ready","status":403,"durationMs":0}
+{"requestId":"2fe66521-4f18-4015-bd8d-5d21f10688e9","method":"GET","route":"/api/v1/admin/users","status":200,"durationMs":1}
+{"requestId":"2173f06b-3f40-480d-b05a-6d72cf8e4d2c","method":"POST","route":"/api/v1/auth/logout","status":200,"durationMs":1}
+{"requestId":"bf8c55ab-67ee-4217-8779-8c7b361b40c0","method":"GET","route":"/api/v1/auth/me","status":401,"durationMs":0}
+✔ HTTP login/session, CSRF+Origin, owner isolation and no forged role/owner acceptance (983.028083ms)
+{"requestId":"30921308-8968-445a-aab8-68e48fe9c2fe","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":121}
+{"requestId":"60d459f0-2b3b-45cf-951d-68c322a8728a","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":119}
+{"requestId":"cc079cd7-4acb-470a-b77b-c31b13cadb37","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":122}
+{"requestId":"b707bb11-9977-4d64-b8cd-cbd743abe667","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":122}
+{"requestId":"8c4d455d-4fe5-435c-88a7-dc584fee63b5","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":127}
+{"requestId":"f3611d82-6102-4646-a3c9-b2736fbeb5f5","method":"POST","route":"/api/v1/projects","status":201,"durationMs":3}
+{"requestId":"4b6f4163-b767-425d-97a4-c7b345dcf199","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":4}
+{"requestId":"6d334f63-5498-4aec-802b-97d78738bfdf","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":2}
+{"requestId":"3503011a-eea1-4ac6-831f-4ddfca049e55","method":"PATCH","route":"/api/v1/projects/:id/document","status":409,"durationMs":1}
+{"requestId":"706c9da0-e082-4ec3-9958-a982d96cd594","method":"POST","route":"/api/v1/projects/:id/lease","status":200,"durationMs":2}
+{"requestId":"847de986-cc25-4afd-b7b2-cd0c4310c06a","method":"PATCH","route":"/api/v1/projects/:id/document","status":409,"durationMs":1}
+{"requestId":"4358ac80-f6cc-4ba5-8d56-e547e1f60dd1","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":2}
+{"requestId":"c434dd8c-993f-447c-8cef-239f98a8236e","method":"POST","route":"/api/v1/projects/:id/lease/renew","status":200,"durationMs":1}
+{"requestId":"2e814f91-460e-4f2e-b119-3dc5d5c0b282","method":"DELETE","route":"/api/v1/projects/:id/lease","status":200,"durationMs":1}
+{"requestId":"25b6e2ec-7dd8-4617-87a3-c4148e66634c","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":2}
+{"requestId":"be3cc073-5218-4929-936c-f8841d75888b","method":"DELETE","route":"/api/v1/projects/:id","status":200,"durationMs":3}
+{"requestId":"1298f1f9-f591-456c-b651-6086ab50b002","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":1}
+{"requestId":"2a820a60-58b5-4f29-8b6e-d555a4e2a20e","method":"POST","route":"/api/v1/projects/:id/restore","status":200,"durationMs":2}
+✔ HTTP document edit/retry/lease/CAS/trash roundtrip persists through a new app instance (841.179791ms)
+{"requestId":"38185cb7-61d0-41aa-bcb2-bbf291ba42a0","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":135}
+{"requestId":"e025ef6e-04a0-4650-9ca8-53284fe209b8","method":"POST","route":"/api/v1/auth/login","status":401,"durationMs":129}
+{"requestId":"77d50fc6-9be7-4032-ab97-4ec3ed3fb2e1","method":"POST","route":"/api/v1/auth/login","status":429,"durationMs":0}
+{"requestId":"cfd83695-d42b-4fdb-a144-9836831a9d0b","method":"GET","route":"unmatched","status":404,"durationMs":0}
+✔ HTTP login throttles uniformly and production cookies are Secure without token in JSON (435.161166ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2551.442125

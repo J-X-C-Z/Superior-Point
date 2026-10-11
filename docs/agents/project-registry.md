@@ -6,4 +6,6 @@
 
 临时子任务：CloudProjectStore/迁移/接力；PAT与权限；MCPBridge；后续Admin和部署。共享契约docs/architecture/alpha-contract.md。长期状态按Milestone汇总，不用第二调度器。v0.2及主题/PPTX新能力不作为当前AlphaP0自行扩展。
 
-待验收：Web/Agent同库纵向链路、Admin、Hakari环境与HTTPS/备份/恢复、正式CI与发布。生产凭据未建立，不能宣称Alpha已上线。
+当前交付：Alpha候选实现7d1f765；本地193通过/1原有跳过，服务44通过；真实Edge登录、云端保存/刷新、SDK MCP接力、账号隔离、断网独立恢复、后台概览与任务浏览器完整退出重开通过。备份真实受限账号public恢复与跨进程互斥已通过。详见docs/verification/alpha/acceptance.md。
+
+待发布验收：Hakari Docker实际构建/运行、DNS/HTTPS、每日及离机备份、正式CI/远端合并/发布；编辑器Chrome/Firefox与剩余兼容矩阵。生产凭据未建立，没有远程写入，不能宣称Alpha已上线。

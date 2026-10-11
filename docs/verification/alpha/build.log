@@ -1,0 +1,5 @@
+
+> superior-point-framework@0.0.1 build
+> node tools/build.js
+
+Built dist/SuperiorPoint_v0.0.1.html

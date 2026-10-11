@@ -1,0 +1,211 @@
+
+> superior-point-framework@0.0.1 test:service
+> node --import tsx --test --test-concurrency=1 tests/service/*.test.ts
+
+✔ admin aggregates, paginated metadata and audit never expose private documents or credentials (1310.54725ms)
+✔ sensitive admin methods require recent bound session reauthentication; CSRF rotation only rotates CSRF (2963.44025ms)
+✔ password reset/change revoke sessions and preserve password validation/audit transaction (3995.073916ms)
+✔ settings whitelist, safe reads, stale role and atomic multi-setting audit rollback (1378.49525ms)
+✔ admin routes validate schemas, paginate reads and delegate content mutations to ProjectService (1819.373041ms)
+{"requestId":"b9c158e1-2e44-4df2-84d2-177163efe830","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":264}
+{"requestId":"8a4f0e6b-0ef8-4531-a397-4a08c34817ca","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":282}
+{"requestId":"bf4c22e4-c918-4c2b-9d7c-371a898c6e09","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":247}
+{"requestId":"89f34111-1bbd-4a05-808f-77c5a63279e4","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":308}
+{"requestId":"9fe74b9d-a2ad-4b31-83bd-29a5a8758fc3","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":280}
+{"requestId":"6c7fe208-d089-433f-8b36-5e0eb70d788e","method":"GET","route":"/api/v1/projects","status":401,"durationMs":3}
+{"requestId":"1f7d9f2a-ce2d-41b9-8eb9-f5826889e18b","method":"POST","route":"/api/v1/projects","status":403,"durationMs":0}
+{"requestId":"41bb04a9-dc42-4bfc-9d2f-b8e6cecf50b8","method":"POST","route":"/api/v1/projects","status":403,"durationMs":2}
+{"requestId":"064a3844-dc82-4ed5-8cb4-270a54e0f968","method":"POST","route":"/api/v1/projects","status":400,"durationMs":1}
+{"requestId":"20d2b825-e337-434f-9bd6-8e667383a44e","method":"POST","route":"/api/v1/projects","status":201,"durationMs":6}
+{"requestId":"331d6b3d-c0d4-4ee9-969f-7b8657570839","method":"GET","route":"/api/v1/projects/:id","status":404,"durationMs":2}
+{"requestId":"790e1825-e34f-4422-8d3b-36b48a78bad1","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":2}
+{"requestId":"760d7843-020e-444d-bc4b-d0572d231a6e","method":"GET","route":"/api/v1/projects/:id","status":404,"durationMs":2}
+{"requestId":"8aa978b3-a335-4622-b83a-db777c6e9ef3","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":2}
+{"requestId":"fe95df73-2d52-4440-9b25-09f9245b22eb","method":"GET","route":"/api/v1/projects","status":200,"durationMs":2}
+{"requestId":"63507b3a-14d6-49b1-a92e-c40ce82b4d83","method":"GET","route":"/api/v1/admin/users","status":403,"durationMs":1}
+{"requestId":"e5e3654f-d13d-41fb-89f8-c347fbb0e3c0","method":"GET","route":"/health/ready","status":403,"durationMs":1}
+{"requestId":"b1cacbd0-5bb5-47a3-b7d2-d2c2a457ffed","method":"GET","route":"/api/v1/admin/users","status":200,"durationMs":2}
+{"requestId":"d80a41e5-cc03-452c-bbd7-fff0cac6052c","method":"POST","route":"/api/v1/auth/logout","status":200,"durationMs":3}
+{"requestId":"e193e6a4-dc46-408e-bfda-022b78f539a6","method":"GET","route":"/api/v1/auth/me","status":401,"durationMs":1}
+✔ HTTP login/session, CSRF+Origin, owner isolation and no forged role/owner acceptance (2081.878708ms)
+{"requestId":"70059408-5555-43f4-9276-88d02c2dc149","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":242}
+{"requestId":"9a904df6-e77a-4072-a16e-03a4bf6e2ea5","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":240}
+{"requestId":"03452766-9f58-422c-b154-5b907a0472db","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":246}
+{"requestId":"3dcac55f-de13-43eb-b44f-d7daeb66ae8c","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":239}
+{"requestId":"8934f327-a793-4213-84f8-5eec57103b02","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":240}
+{"requestId":"0cb82945-5c27-41a9-8270-b01c9a302280","method":"POST","route":"/api/v1/projects","status":201,"durationMs":5}
+{"requestId":"e252f8e6-5443-4f23-aed5-b954bdf4a56d","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":7}
+{"requestId":"71332a7c-0923-4725-86fb-2dc784bd5ea6","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":3}
+{"requestId":"ac92163d-7660-46b4-9f4d-468adfffb24c","method":"PATCH","route":"/api/v1/projects/:id/document","status":409,"durationMs":3}
+{"requestId":"7fb20e99-ee80-4197-b97d-5d69f8d195f3","method":"POST","route":"/api/v1/projects/:id/lease","status":200,"durationMs":3}
+{"requestId":"6d339ce7-189f-49a9-b5c6-24be7b692f13","method":"PATCH","route":"/api/v1/projects/:id/document","status":409,"durationMs":3}
+{"requestId":"afa3da83-203b-4bcc-b53d-049cc17c04e6","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"d911740f-e0ae-4081-9ba6-91205a8ebfe9","method":"POST","route":"/api/v1/projects/:id/lease/renew","status":200,"durationMs":3}
+{"requestId":"ff94d752-b976-4f17-af8b-a9c10038d4fd","method":"DELETE","route":"/api/v1/projects/:id/lease","status":200,"durationMs":3}
+{"requestId":"ce92f881-854f-451a-a8cc-c24f46b26ada","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"4b54a494-652f-46a0-9e99-7db1d4ffa1f2","method":"DELETE","route":"/api/v1/projects/:id","status":200,"durationMs":5}
+{"requestId":"50761f71-ba55-484b-8275-8a41c333df4b","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":2}
+{"requestId":"0b5a9e0e-8583-4ebc-8c6d-5799f48d90aa","method":"POST","route":"/api/v1/projects/:id/restore","status":200,"durationMs":4}
+✔ HTTP document edit/retry/lease/CAS/trash roundtrip persists through a new app instance (1644.438208ms)
+{"requestId":"f0484444-de6d-4d89-9075-23800740ca81","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":254}
+{"requestId":"b7ec0d92-771c-4d94-8e77-260156e8e760","method":"POST","route":"/api/v1/auth/login","status":401,"durationMs":237}
+{"requestId":"e215da3e-fe88-4b92-be58-2b14e2023206","method":"POST","route":"/api/v1/auth/login","status":429,"durationMs":0}
+{"requestId":"900a8ceb-b326-4e03-90df-b0ada1a53780","method":"GET","route":"unmatched","status":404,"durationMs":0}
+✔ HTTP login throttles uniformly and production cookies are Secure without token in JSON (859.328416ms)
+✔ auth stores Argon2id and only hashes of session secrets; failures are uniform and audited (2660.999417ms)
+✔ RBAC, disable, session revocation and expiry recheck current persisted state (1701.713083ms)
+✔ concurrent bootstrap and last-admin changes serialize; audit failures roll back mutations (1269.565584ms)
+✔ admin transactions reject captured actors after logout, revocation or session expiry (2409.027125ms)
+✔ concurrent logout/admin mutation and mutual admin revocation avoid lock cycles (1580.849833ms)
+✔ real pg_dump snapshot, assets, isolated pg_restore and persisted backup status (2623.003917ms)
+✔ startup preserves another backup process holding the PostgreSQL flight lock (834.397833ms)
+{"requestId":"c9f9fb1c-f082-4a23-b36d-7d3c448326d5","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":624}
+{"requestId":"dae01530-567d-45fb-8183-fe29059f68d2","method":"POST","route":"/api/v1/projects/import","status":201,"durationMs":27}
+{"requestId":"7acb98f4-0b90-4681-b595-3c759bbf33a4","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":6}
+{"requestId":"6bc26818-d763-4331-b952-5037a348218a","method":"POST","route":"/api/v1/projects/:id/lease","status":200,"durationMs":9}
+{"requestId":"16c21ecb-524f-4ba7-ba7c-76a02d729a73","method":"POST","route":"/api/v1/projects/:id/lease","status":409,"durationMs":6}
+{"requestId":"a037d90a-12c3-41f6-ac4e-0d37487f165f","method":"PUT","route":"/api/v1/projects/:id/snapshot","status":200,"durationMs":16}
+{"requestId":"1852db8b-58c0-4926-b4d5-18c28db4a69a","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"77eb2dba-64c6-4a93-ac86-fe16493936d1","method":"PUT","route":"/api/v1/projects/:id/snapshot","status":200,"durationMs":9}
+{"requestId":"e6e7a6f5-2ccb-4f8a-a393-352308a244ac","method":"PUT","route":"/api/v1/projects/:id/snapshot","status":200,"durationMs":6}
+{"requestId":"b2c0b6bc-5c77-4632-a87e-52582c22dbf6","method":"DELETE","route":"/api/v1/projects/:id/lease","status":200,"durationMs":9}
+{"requestId":"7efa78ef-701a-4b78-99fc-f80b5103b5f5","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":4}
+{"requestId":"f28f2dc3-c278-436f-b0ad-31e7032d8756","method":"DELETE","route":"/api/v1/projects/:id","status":200,"durationMs":12}
+{"requestId":"6a4d2b3c-7591-42cf-92d4-1b81d72ae89c","method":"GET","route":"/api/v1/projects","status":200,"durationMs":5}
+{"requestId":"c3c12349-ecaa-4bc4-b1fb-673673c260dd","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"e559dfda-0c6c-40b1-a1ac-da0a1824d0ae","method":"GET","route":"/api/v1/projects/:id/document","status":404,"durationMs":4}
+{"requestId":"40241fa8-78e0-4918-912e-6f5efd3b84c3","method":"GET","route":"/api/v1/projects","status":200,"durationMs":4}
+{"requestId":"1fe2562e-530a-44c7-bafb-b93c8862efbe","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"28968a05-2548-4ac1-bbd5-00c221f2e47e","method":"POST","route":"/api/v1/projects/:id/restore","status":200,"durationMs":10}
+{"requestId":"61a25eed-34c9-46a3-8128-de9f24a255d5","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"e8897c42-7e5c-4267-931c-c0d3c841f780","method":"GET","route":"/api/v1/auth/me","status":200,"durationMs":2}
+{"requestId":"e22459dc-164c-46f7-952f-18de6b9f31d6","method":"GET","route":"/api/v1/auth/me","status":200,"durationMs":1}
+{"requestId":"0a2f8d54-f5b9-4c4d-ae3d-ee786887d943","method":"POST","route":"/api/v1/auth/csrf","status":200,"durationMs":4}
+{"requestId":"dabf6f5e-6985-49ae-a170-e47ba102fc6e","method":"POST","route":"/api/v1/projects/:id/lease","status":403,"durationMs":5}
+{"requestId":"45c25ca6-8240-4b8a-a0ec-2188a07f8eee","method":"GET","route":"/api/v1/auth/me","status":200,"durationMs":3}
+{"requestId":"a174f22b-2592-419c-a3ba-8df53b0ba116","method":"POST","route":"/api/v1/auth/csrf","status":200,"durationMs":5}
+{"requestId":"d5cbfc49-506d-42f4-ac77-bdfa35c07e82","method":"POST","route":"/api/v1/projects/:id/lease","status":200,"durationMs":30}
+{"requestId":"b7742826-5b41-42d9-b7d0-d3a79de6bc49","method":"DELETE","route":"/api/v1/projects/:id/lease","status":200,"durationMs":16}
+✔ browser cloud store uses real Cookie/CSRF/import/snapshot/lease APIs and PostgreSQL receipts (9096.296833ms)
+✔ deployment roles: actual initializer, independent migrations, app DML without DDL, and non-superuser public-schema backup restore (4548.011541ms)
+{"requestId":"6a609e7b-181b-440d-829b-14b0cdcde2da","method":"POST","route":"/api/v1/projects","status":201,"durationMs":14}
+{"requestId":"e2231328-51d1-4559-842e-c2b6675cb467","method":"POST","route":"/api/v1/projects/:id/lease","status":200,"durationMs":8}
+{"requestId":"ed02cbad-1d30-440e-a456-e58aba71aa20","method":"PATCH","route":"/api/v1/projects/:id/document","status":200,"durationMs":9}
+{"requestId":"73fe7b9a-944d-4f7b-b2f5-4fc339a260de","method":"DELETE","route":"/api/v1/projects/:id/lease","status":200,"durationMs":5}
+{"requestId":"2572ae1a-403e-4efd-8e7b-60b5e423d8f6","method":"GET","route":"/api/v1/projects/:id/slides/:slideId","status":200,"durationMs":4}
+{"requestId":"2b552183-b2a3-418f-9cfd-3c959792a76b","method":"GET","route":"/api/v1/projects/:id/validate","status":200,"durationMs":6}
+{"requestId":"593dac4a-33f1-45b3-ae08-6298c86c8efd","method":"GET","route":"/api/v1/projects/:id/slides/:slideId/render","status":200,"durationMs":5}
+{"requestId":"40dfb1c8-4923-487d-a382-89eb5b25ae0f","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":4}
+{"requestId":"015b37f0-300e-4914-a4ca-2fda7504742c","method":"GET","route":"/api/v1/projects/:id","status":200,"durationMs":3}
+{"requestId":"ff63f185-94c7-44be-8327-c17c9d076143","method":"GET","route":"/api/v1/projects","status":200,"durationMs":5}
+{"requestId":"88cdcc60-a060-492d-9029-cff68ddd1a01","method":"POST","route":"/api/v1/projects/:id/lease","status":409,"durationMs":4}
+{"requestId":"f7c6c1c8-9bc9-4f1a-bd0d-b8584e1c017c","method":"POST","route":"/api/v1/projects/:id/lease","status":200,"durationMs":4}
+{"requestId":"be52d528-f488-47dd-b374-14e20e7fddc4","method":"PATCH","route":"/api/v1/projects/:id/document","status":409,"durationMs":5}
+{"requestId":"c5272d73-73f4-427e-97d6-e721c08e9691","method":"DELETE","route":"/api/v1/projects/:id/lease","status":200,"durationMs":4}
+{"requestId":"13bba85b-5dd0-4583-850d-56a1449ed118","method":"POST","route":"/api/v1/projects/:id/exports","status":200,"durationMs":5}
+{"requestId":"b8961611-3f8c-4ded-9aa6-e1d7f6af3b7f","method":"POST","route":"/api/v1/projects/import","status":201,"durationMs":8}
+{"requestId":"772e66cb-30fa-42dd-a667-c19c66c3714e","method":"GET","route":"/api/v1/projects/:id/document","status":200,"durationMs":5}
+{"requestId":"56017f2d-159c-4326-bab9-4b453231b2df","method":"POST","route":"/api/v1/projects/:id/exports","status":403,"durationMs":4}
+{"requestId":"ec83932c-2133-40d0-bf16-1dd78d49ae0f","method":"GET","route":"/api/v1/projects/:id/document","status":403,"durationMs":3}
+{"requestId":"83ce8634-0f0c-44a8-be6e-f45e40925c3e","method":"GET","route":"/api/v1/projects/:id/document","status":401,"durationMs":3}
+✔ real SDK stdio -> HTTP -> PAT -> PostgreSQL edits, leases, import/export, revocation and scopes (1553.560541ms)
+✔ real PostgreSQL migration replay, checksum drift refusal, rollback and rebuild (285.604833ms)
+✔ PostgreSQL transaction failure does not leave partial schema/data (85.628958ms)
+✔ real HTTP service process restart preserves PostgreSQL document and sessions (2303.305208ms)
+✔ bootstrap CLI consumes stdin only, initializes once, and never prints the password (948.880417ms)
+✔ PostgreSQL CRUD preserves unknown data, returns metadata only, and bumps trash/restore revisions (93.473333ms)
+✔ owner isolation applies to every project operation, including administrators (75.438833ms)
+✔ concurrent CAS commits one writer; matching receipts replay original result without duplicate commits (67.413792ms)
+✔ leases require actor-owned unexpired tokens, forbid takeover, and gate snapshots and regular writes (74.3975ms)
+✔ disabled users are rechecked on reads, writes, receipts, and leases; MCP scopes remain bounded (60.130583ms)
+✔ invalid batches and database audit failure roll back document, revision, and mutation receipt together (90.948791ms)
+✔ rename, trash and restore honor lease tokens and replay committed semantic mutations across renewed lease tokens (68.659125ms)
+✔ service boundaries enforce title and encoded document limits without committing partial data (285.487916ms)
+✔ captured actors cannot reuse revoked, expired, or differently bound sessions, including receipt replay (63.775666ms)
+✔ an in-flight write holds its session lock until commit; waiting revocation blocks every later write (79.974833ms)
+✔ real service SIGTERM/restart preserves old browser session, canonical document, CAS and mutation receipts (1414.37175ms)
+{"requestId":"00b6c25e-f599-49e3-9213-ce9ea3d2b070","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":183}
+{"requestId":"7a386c22-3a03-4bad-97bf-9de4dd365dad","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":176}
+{"requestId":"05f06319-aeef-4122-bc58-3603ac7453ad","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":172}
+{"requestId":"259e44a1-1772-4f27-bcea-dee84edd93cd","method":"GET","route":"/app","status":200,"durationMs":1}
+{"requestId":"6d86ef76-b5e4-4304-aea0-9c14eb9b7f65","method":"GET","route":"/web/*","status":200,"durationMs":1}
+{"requestId":"204bf8ba-21af-411b-81ce-d2d15527265b","method":"GET","route":"/web/*","status":200,"durationMs":1}
+{"requestId":"49485cd1-d6fd-4627-9e7e-5a342a333edb","method":"GET","route":"/web/*","status":200,"durationMs":0}
+{"requestId":"28b36abc-657a-4842-817b-e1f3283e67ca","method":"GET","route":"/storage/*","status":200,"durationMs":1}
+{"requestId":"dbedd853-436f-4cf0-8d58-6451994ec922","method":"GET","route":"/core/*","status":200,"durationMs":0}
+{"requestId":"c728fea4-706b-4371-8638-91af9b0ed15a","method":"GET","route":"/web/*","status":200,"durationMs":0}
+{"requestId":"2d6e0e5b-728f-4ee2-b2b7-de7d90769f14","method":"GET","route":"/web/*","status":200,"durationMs":1}
+✔ HTTP app HTML resolves real static JS/CSS with correct MIME types after repository root normalization (966.117583ms)
+{"requestId":"8e77bc2c-427a-4925-bc75-05438c15182a","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":177}
+{"requestId":"59bca9fb-274e-452e-aa08-dcf5b3b68648","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":172}
+{"requestId":"f4102e45-0216-4829-a7c0-aff5bed1dd6f","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":165}
+{"requestId":"79963771-d615-42d0-a591-e74d6b5a34cd","method":"GET","route":"/admin","status":302,"durationMs":1}
+{"requestId":"0244365d-a8cd-4f42-9ee9-651249787840","method":"GET","route":"/admin","status":403,"durationMs":0}
+{"requestId":"2e4e0905-9922-452f-80f4-90de61d2dd72","method":"GET","route":"/admin","status":200,"durationMs":1}
+{"requestId":"1744630f-5e82-4e69-8a7e-bfd6977fa5e6","method":"GET","route":"/web/*","status":302,"durationMs":0}
+{"requestId":"826e0b5e-ce17-4afb-b724-1265ff247634","method":"GET","route":"/web/*","status":403,"durationMs":0}
+{"requestId":"c17ebd90-3e84-4f95-9f30-6dc3a8b13f05","method":"GET","route":"/web/*","status":200,"durationMs":0}
+{"requestId":"44df8176-5c7b-4ec2-8e20-06afd6bd9b58","method":"GET","route":"/web/*","status":302,"durationMs":0}
+{"requestId":"0267f633-64cc-469d-a590-9b7becf5b907","method":"GET","route":"/web/*","status":403,"durationMs":0}
+{"requestId":"d6f437d8-5d59-4862-8865-f58e530bb3d0","method":"GET","route":"/web/*","status":200,"durationMs":1}
+{"requestId":"53a41883-dc78-49dd-a4ad-e08142305431","method":"POST","route":"/api/v1/me/tokens","status":201,"durationMs":5}
+{"requestId":"9d442140-1607-49ab-af9c-3eeaf16c0b0e","method":"GET","route":"/admin","status":403,"durationMs":1}
+✔ HTTP both admin HTML entry paths enforce ordinary-user denial and unauthenticated redirect (794.650459ms)
+{"requestId":"f57d60ac-0c1d-4ec8-aafa-a8a7071121fc","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":175}
+{"requestId":"aa666f77-3cd1-4775-a9fc-e56812b17ab0","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":226}
+{"requestId":"c8e9a6f6-c9ac-4d3b-a9bc-0e57cba47f2f","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":172}
+{"requestId":"a6e55b63-3258-4de5-926f-2964702a802c","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"1d3b3e06-3a33-4346-96eb-eef46e690a48","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"c004c16c-8059-4c38-8e1a-1e635024423e","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"4884dd78-89a2-4598-a2a0-4ff60cb1aab2","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"0204a3fd-cd4c-4928-8b04-f6003b2e1dde","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"1a5b72bf-002b-4298-bc17-0e718cf6ad2d","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"272f3539-9389-44d6-a6ca-06253fe6eb43","method":"GET","route":"/web/*","status":404,"durationMs":0}
+{"requestId":"67d9adf6-3b4d-4587-98ec-81b0b47af6ab","method":"GET","route":"unmatched","status":404,"durationMs":0}
+{"requestId":"9c796c86-fcdf-4eb9-9681-5e09141bb583","method":"GET","route":"/web/*","status":404,"durationMs":0}
+{"requestId":"32b7564b-5bbd-4fe7-a26d-e43f06f75d87","method":"GET","route":"/web/*","status":404,"durationMs":0}
+✔ HTTP static allowlist rejects private server files and encoded path traversal (811.327ms)
+{"requestId":"798a08e9-94af-46d4-94d6-cf2b23015e1f","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":228}
+{"requestId":"60ec7519-b1b6-4202-8087-1db8d250ff2f","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":229}
+{"requestId":"e515756d-cd4a-4963-9a7e-9fa47f95e678","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":185}
+{"requestId":"c63929b2-92f5-48dc-bf17-d57acc133abe","method":"PATCH","route":"/api/v1/admin/settings","status":200,"durationMs":15}
+{"requestId":"503f6bf3-bba7-443f-9ad1-59d4eaf0bc51","method":"GET","route":"/api/v1/public/config","status":200,"durationMs":0}
+{"requestId":"1d8ef1b4-c201-4a1d-8932-7101cb7fe9e1","method":"POST","route":"/api/v1/projects","status":503,"durationMs":1}
+{"requestId":"53085279-eada-4ec4-aa35-30e68130d18b","method":"POST","route":"/api/v1/projects","status":201,"durationMs":5}
+{"requestId":"0a6a15ff-5705-4bcd-bbb5-9b1e9a7fce54","method":"POST","route":"/api/v1/me/tokens","status":201,"durationMs":3}
+{"requestId":"206963ea-7f14-4e70-b161-08dc40abead5","method":"POST","route":"/api/v1/projects","status":503,"durationMs":2}
+{"requestId":"7bb7043e-e284-435d-b985-0d84c5ae4b4b","method":"PATCH","route":"/api/v1/admin/settings","status":200,"durationMs":2}
+{"requestId":"5443230d-ba48-4a9f-978e-5cf356f31d6a","method":"POST","route":"/api/v1/projects","status":413,"durationMs":0}
+{"requestId":"21389e5c-b313-4a32-814c-6cfd4046376b","method":"POST","route":"/api/v1/projects","status":201,"durationMs":2}
+✔ HTTP maintenance and upload policy enforce actual project requests without leaking private public config (965.862042ms)
+{"requestId":"3cca5fa4-0c15-4cca-bd0b-41ff583aec58","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":172}
+{"requestId":"29ff6807-6ab5-46dc-91b2-a76d5205d2a9","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":190}
+{"requestId":"337062a2-9ac8-4f73-81d7-32c02f01e863","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":186}
+{"requestId":"63eecc18-54b8-491c-905d-877f83492b04","method":"PATCH","route":"/api/v1/admin/settings","status":403,"durationMs":2}
+{"requestId":"d8234afe-2842-44a4-84ee-5a2eec8399b0","method":"GET","route":"/api/v1/admin/dashboard","status":200,"durationMs":9}
+{"requestId":"4bcb0e83-cae7-4007-a6dc-5b77cf5e8b30","method":"POST","route":"/api/v1/auth/reauth","status":401,"durationMs":176}
+{"requestId":"88a2ff0c-a0e7-4258-b9d9-86cd8e2726dd","method":"POST","route":"/api/v1/auth/reauth","status":200,"durationMs":181}
+{"requestId":"5b9307c4-147c-495d-b088-c7c4e00dd881","method":"PATCH","route":"/api/v1/admin/settings","status":200,"durationMs":3}
+{"requestId":"91c8676e-3107-4e6d-8e16-e015289d587d","method":"POST","route":"/api/v1/auth/logout","status":200,"durationMs":2}
+{"requestId":"0129f497-d434-4bda-bb9a-9ec9e177d4fb","method":"GET","route":"/api/v1/admin/dashboard","status":401,"durationMs":0}
+✔ HTTP sensitive admin writes require recent password verification and stale sessions fail after revocation (1175.059708ms)
+{"requestId":"4fbf1910-3981-493d-839d-472ff0bb9924","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":195}
+{"requestId":"a9eddd78-129d-46d8-aac2-bc8c9c74b2fd","method":"POST","route":"/api/v1/admin/users","status":201,"durationMs":188}
+{"requestId":"86251b07-c99e-4e38-bddf-9ca895542af4","method":"POST","route":"/api/v1/auth/login","status":200,"durationMs":190}
+{"requestId":"9f11bfa0-389d-434d-90c7-7c8ae541560c","method":"POST","route":"/api/v1/auth/csrf","status":200,"durationMs":2}
+{"requestId":"162e46ef-23dd-419c-bc7f-2db07a14801c","method":"POST","route":"/api/v1/projects","status":403,"durationMs":2}
+{"requestId":"a8884a9b-1525-4af9-b5f3-51b41b64b83c","method":"POST","route":"/api/v1/projects","status":201,"durationMs":3}
+✔ HTTP rotated CSRF returns explicit safe-retry code and new CSRF succeeds (848.126125ms)
+✔ PAT plaintext appears only at creation; defaults, metadata, audit and web-only management (934.443834ms)
+✔ PAT scopes, project allowlists and expiry validate; export does not grant read (1331.103125ms)
+✔ PAT expiry, revoke, owner disable and fresh role are authoritative (883.654166ms)
+✔ token management rejects revoked sessions and stale admin role; audit failure rolls back creation/revoke (1307.593042ms)
+✔ transactional token SHARE lock orders a project commit before concurrent revocation (914.815334ms)
+ℹ tests 44
+ℹ suites 0
+ℹ pass 44
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65417.821708
