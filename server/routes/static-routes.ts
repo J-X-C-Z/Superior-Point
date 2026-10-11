@@ -6,6 +6,7 @@ import type {Actor} from '../contracts.js';
 const root=path.resolve(fileURLToPath(new URL('../../',import.meta.url)));
 const types:Record<string,string>={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.svg':'image/svg+xml'};
 export function registerStaticRoutes(app:FastifyInstance,actor:(request:FastifyRequest)=>Promise<Actor>){
+ app.get('/share',async(_,reply)=>reply.type('text/html; charset=utf-8').send(await readFile(path.join(root,'web/share.html'))));
  app.get('/favicon.ico',async(_,reply)=>reply.code(204).send());
  app.get('/',async(_,reply)=>reply.redirect('/app'));
  app.get('/login',async(_,reply)=>reply.redirect('/app?login=1'));

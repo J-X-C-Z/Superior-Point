@@ -1,3 +1,4 @@
+import {openShareCenter} from './share-center.js';
 import {fiveSlideDocument} from '../examples/five-slides.js';
 import {DocumentCore,createDocument} from '../core/document-core.js';
 import {ProjectStore,AutosaveQueue} from '../storage/project-store.js';
@@ -6,7 +7,7 @@ import {exportHTML,renderSlideSVG,inspectRenderCompatibility} from '../io/html.j
 import {readImportFile,createImportDocument,importErrorMessage} from '../io/project-import.js';
 import {exportEditorHTML} from '../io/editor-export.js';
 import {mountEditor,registerEditorAdapter,getEditorAdapter} from './editor-adapter.js';
-import {mergeCloudDocument} from '../storage/cloud-collaboration.js';
+import {subscribeProjectEvents} from './project-events.js';
 import {initCloudWorkspace} from './cloud-workspace.js';
 import {WorkspaceLibrary} from '../storage/workspace-library.js';
 import {ThemeStore} from '../storage/theme-store.js';
@@ -20,9 +21,9 @@ const $=id=>document.getElementById(id),localStore=new ProjectStore(),owner=cryp
 let store=localStore,cloudWorkspace=null;
 const localThemes=new ThemeStore();let cloudThemes=null,themeLibrary=null,projectHistory=null;
 const library=new WorkspaceLibrary({localStore,getCloudStore:()=>cloudWorkspace?.getCloudStore()||null});
-let navigation=Promise.resolve(),listRender=0,session=0,closing=false,drainingEditor=false,recovering=false,recoveryFlight=null,recoveryError=null;
+let navigation=Promise.resolve(),listRender=0,libraryPage=0,session=0,closing=false,drainingEditor=false,recovering=false,recoveryFlight=null,recoveryError=null;
 let importFlight=null,importSource=null;
-let leaseWait=null,collaborationTimer=null;
+let leaseWait=null,revisionSubscription=null;
 const navigate=fn=>{const next=navigation.catch(()=>{}).then(fn);navigation=next;return next;};
 let view='home',core=null,lock=null,autosave=null,editor=null,persistedRevision=null,heartbeat=null,notifyTimer=null;
 const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('sp-framework-changes'):null;
@@ -131,7 +132,8 @@ function repaint(){const doc=core.getDocument();$('project-title').value=doc.tit
 function rememberCloudDraft(doc){if(store.storage==='cloud')store.captureDraft(doc,persistedRevision).then(()=>cloudWorkspace?.refreshDrafts()).catch(error=>notify('本地恢复草稿未保存，请保留当前页面并导出备份：'+error.message,true));}
 function edit(operations,expectedRevision=core?.getDocument().revision){if(closing&&!drainingEditor)throw new Error('项目正在切换，当前编辑已停止');if(!core||!lock)throw new Error('当前项目只读，请先获取写入权');const result=core.edit(operations,{expectedRevision});rememberCloudDraft(result);autosave.schedule(core.getDocument());repaint();return result;}
 function clearCurrent(){
- clearInterval(collaborationTimer);collaborationTimer=null;
+ revisionSubscription?.close();revisionSubscription=null;
+ $('remote-revision-notice').hidden=true;
  stopLeaseWait();
  document.body.classList.remove('editor-integrated','editor-attention');
  clearInterval(heartbeat);
@@ -154,14 +156,14 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
  core=new DocumentCore(rec.document);lock=lease;persistedRevision=rec.document.revision;recoveryError=null;
  const ownerSession=++session,ownerCore=core;
  const active=()=>ownerSession===session&&ownerCore===core;
- let savedRevision=rec.document.revision,savedDocument=rec.document,syncing=false;
+ let savedRevision=rec.document.revision;
  autosave=new AutosaveQueue({
   write:async doc=>{
    if(!active())throw new Error('保存会话已失效');
    const lease=lock;
    try{
     const saved=await store.save(doc,{expectedRevision:savedRevision,lock:lease});
-    savedRevision=saved.document.revision;savedDocument=saved.document;
+    savedRevision=saved.document.revision;
     if(active()){persistedRevision=savedRevision;announce(doc.id);}
    }catch(error){if(active()&&error.code==='LOCK_LOST'&&lock?.token===lease?.token)loseLock();throw error;}
   },
@@ -182,28 +184,11 @@ async function activateProject(rec,lease,{waitForLease=false}={}){
  try{editor=await mountEditor({container:$('editor-mount'),document:core.getDocument(),readOnly:!lock||closing,onEdit:scoped(edit),onUndo:scoped(undo),onRedo:scoped(redo),onSave:scoped(()=>autosave.flush()),getHistoryState:()=>({canUndo:core?.canUndo??false,canRedo:core?.canRedo??false}),onImportFile:importFile,onExport:format=>format==='json'?exportJSONBackup():exportProject(undefined,{audience:format==='audience'}),onHome:()=>home(),onThemes:()=>home('themes'),onCommitRejected:error=>{if(!active())return;stopLeaseWait();recoveryError=error;setState('failed',core?.getDocument().revision,error);refreshRecoveryControls(true);}});}
  catch(error){editorValid=false;$('editor-mount').textContent='编辑器加载失败，项目仍保留，可导出备份。'+error.message;editor=null;notify('编辑器加载失败：'+error.message,true);}
  repaint();startHeartbeat();if(waitForLease&&!lock)startLeaseWait();
- if(store.storage==='cloud'&&lock)collaborationTimer=setInterval(async()=>{
-  if(!active()||!lock||syncing||closing||recovering||autosave.running||recoveryError)return;
-  syncing=true;
-  try{
-   const remote=await store.get(rec.id);
-   if(!active()||closing||!remote||remote.deletedAt||remote.document.revision<=savedRevision)return;
-   // Drain native typing before replacing the visible snapshot, including IME edits.
-   await flushEditor();
-   if(!active()||!lock||closing||remote.document.revision<=savedRevision||autosave.running||recoveryError||editor?.getRejectedSnapshot?.())return;
-   const merged=mergeCloudDocument(savedDocument,core.getDocument(),remote.document);
-   autosave.cancel();autosave.lastError=null;
-   savedRevision=remote.document.revision;savedDocument=remote.document;persistedRevision=savedRevision;
-   core.synchronize(merged);repaint();
-   if(merged.revision>savedRevision){rememberCloudDraft(merged);autosave.schedule(merged);}
-   else setState('saved',savedRevision);
-  }catch(error){
-   if(active()&&!['OFFLINE','TIMEOUT'].includes(error.code)){
-    autosave.pause();recoveryError=error;setState('failed',core.getDocument().revision,error);
-   }
-   // Transient read failures leave the visible document and recovery draft intact.
-  }finally{syncing=false;}
- },1000);
+ if(store.storage==='cloud')revisionSubscription=subscribeProjectEvents({api:store.api,projectId:rec.id,revision:persistedRevision,onRevision:event=>{
+  if(!active()||event.revision<=persistedRevision&&!event.deleted)return;
+  const notice=$('remote-revision-notice');notice.textContent=event.deleted?'此项目已在云端移到回收站。当前文稿和恢复草稿保留。':`云端已有新修订 r${event.revision}。当前内容和草稿保持不变；请返回工作台查看历史差异，保存冲突时可恢复为独立项目。`;notice.hidden=false;
+ },onState:state=>{if(!active())return;if(state==='access-revoked'||state==='account-changed'){const notice=$('remote-revision-notice');notice.textContent='云端访问已失效。当前内容保留，请导出或恢复草稿后重新登录。';notice.hidden=false;}}});
+
  return core.getDocument();
 }
 async function openProjectNow(id,{takeover=false}={}){
@@ -334,15 +319,16 @@ function openEntry(entry){return navigate(async()=>{
 });}
 async function mutateCard(entry,action,newTitle){
  if(action==='open')return openEntry(entry);
+ if(action==='share-link'){const selected=library.storeFor(entry);await openShareCenter({document,api:selected.api,projectId:entry.id,accountId:entry.accountId});return;}
  if(action==='history'){const selected=library.storeFor(entry);if(entry.source!=='cloud')throw new Error('历史版本目前支持云端项目');projectHistory?.destroy();projectHistory=mountProjectHistory({document,api:selected.api,projectRef:{source:'cloud',projectId:entry.id,accountId:entry.accountId},notify,onRestore:async request=>{const target=library.storeFor(entry),lease=await target.acquire(entry.id,owner);if(!lease)throw new Error('项目正在另一个写入方编辑，请等待释放后恢复');try{const restored=await target.api.request('/projects/'+encodeURIComponent(entry.id)+'/restore-revision',{method:'POST',body:{...request,leaseToken:lease.token}});library.storeFor(entry);announce(entry.id);await renderProjects();return restored;}finally{await target.release(lease).catch(()=>notify('写入权清理失败，将自动到期。',true));}}});projectHistory.open();return;}
  if(action==='upload'){
   if(!cloudWorkspace.api.user||!cloudWorkspace.getCloudStore()){cloudWorkspace.openAccount();return;}
   await library.migrate(entry);notify('已上传并核对云端副本；本地原项目保留。');announce();await renderProjects();return;
  }
- const projectStore=library.storeFor(entry),id=entry.id,rec=action==='rename'?entry.record:await projectStore.get(id);if(!rec)throw new Error('项目已不存在');
+ const projectStore=library.storeFor(entry),id=entry.id,rec=await projectStore.get(id);if(!rec)throw new Error('项目已不存在');
  if(action==='export')return exportProject(id,{projectStore});if(action==='share')return exportProject(id,{audience:true,projectStore});
  if(action==='copy'){const doc=structuredClone(rec.document);doc.id=crypto.randomUUID();doc.title+=' · 副本';doc.revision=0;doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;library.storeFor(entry);await projectStore.create(doc);}
- if(action==='rename'){library.storeFor(entry);const lease=await projectStore.acquire(id,owner);if(!lease)throw new Error('项目正在另一个标签页编辑');try{library.storeFor(entry);const c=new DocumentCore(rec.document);c.edit([{type:'updateProject',properties:{title:newTitle}}],{expectedRevision:rec.document.revision});await projectStore.save(c.getDocument(),{expectedRevision:rec.document.revision,lock:lease});}finally{await projectStore.release(lease).catch(()=>notify('写入权清理失败，将自动到期。',true));}}
+ if(action==='rename'){if(rec.document.revision!==entry.record.document.revision)throw new Error('项目已有更新，重命名冲突；请刷新后重试。');library.storeFor(entry);const lease=await projectStore.acquire(id,owner);if(!lease)throw new Error('项目正在另一个标签页编辑');try{library.storeFor(entry);const c=new DocumentCore(rec.document);c.edit([{type:'updateProject',properties:{title:newTitle}}],{expectedRevision:rec.document.revision});await projectStore.save(c.getDocument(),{expectedRevision:rec.document.revision,lock:lease});}finally{await projectStore.release(lease).catch(()=>notify('写入权清理失败，将自动到期。',true));}}
  if(action==='delete'||action==='restore'){library.storeFor(entry);await projectStore.setDeleted(id,action==='delete',{owner});notify(action==='delete'?'已移入回收站，可随时恢复。':'项目已恢复。');}
  announce();await renderProjects();
 }
@@ -381,13 +367,16 @@ function renderEntries(result,trash){
  entries.sort($('sort').value==='title'?(a,b)=>a.record.document.title.localeCompare(b.record.document.title):(a,b)=>view==='recent'?b.record.openedAt-a.record.openedAt:b.record.modifiedAt-a.record.modifiedAt);
  $('library-status').hidden=!result.cloudError;$('library-status').textContent=result.cloudError?'云端项目暂不可用，本地项目仍可打开。'+result.cloudError.message:'';
  $('list-title').firstChild.textContent=trash?'回收站 ':view==='recent'?'最近使用 ':'我的项目 ';$('count').textContent=String(entries.length).padStart(2,'0');$('empty').hidden=!!entries.length;$('projects').replaceChildren();
- for(const entry of entries){const rec=entry.record,doc=rec.document,card=document.createElement('article');card.className='project';card.dataset.projectId=entry.id;card.dataset.source=entry.source;if(entry.accountId)card.dataset.accountId=entry.accountId;
+ const pageSize=24;libraryPage=Math.min(libraryPage,Math.max(0,Math.ceil(entries.length/pageSize)-1));
+ const pager=$('project-pages');pager.replaceChildren();pager.hidden=entries.length<=pageSize;
+ if(!pager.hidden){const previous=document.createElement('button'),next=document.createElement('button'),label=document.createElement('span');previous.textContent='上一页';next.textContent='下一页';label.textContent=`第 ${libraryPage+1} / ${Math.ceil(entries.length/pageSize)} 页`;previous.disabled=libraryPage===0;next.disabled=(libraryPage+1)*pageSize>=entries.length;previous.onclick=()=>{libraryPage--;renderEntries(result,trash);};next.onclick=()=>{libraryPage++;renderEntries(result,trash);};pager.append(previous,label,next);}
+ for(const entry of entries.slice(libraryPage*pageSize,(libraryPage+1)*pageSize)){const rec=entry.record,doc=rec.document,card=document.createElement('article');card.className='project';card.dataset.projectId=entry.id;card.dataset.source=entry.source;if(entry.accountId)card.dataset.accountId=entry.accountId;
   const cover=document.createElement('button');cover.className='cover';cover.style.setProperty('--cover-ratio',String(doc.canvas.width/doc.canvas.height));cover.setAttribute('aria-label','打开 '+doc.title);
   if(doc.slides.length){try{cover.innerHTML=renderSlideSVG(doc,doc.slides[0].id);}catch{cover.textContent='预览暂不可用';}}else{const mark=document.createElement('span');mark.className='empty-cover';mark.textContent='SUPERIOR POINT';cover.append(mark);}
   if(!trash){const hint=document.createElement('span');hint.className='cover-open-hint';hint.setAttribute('aria-hidden','true');hint.textContent='打开编辑 ↗';cover.append(hint);}cover.disabled=trash;cover.onclick=guard(()=>openEntry(entry));card.append(cover);
   const info=document.createElement('div');info.className='project-info';const title=document.createElement('h3');title.className='project-title';title.textContent=doc.title;if(!trash){title.title='双击重命名';title.ondblclick=event=>{event.preventDefault();event.stopPropagation();renameCard(entry,title,card);};}info.append(title);
-  const meta=document.createElement('div');meta.className='project-meta';meta.textContent=`${doc.slides.length} 页 · ${entry.source==='cloud'?'云端'+(entry.hasDraft?' · 待恢复草稿':''):entry.syncState==='uploaded'?'已上传云端 · 本地原件':entry.syncState==='local-changed'?'仅本地 · 上传后已修改':'仅本地'} · ${new Date(rec.modifiedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;info.append(meta);
-  const actions=document.createElement('div');actions.className='project-actions';const choices=trash?[['恢复','restore']]:[['重命名','rename'],['复制','copy'],...(entry.source==='cloud'?[['历史版本','history']]:[]),...(entry.source==='local'?[['上传云端','upload']]:[]),['备份 HTML','export'],['分享 HTML','share'],['删除','delete']];
+  const meta=document.createElement('div');meta.className='project-meta';meta.textContent=`${rec.slideCount??doc.slides.length} 页 · ${entry.source==='cloud'?'云端'+(entry.hasDraft?' · 待恢复草稿':''):entry.syncState==='uploaded'?'已上传云端 · 本地原件':entry.syncState==='local-changed'?'仅本地 · 上传后已修改':'仅本地'} · ${new Date(rec.modifiedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;info.append(meta);
+  const actions=document.createElement('div');actions.className='project-actions';const choices=trash?[['恢复','restore']]:[['重命名','rename'],['复制','copy'],...(entry.source==='cloud'?[['历史版本','history'],['分享链接','share-link']]:[]),...(entry.source==='local'?[['上传云端','upload']]:[]),['备份 HTML','export'],['分享 HTML','share'],['删除','delete']];
   for(const [label,action] of choices){const b=document.createElement('button');b.textContent=label;if(action==='export')b.title='可重新编辑版：包含备注与批注，请勿直接作为公开分享版';b.dataset.action=action;b.onclick=guard(async event=>{if(action==='upload')event.stopPropagation();if(action==='rename'){renameCard(entry,title,card);return;}b.disabled=true;try{await mutateCard(entry,action);}finally{b.disabled=false;}});actions.append(b);}info.append(actions);card.append(info);$('projects').append(card);
  }
 }
@@ -407,7 +396,7 @@ async function applyProjectTheme(theme,{mode='preserve',projectRef}={}){
 $('open-example').onclick=guard(async()=>{const doc=fiveSlideDocument();doc.id=crypto.randomUUID();doc.metadata.createdAt=new Date().toISOString();doc.metadata.updatedAt=doc.metadata.createdAt;const record=await store.create(doc);await openProject(record.id);});
 $('new-project').onclick=()=>{$('new-dialog').showModal();$('new-title').select();};$('cancel-new').onclick=()=>$('new-dialog').close();$('new-form').onsubmit=guard(async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;try{await newProject($('new-title').value.trim()||'未命名演示文稿',$('new-ratio').value);$('new-dialog').close();}finally{button.disabled=false;}});
 const chooseImport=()=>{if(!importFlight)$('file-input').click();};
-$('import-top').onclick=chooseImport;$('file-input').onchange=guard(async e=>{try{await importFile(e.target.files[0]);}finally{e.target.value='';}});$('import-go-home').onclick=guard(()=>{$('search').value='';return home('home');});$('back-home').onclick=guard(()=>home());$('project-title').onchange=guard(e=>edit([{type:'updateProject',properties:{title:e.target.value.trim()||'未命名演示文稿'}}]));$('export-project').onclick=guard(()=>exportProject());$('share-project').onclick=guard(()=>exportProject(undefined,{audience:true}));$('retry-save').onclick=guard(()=>autosave?.flush());$('backup-json').onclick=guard(exportJSONBackup);$('recover-project').onclick=guard(recoverProject);$('takeover').onclick=guard(async()=>{const id=core.getDocument().id;if(autosave?.pending)throw new Error('请先恢复为独立项目以保存当前改动，再接管原项目。');await openProject(id,{takeover:true});announce();});$('search').oninput=guard(renderProjects);$('sort').onchange=guard(renderProjects);$('project-source').onchange=guard(renderProjects);document.querySelectorAll('[data-view]').forEach(b=>b.onclick=guard(()=>home(b.dataset.view)));
+$('import-top').onclick=chooseImport;$('file-input').onchange=guard(async e=>{try{await importFile(e.target.files[0]);}finally{e.target.value='';}});$('import-go-home').onclick=guard(()=>{$('search').value='';return home('home');});$('back-home').onclick=guard(()=>home());$('project-title').onchange=guard(e=>edit([{type:'updateProject',properties:{title:e.target.value.trim()||'未命名演示文稿'}}]));$('export-project').onclick=guard(()=>exportProject());$('share-project').onclick=guard(()=>exportProject(undefined,{audience:true}));$('retry-save').onclick=guard(()=>autosave?.flush());$('backup-json').onclick=guard(exportJSONBackup);$('recover-project').onclick=guard(recoverProject);$('takeover').onclick=guard(async()=>{const id=core.getDocument().id;if(autosave?.pending)throw new Error('请先恢复为独立项目以保存当前改动，再接管原项目。');await openProject(id,{takeover:true});announce();});$('search').oninput=guard(()=>{libraryPage=0;return renderProjects();});$('sort').onchange=guard(()=>{libraryPage=0;return renderProjects();});$('project-source').onchange=guard(()=>{libraryPage=0;return renderProjects();});document.querySelectorAll('[data-view]').forEach(b=>b.onclick=guard(()=>home(b.dataset.view)));
 window.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='o'){e.preventDefault();chooseImport();}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();guard(()=>autosave?.flush())();}});
 window.addEventListener('dragover',e=>{if(e.dataTransfer.types.includes('Files')){e.preventDefault();document.body.classList.add('dragging');}});window.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('dragging');});window.addEventListener('drop',guard(async e=>{e.preventDefault();document.body.classList.remove('dragging');await importFile(e.dataTransfer.files[0]);}));
 window.addEventListener('beforeunload',e=>{if(importFlight||recovering||autosave?.pending||autosave?.running){e.preventDefault();e.returnValue='';}});window.addEventListener('pagehide',()=>{store.release(lock).catch(()=>{});});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')autosave?.flush().catch(()=>{});});

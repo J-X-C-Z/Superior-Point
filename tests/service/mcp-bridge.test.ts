@@ -21,7 +21,7 @@ test('real SDK stdio -> HTTP -> PAT -> PostgreSQL edits, leases, import/export, 
   const connect=async(raw:string)=>{const client=new Client({name:'vertical-test',version:'1'});clients.push(client);await client.connect(new StdioClientTransport({command:process.execPath,args:[path.resolve('mcp/bridge/server.js'),'--root',root],env:{SP_API_URL:apiUrl,SP_API_TOKEN:raw,SP_BRIDGE_ALLOW_HTTP:'1'},stderr:'pipe'}));return client;};
   const client=await connect(token.token);
   const call=async(name:string,args:Record<string,unknown>,target=client)=>{const r=await target.callTool({name,arguments:args});const text=(r.content as {text:string}[])[0].text;return {error:r.isError,value:JSON.parse(text)};};
-  assert.equal((await client.listTools()).tools.length,16);
+  assert.equal((await client.listTools()).tools.length,20);
   const created=await call('sp_create_project',{projectId:'old-local-id',title:'cloud MCP'});assert.equal(created.error,undefined,JSON.stringify(created));const id=created.value.id;assert.notEqual(id,'old-local-id');assert.match(id,/^[a-f0-9-]{36}$/);
   const edited=await call('sp_edit',{projectId:id,expectedRevision:0,clientMutationId:'sdk-edit',operations:[{type:'createSlide',slide:{id:'s1',elements:[{id:'e1',type:'text',x:10,y:20,w:400,h:60,text:'PG saved'}]}}]});assert.equal(edited.error,undefined,JSON.stringify(edited));assert.equal(edited.value.revision,1);
   assert.equal((await projects.get(actor,id)).slides[0].elements[0].text,'PG saved');

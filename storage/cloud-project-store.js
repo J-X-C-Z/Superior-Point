@@ -1,4 +1,4 @@
-import {importDocument} from '../core/document-core.js';
+import {importDocument,createDocument} from '../core/document-core.js';
 import {CloudDraftStore} from './cloud-drafts.js';
 
 export class CloudError extends Error {constructor(code,message,status=0){super(message);this.code=code;this.status=status;}}
@@ -30,10 +30,11 @@ export class CloudProjectStore {
  close(){this.drafts.close();}
  record(document,metadata={}){const doc=importDocument(document);return {id:doc.id,document:doc,modifiedAt:Date.parse(metadata.updatedAt||doc.metadata.updatedAt),openedAt:this.opened.get(doc.id)||Date.parse(metadata.updatedAt||doc.metadata.updatedAt),deletedAt:metadata.deletedAt?Date.parse(metadata.deletedAt):null,storage:'cloud'};}
  async list({trash=false}={}){
-  const rows=await this.api.request('/projects'+(trash?'?trash=true':'')),records=new Array(rows.length);let cursor=0;
-  await Promise.all(Array.from({length:Math.min(4,rows.length)},async()=>{while(cursor<rows.length){const index=cursor++,meta=rows[index];try{records[index]=this.record(await this.api.request('/projects/'+encodeURIComponent(meta.id)+'/document'+(trash?'?trash=true':'')),meta);}catch(error){if(error.code!=='NOT_FOUND')throw error;}}}));
-  return records.filter(Boolean);
+  const rows=await this.api.request('/projects'+(trash?'?trash=true':''));
+  // Library records contain metadata only; opening/exporting always reads the authoritative document.
+  return rows.map(meta=>{const doc=createDocument({id:meta.id,title:meta.title,canvas:meta.canvas});doc.revision=Number(meta.revision);return {...this.record(doc,meta),summaryOnly:true,slideCount:meta.slideCount??0};});
  }
+
  async get(id){try{return this.record(await this.api.request('/projects/'+encodeURIComponent(id)+'/document'));}catch(error){if(error.code!=='NOT_FOUND')throw error;const rows=await this.api.request('/projects?trash=true'),meta=rows.find(row=>row.id===id);if(!meta)return null;return this.record(await this.api.request('/projects/'+encodeURIComponent(id)+'/document?trash=true'),meta);}}
  async create(document){const doc=importDocument(document),key=stableJSON(doc);let request=this.imports.get(key);if(!request){request={document:doc,clientMutationId:crypto.randomUUID()};this.imports.set(key,request);}const saved=importDocument(await this.api.request('/projects/import',{method:'POST',body:request}));if(saved.id===doc.id||migrationContent(saved)!==migrationContent(doc))throw new CloudError('IMPORT_READBACK_MISMATCH','云端导入数据与来源不一致；原本地项目仍保留。');const readback=await this.get(saved.id);if(!readback||stableJSON(readback.document)!==stableJSON(saved))throw new CloudError('IMPORT_READBACK_MISMATCH','无法确认云端导入回读，请保留来源项目后重试。');this.imports.delete(key);return readback;}
  async markOpened(id){this.opened.set(id,Date.now());return true;}

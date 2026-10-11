@@ -206,6 +206,30 @@ export class AuthService {
     if (!session.rowCount) throw errors.unauthorized();
     return {passwordHash: user.rows[0].password_hash as string, recent: Boolean(session.rows[0].recent)};
   }
+  async listOwnSessions(actor: Actor) {
+    return transaction(this.db, async client => {
+      await this.webSession(client, actor);
+      return (await client.query("SELECT id,created_at AS \"createdAt\",expires_at AS \"expiresAt\",id=$2 AS current FROM sessions WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>clock_timestamp() ORDER BY created_at DESC LIMIT 100",[actor.id,actor.sessionId])).rows;
+    });
+  }
+  async revokeOwnSession(actor: Actor, id: string) {
+    userId(id);
+    return transaction(this.db, async client => {
+      const current=await this.webSession(client, actor,true);
+      if(!current.recent)throw new ServiceError('REAUTHENTICATION_REQUIRED',403,'请重新验证密码');
+      const result=await client.query('UPDATE sessions SET revoked_at=clock_timestamp() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL RETURNING id',[id,actor.id]);
+      if(!result.rowCount)throw new ServiceError('NOT_FOUND',404,'会话不存在');
+      await audit(client,actor.id,'auth.session_revoke',actor.id);
+      return {revoked:true,current:id===actor.sessionId};
+    });
+  }
+  async loginSecurity(actor: Actor) {
+    return transaction(this.db,async client=>{
+      await this.checkAdmin(client,actor);
+      const result=(await client.query("SELECT count(*)::int AS failures FROM audit_logs WHERE action='auth.login' AND outcome='failure' AND created_at>clock_timestamp()-interval '15 minutes'")).rows[0];
+      return {windowMinutes:15,failures:result.failures,warning:result.failures>=5,threshold:5};
+    });
+  }
   async rotateCsrf(actor: Actor) {
     return transaction(this.db, async client => {
       await this.webSession(client, actor, true);
