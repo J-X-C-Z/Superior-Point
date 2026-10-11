@@ -9,5 +9,5 @@ test('owner share center uses service active state and displays no capability in
 });
 test('storage center reports retained history and warning without accepting stale account results',async()=>{
  const dom=new JSDOM('<body></body>');let resolve;const api={user:{id:'owner'},request:()=>new Promise(done=>{resolve=done;})};
- try{const pending=openStorageUsage({api,document:dom.window.document});api.user={id:'other'};resolve({usage:{totalBytes:999,activeProjects:1},limits:{maxBytes:1000,maxProjects:100}});const center=await pending;assert.match(dom.window.document.body.textContent,/账号已变更/);assert.doesNotMatch(dom.window.document.body.textContent,/0.9 KiB/);center.close();}finally{dom.window.close();}
+ try{const pending=openStorageUsage({api,document:dom.window.document});api.user={id:'other'};resolve({usage:{totalBytes:999,activeProjects:1},limits:{maxBytes:1000,maxProjects:100}});await pending;assert.match(dom.window.document.body.textContent,/账号已变更/);assert.doesNotMatch(dom.window.document.body.textContent,/0.9 KiB/);dom.window.document.querySelector('dialog button').click();assert.equal(dom.window.document.querySelector('dialog'),null);}finally{dom.window.close();}
 });
