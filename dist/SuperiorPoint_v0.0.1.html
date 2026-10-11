@@ -865,13 +865,17 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
         output.background = { type: "solid", color: slide.background };
         slideMapping.background = { canonical: slide.background, native: cloneJSON(output.background), bg: output.bg };
       }
-      const groups = elements.filter((e) => e.type === "group");
+      const groups = elements.filter((e) => e.type === "group"), hidden = hiddenElementIds(slide);
       checkGroups(groups, slide.animations || []);
       output.spCanonicalGroups = groups;
       slideMapping.groupOrder = elements.map((e) => e.id);
       output.spEditorMapping = slideMapping;
       output.objects = elements.filter((e) => e.type !== "group").map((element) => {
         const o = { ...OBJECT, ...element }, source = mapping(element);
+        if (hidden.has(o.id) && o.visible !== false) {
+          source.visibility = { ...Object.hasOwn(element, "visible") ? { visible: element.visible } : {}, native: false };
+          o.visible = false;
+        } else delete source.visibility;
         if (o.type === "image" && o.assetId) {
           const asset = doc.assets.find((a) => a.id === o.assetId), src = asset?.dataUrl ?? asset?.src ?? asset?.data;
           if (source.image && o.src !== source.image.src && o.assetId === source.image.assetId) delete o.assetId;
@@ -929,6 +933,11 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
       checkGroups(spCanonicalGroups, fields.animations || []);
       const elements = objects.map((raw) => {
         const o = cloneJSON(raw), source = mapping(o);
+        if (source.visibility && o.visible === source.visibility.native) {
+          if (Object.hasOwn(source.visibility, "visible")) o.visible = source.visibility.visible;
+          else delete o.visible;
+        } else if (o.visible !== false && o.hidden) o.hidden = false;
+        delete source.visibility;
         if (o.type === "image" && source.image && o.assetId === source.image.assetId && o.src !== source.image.src) {
           delete o.assetId;
           delete source.image;
@@ -972,6 +981,7 @@ body:not(.editor-open) .project-actions button[data-action=delete]:focus-visible
   var init_editor_v038_model = __esm({
     "adapters/editor-v038-model.js"() {
       init_document_core();
+      init_visibility();
       SLIDE = { bg: "#f2f1ec", hidden: false, transition: "fade", duration: 600, autoSec: 0, advanceOnClick: true, transitionEnter: "", transitionExit: "", backgroundTransition: "fade", morphEase: "cubic-bezier(.22,1,.36,1)", morphGroup: "", notes: "", comments: [] };
       OBJECT = { name: "\u5BF9\u8C61", rotation: 0, opacity: 1, fill: "transparent", stroke: "transparent", strokeWidth: 0, text: "", fontFamily: "Arial", fontSize: 28, color: "#161715", bold: false, italic: false, align: "left", valign: "middle", padding: 0, anim: "none", visible: true, locked: false };
       ROOT = { version: 1, themeId: "noema", themeAccent: "#d75c3c", guides: [], reviewAuthor: "\u672C\u5730\u7528\u6237", reviewHistory: [], motion: { defaultAutoSec: 5, backgroundTransition: "fade" }, master: { enabled: false, footer: "", pageNumber: false, accentLine: false, skipFirst: false }, metadata: { author: "", description: "", keywords: "" } };
@@ -3901,7 +3911,7 @@ function v24OfflineExportBootstrap(width,height){
   var editorCandidateHTML = `<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"><script>window.__SPEmbeddedGate={locked:true};for(const kind of ['click','dblclick','pointerdown','pointerup','mousedown','mouseup','keydown','beforeinput','input','change','paste','cut','drop','dragstart'])window.addEventListener(kind,e=>{if(window.__SPEmbeddedGate.locked){e.preventDefault();e.stopImmediatePropagation();}},true);<\/script><style id="sp-candidate-reveal-css">/**
+<meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'"><script>window.__SPEmbeddedGate={locked:true};for(const kind of ['click','dblclick','pointerdown','pointermove','pointerup','mousedown','mouseup','keydown','beforeinput','input','change','paste','cut','drop','dragstart'])window.addEventListener(kind,e=>{if(window.__SPEmbeddedGate.locked){e.preventDefault();e.stopImmediatePropagation();}},true);<\/script><style id="sp-candidate-reveal-css">/**
  * reveal.js 5.2.0
  * https://revealjs.com
  * MIT licensed
@@ -11717,7 +11727,7 @@ body:has(#v14-motion-shade:not([hidden])) #toast-container, body:has(#v23-design
       row.effect.delay=clamp(row.effect.delay+offset,0,5000);commit();renderTimeline();
       const next=$(\`#timeline-items [data-v15-drag-zone][data-v15-object="\${CSS.escape(row.o.id)}"][data-v15-track="\${CSS.escape(row.effect.id)}"]\`);next?.focus({preventScroll:true});
     });
-    let v15Dragging=null;
+
     const v36FinishDrag=(cancel=false)=>{
       if(!v15Dragging)return;
       const d=v15Dragging;v15Dragging=null;
@@ -12159,11 +12169,14 @@ function spPanelLayoutBoot(){
   let spBridgeStarted=false,spBridgeReadOnly=true,spBridgeRevision=0,spBridgeEpoch=0;
   let spBridgeBaseline=null,spBridgeLatest='',spBridgeSending=null,spBridgeQueue=[],spBridgeSequence=0;
   let spBridgeFailure=null,spBridgeCapturing=false,spBridgeComposing=false;
+  let v15Dragging=null;
   let spBridgeWaiters=[],spBridgeCommandSerial=Promise.resolve();
   const spBridgeClone=value=>JSON.parse(JSON.stringify(value));
   const spBridgePost=(type,data={})=>parent.postMessage({spCandidate:1,channel:spBridgeChannel,type,...data},'*');
   function spBridgeStatus(){
     if(!spBridgeStarted)return;
+    // End the gesture at its current draft; cancelling would discard recovery data.
+    if(spBridgeReadOnly&&(drag||timingDrag||v15Dragging)){drag=null;timingDrag=null;v15Dragging=null;renderCanvas();renderTimeline();}
     const pending=!!spBridgeSending||spBridgeQueue.length>0;
     // A pending commit is already isolated in the snapshot queue. Blocking input
     // here would silently swallow real keystrokes between postMessage and ack.
