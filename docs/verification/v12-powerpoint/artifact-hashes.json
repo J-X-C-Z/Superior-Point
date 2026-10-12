@@ -1,0 +1,54 @@
+{
+  "powerpointVersion": "16.113.4",
+  "build": "16.113.26100421",
+  "files": {
+    "warm.pptx": {
+      "sha256": "23b1b845021209569d69ae505264f0ee4990c49ec685d77faa18baaca456095e",
+      "bytes": 187179
+    },
+    "same-technical.pptx": {
+      "sha256": "7d84698f5c651d88526822693700d13a53e4f6b3f2000ac84c82afdfed586590",
+      "bytes": 195401
+    },
+    "same-editorial.pptx": {
+      "sha256": "95428ca9961ea66f4e338189420667222aeb652e6f1f1c460107963fd6115d36",
+      "bytes": 195234
+    },
+    "same-warm.pptx": {
+      "sha256": "78db23920a8f2a6bf3a183f6d2c7500129d02d3ef2f62fc508df944d4bc17ab0",
+      "bytes": 195229
+    },
+    "~$same-warm.pptx": {
+      "sha256": "cd923196f0bdca679af988132d7afff57d9e98c0b715a31baa1e5034d455b199",
+      "bytes": 165
+    },
+    "~$warm.pptx": {
+      "sha256": "cd923196f0bdca679af988132d7afff57d9e98c0b715a31baa1e5034d455b199",
+      "bytes": 165
+    },
+    "~$same-editorial.pptx": {
+      "sha256": "cd923196f0bdca679af988132d7afff57d9e98c0b715a31baa1e5034d455b199",
+      "bytes": 165
+    },
+    "~$editorial.pptx": {
+      "sha256": "cd923196f0bdca679af988132d7afff57d9e98c0b715a31baa1e5034d455b199",
+      "bytes": 165
+    },
+    "technical.pptx": {
+      "sha256": "78ae1a412570106dd06d50ecb75904134759384334bafeb514cd2856b2ebef58",
+      "bytes": 190693
+    },
+    "editorial.pptx": {
+      "sha256": "96073ab321e5af7ef934d3785bb7d4f182820ea60e62175444afe9a1caedd314",
+      "bytes": 195245
+    },
+    "~$same-technical.pptx": {
+      "sha256": "cd923196f0bdca679af988132d7afff57d9e98c0b715a31baa1e5034d455b199",
+      "bytes": 165
+    },
+    "~$technical.pptx": {
+      "sha256": "cd923196f0bdca679af988132d7afff57d9e98c0b715a31baa1e5034d455b199",
+      "bytes": 165
+    }
+  }
+}

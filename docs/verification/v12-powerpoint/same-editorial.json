@@ -1,0 +1,1158 @@
+{
+  "format": "superior-point",
+  "schemaVersion": 1,
+  "id": "5ed3be5a-4b4f-478e-97ae-8ad78395d4ef",
+  "title": "PP SAME editorial",
+  "revision": 1,
+  "canvas": {
+    "width": 1280,
+    "height": 720
+  },
+  "slides": [
+    {
+      "id": "preview-cover",
+      "title": "标题页",
+      "background": "#FCF5E9",
+      "themeLayout": "cover",
+      "elements": [
+        {
+          "id": "cover-1",
+          "type": "shape",
+          "shape": "rect",
+          "x": 0,
+          "y": 0,
+          "w": 1280,
+          "h": 20,
+          "fill": "#794337",
+          "stroke": "#794337",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "cover-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 64,
+          "y": 64,
+          "w": 1152,
+          "h": 592,
+          "fill": "#EEE1D0",
+          "stroke": "#6A584B",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "cover-3",
+          "type": "text",
+          "text": "SUPERIOR POINT / 16:9",
+          "x": 100,
+          "y": 92,
+          "w": 1116,
+          "h": 40,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "cover-4",
+          "type": "text",
+          "text": "书页叙事 · 设计语言",
+          "x": 100,
+          "y": 290,
+          "w": 1116,
+          "h": 120,
+          "fontFamily": "Georgia",
+          "fontSize": 64,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#352D27",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "cover-5",
+          "type": "text",
+          "text": "让内容形成清晰的节奏",
+          "x": 100,
+          "y": 445,
+          "w": 1116,
+          "h": 60,
+          "fontFamily": "Georgia",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#352D27",
+          "lineHeight": 1.5,
+          "themeRole": "body"
+        },
+        {
+          "id": "cover-6",
+          "type": "text",
+          "text": "原创主题 / 标题 · 内容 · 数据 · 图像",
+          "x": 100,
+          "y": 550,
+          "w": 1116,
+          "h": 40,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-cover-entrance",
+          "targetId": "cover-4",
+          "type": "fade-in",
+          "trigger": "click",
+          "duration": 0.42,
+          "delay": 0,
+          "easing": "ease-in-out",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "fade",
+      "duration": 420,
+      "themeMotionIntent": {
+        "enter": "fade",
+        "exit": "fade",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 180,
+          "standardMs": 420,
+          "longMs": 640
+        }
+      }
+    },
+    {
+      "id": "preview-content",
+      "title": "文字内容页",
+      "background": "#FCF5E9",
+      "themeLayout": "content",
+      "elements": [
+        {
+          "id": "content-1",
+          "type": "text",
+          "text": "从信息到叙事",
+          "x": 64,
+          "y": 70,
+          "w": 1152,
+          "h": 100,
+          "fontFamily": "Georgia",
+          "fontSize": 64,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#352D27",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "content-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 64,
+          "y": 188,
+          "w": 1152,
+          "h": 4,
+          "fill": "#794337",
+          "stroke": "#794337",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "content-3",
+          "type": "shape",
+          "shape": "rect",
+          "x": 64,
+          "y": 230,
+          "w": 558,
+          "h": 320,
+          "fill": "#EEE1D0",
+          "stroke": "#6A584B",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "content-4",
+          "type": "shape",
+          "shape": "rect",
+          "x": 658,
+          "y": 230,
+          "w": 558,
+          "h": 320,
+          "fill": "#EEE1D0",
+          "stroke": "#6A584B",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "content-5",
+          "type": "text",
+          "text": "01 / 结构",
+          "x": 84,
+          "y": 250,
+          "w": 518,
+          "h": 50,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "content-6",
+          "type": "text",
+          "text": "先给读者一个方向\n再展开关键证据\n最后留下行动线索",
+          "x": 84,
+          "y": 320,
+          "w": 518,
+          "h": 190,
+          "fontFamily": "Georgia",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#352D27",
+          "lineHeight": 1.5,
+          "themeRole": "body"
+        },
+        {
+          "id": "content-7",
+          "type": "text",
+          "text": "02 / 节奏",
+          "x": 678,
+          "y": 250,
+          "w": 518,
+          "h": 50,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "content-8",
+          "type": "text",
+          "text": "标题建立层级\n留白区分段落\n颜色标记重点",
+          "x": 678,
+          "y": 320,
+          "w": 518,
+          "h": 190,
+          "fontFamily": "Georgia",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#352D27",
+          "lineHeight": 1.5,
+          "themeRole": "body"
+        },
+        {
+          "id": "content-9",
+          "type": "text",
+          "text": "共同样例内容 / 主题决定层级与阅读密度",
+          "x": 64,
+          "y": 620,
+          "w": 1152,
+          "h": 35,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-content-entrance",
+          "targetId": "content-1",
+          "type": "fade-in",
+          "trigger": "click",
+          "duration": 0.42,
+          "delay": 0,
+          "easing": "ease-in-out",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "fade",
+      "duration": 420,
+      "themeMotionIntent": {
+        "enter": "fade",
+        "exit": "fade",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 180,
+          "standardMs": 420,
+          "longMs": 640
+        }
+      }
+    },
+    {
+      "id": "preview-data",
+      "title": "数据图表页",
+      "background": "#FCF5E9",
+      "themeLayout": "data",
+      "elements": [
+        {
+          "id": "data-1",
+          "type": "text",
+          "text": "把趋势变成判断",
+          "x": 64,
+          "y": 70,
+          "w": 1152,
+          "h": 100,
+          "fontFamily": "Georgia",
+          "fontSize": 64,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#352D27",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "data-2",
+          "type": "text",
+          "text": "季度完成量 / 演示数据",
+          "x": 64,
+          "y": 180,
+          "w": 1152,
+          "h": 40,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "data-3",
+          "type": "shape",
+          "shape": "rect",
+          "x": 64,
+          "y": 245,
+          "w": 1152,
+          "h": 345,
+          "fill": "#EEE1D0",
+          "stroke": "#6A584B",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "data-4",
+          "type": "chart",
+          "chartType": "bar",
+          "x": 100,
+          "y": 265,
+          "w": 1080,
+          "h": 250,
+          "values": [
+            24,
+            38,
+            52,
+            76
+          ],
+          "labels": [
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4"
+          ],
+          "fill": "#F8FAFC",
+          "chartColor": "#794337",
+          "color": "#794337",
+          "fontSize": 18,
+          "chartTitle": "季度完成量",
+          "themeRole": "chart"
+        },
+        {
+          "id": "data-5",
+          "type": "text",
+          "text": "24 → 76",
+          "x": 64,
+          "y": 615,
+          "w": 576,
+          "h": 55,
+          "fontFamily": "Georgia",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#352D27",
+          "lineHeight": 1.5,
+          "themeRole": "body"
+        },
+        {
+          "id": "data-6",
+          "type": "text",
+          "text": "样例值 / 非实时数据",
+          "x": 640,
+          "y": 620,
+          "w": 576,
+          "h": 40,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-data-entrance",
+          "targetId": "data-1",
+          "type": "fade-in",
+          "trigger": "click",
+          "duration": 0.42,
+          "delay": 0,
+          "easing": "ease-in-out",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "fade",
+      "duration": 420,
+      "themeMotionIntent": {
+        "enter": "fade",
+        "exit": "fade",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 180,
+          "standardMs": 420,
+          "longMs": 640
+        }
+      }
+    },
+    {
+      "id": "preview-image",
+      "title": "图片组合页",
+      "background": "#FCF5E9",
+      "themeLayout": "image",
+      "elements": [
+        {
+          "id": "image-1",
+          "type": "text",
+          "text": "图像，也是一种语言",
+          "x": 64,
+          "y": 70,
+          "w": 1152,
+          "h": 100,
+          "fontFamily": "Georgia",
+          "fontSize": 64,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#352D27",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "image-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 656,
+          "y": 245,
+          "w": 560,
+          "h": 340,
+          "fill": "#EEE1D0",
+          "stroke": "#6A584B",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "image-3",
+          "type": "image",
+          "assetId": "preview-landscape",
+          "x": 672,
+          "y": 261,
+          "w": 528,
+          "h": 308,
+          "fit": "cover"
+        },
+        {
+          "id": "image-4",
+          "type": "text",
+          "text": "山色与暖光",
+          "x": 64,
+          "y": 285,
+          "w": 556,
+          "h": 70,
+          "fontFamily": "Georgia",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#352D27",
+          "lineHeight": 1.5,
+          "themeRole": "body"
+        },
+        {
+          "id": "image-5",
+          "type": "text",
+          "text": "原创几何风景\n无外部加载\n图片与文字独立可编辑",
+          "x": 64,
+          "y": 390,
+          "w": 556,
+          "h": 150,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "image-6",
+          "type": "shape",
+          "shape": "rect",
+          "x": 64,
+          "y": 565,
+          "w": 100,
+          "h": 8,
+          "fill": "#794337",
+          "stroke": "#794337",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "image-7",
+          "type": "text",
+          "text": "图像 + 面板 + 标注 / 可编辑组合元素",
+          "x": 64,
+          "y": 630,
+          "w": 1152,
+          "h": 35,
+          "fontFamily": "Georgia",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#6A584B",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-image-entrance",
+          "targetId": "image-1",
+          "type": "fade-in",
+          "trigger": "click",
+          "duration": 0.42,
+          "delay": 0,
+          "easing": "ease-in-out",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "fade",
+      "duration": 420,
+      "themeMotionIntent": {
+        "enter": "fade",
+        "exit": "fade",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 180,
+          "standardMs": 420,
+          "longMs": 640
+        }
+      }
+    },
+    {
+      "id": "preview-section",
+      "title": "章节页",
+      "background": "#FCF5E9",
+      "themeLayout": "section",
+      "elements": [
+        {
+          "id": "section-1",
+          "type": "shape",
+          "shape": "rect",
+          "x": 64,
+          "y": 130,
+          "w": 1152,
+          "h": 12,
+          "fill": "#794337",
+          "stroke": "#794337",
+          "strokeWidth": 0,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "section-2",
+          "type": "text",
+          "text": "02 / 下一章节",
+          "x": 64,
+          "y": 390,
+          "w": 1152,
+          "h": 110,
+          "fontFamily": "Georgia",
+          "fontSize": 64,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#352D27",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "section-3",
+          "type": "text",
+          "text": "让证据引出下一步行动",
+          "x": 64,
+          "y": 535,
+          "w": 1152,
+          "h": 60,
+          "fontFamily": "Georgia",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#352D27",
+          "lineHeight": 1.5,
+          "themeRole": "body"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-section-entrance",
+          "targetId": "section-2",
+          "type": "fade-in",
+          "trigger": "click",
+          "duration": 0.42,
+          "delay": 0,
+          "easing": "ease-in-out",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "fade",
+      "duration": 420,
+      "themeMotionIntent": {
+        "enter": "fade",
+        "exit": "fade",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 180,
+          "standardMs": 420,
+          "longMs": 640
+        }
+      }
+    }
+  ],
+  "assets": [
+    {
+      "id": "preview-landscape",
+      "mimeType": "image/png",
+      "license": "MIT",
+      "author": "Superior Point",
+      "description": "Original geometric landscape, generated for theme preview.",
+      "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAABkCAIAAACO1KzYAAACJElEQVR4nO3RwU0DQRBE0c2RCylwJAbEnQgIiAtJEAIBcLBkWWDZ7GzPVE3Nl34A3fW2768PCm6TX0BdAzg8gMMDODyAwwM4PIDDAzg8gMMDODyAwwO4ss/Xh9uNPwngmu7SqpgBPtou2vHMAB+qWXeYMcCNHaQdxgxwYwAnV6jb2xjg3ZXrdjUGeHcAJ9dJt58xwADTEN1OxgADTAAv0kTAb+8vpwDOAT6jXgbw3MBXUQGeG/guKsDzAe9CBXgO4GZUgH2BS1AB9gIuRwVYb9wVFWAN8DBUgMcZS1AB7gssRwW43lgOCXC9sRwP4PrkYACDCnA6KsDhqACHo64OLB8dYFABBnVNYPmgbiUAy0d0blZg+XDmPT4/nZoJWL6aeWfUy9yB5auZdxXVHVi+mnl3UR2B5auZtwvVBVi+mnnNqEpg+WrmlaCOBpavZl456ghg+WrmdUXtBSxfzbxhqJXA8tXMk6AeBZavZp4ctQVYvpp5csgWYPlq5snxWoDlq5knB2sBlq9mnhzpELB8Ps/kMACDCvCqqKsDy0cHGFSAQV0TWD6oWwnA8hGdmxVYPtwszQQsH2vG3IHlA82eI7B8lKRcgOVDpKYElj+/QqOB5Q+v1ghg+ZMr1wtY/hidqgSWP0N/Owosf4Bu1wIsP5r+33+B5YdSW7eA5cfR8X4Dyw+i2jZQs9vkF1DXAA4P4PAADg/g8AAOD+DwAA4P4PAADu8HLOSaMBl0psQAAAAASUVORK5CYII="
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-10-12T01:19:56.389Z",
+    "updatedAt": "2026-10-12T01:26:54.040Z"
+  },
+  "extensions": {
+    "theme": {
+      "ref": {
+        "id": "sp-editorial-language",
+        "version": "1.0.0",
+        "hash": "sha256:6c7ec83842e1800c2e040bd6eeef487d395668f38ffa7db91b2010f1df7fe316",
+        "snapshot": {
+          "format": "superior-point-theme",
+          "schemaVersion": 1,
+          "id": "sp-editorial-language",
+          "name": "书页叙事 · 设计语言",
+          "version": "1.0.0",
+          "author": "Superior Point",
+          "license": "MIT",
+          "provenance": "Original Superior Point theme; not an imported or licensed third-party Design System.",
+          "description": "衬线大标题、书页边框和左右图文节奏。 完整原创视觉与运动语言。",
+          "tags": [
+            "magazine",
+            "serif",
+            "叙事",
+            "design-language"
+          ],
+          "supportedRatios": [
+            "16:9",
+            "4:3"
+          ],
+          "tokens": {
+            "colors": {
+              "background": "#FCF5E9",
+              "text": "#352D27",
+              "accent": "#794337",
+              "surface": "#EEE1D0",
+              "muted": "#6A584B"
+            },
+            "typography": {
+              "title": {
+                "fontFamily": "Georgia",
+                "fallback": [
+                  "Arial",
+                  "sans-serif"
+                ],
+                "fontSize": 64,
+                "fontWeight": 700,
+                "lineHeight": 1.25,
+                "license": "System font reference only; no font files redistributed. Availability depends on the device."
+              },
+              "body": {
+                "fontFamily": "Georgia",
+                "fallback": [
+                  "Arial",
+                  "sans-serif"
+                ],
+                "fontSize": 26,
+                "fontWeight": 400,
+                "lineHeight": 1.5,
+                "license": "System font reference only; no font files redistributed. Availability depends on the device."
+              },
+              "caption": {
+                "fontFamily": "Georgia",
+                "fallback": [
+                  "Arial",
+                  "sans-serif"
+                ],
+                "fontSize": 18,
+                "fontWeight": 400,
+                "lineHeight": 1.25,
+                "license": "System font reference only; no font files redistributed. Availability depends on the device."
+              }
+            },
+            "spacing": {
+              "unit": 8,
+              "pageInset": 64,
+              "gap": 36
+            },
+            "components": {
+              "panel": {
+                "radius": 0,
+                "strokeWidth": 0
+              },
+              "accent": {
+                "motif": "band"
+              },
+              "chart": {
+                "chartType": "bar",
+                "color": "#794337",
+                "surface": "#F8FAFC",
+                "text": "#20323C"
+              }
+            },
+            "motion": {
+              "durationMs": 420,
+              "easing": "ease-in-out"
+            }
+          },
+          "layouts": [
+            {
+              "id": "cover",
+              "kind": "cover",
+              "rules": {
+                "columns": 1,
+                "pageInset": 64,
+                "gap": 36,
+                "motif": "band",
+                "titlePosition": "top"
+              }
+            },
+            {
+              "id": "section",
+              "kind": "section",
+              "rules": {
+                "columns": 1,
+                "pageInset": 64,
+                "gap": 36,
+                "motif": "band",
+                "titlePosition": "top"
+              }
+            },
+            {
+              "id": "content",
+              "kind": "content",
+              "rules": {
+                "columns": 2,
+                "pageInset": 64,
+                "gap": 36,
+                "motif": "band",
+                "titlePosition": "top"
+              }
+            },
+            {
+              "id": "data",
+              "kind": "data",
+              "rules": {
+                "columns": 1,
+                "pageInset": 64,
+                "gap": 36,
+                "motif": "band",
+                "titlePosition": "top"
+              }
+            },
+            {
+              "id": "image",
+              "kind": "image",
+              "rules": {
+                "columns": 1,
+                "pageInset": 64,
+                "gap": 36,
+                "motif": "band",
+                "titlePosition": "top"
+              }
+            }
+          ],
+          "assets": [],
+          "preview": {
+            "kinds": [
+              "cover",
+              "content",
+              "data",
+              "image",
+              "section"
+            ],
+            "limitations": [
+              "System fonts vary by device; no fonts are bundled.",
+              "Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.",
+              "Sample data and illustration are original demonstration content, not live project data.",
+              "Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed."
+            ]
+          },
+          "designLanguage": {
+            "identity": {
+              "principles": [
+                "Reading hierarchy",
+                "Editorial rhythm"
+              ],
+              "suitableFor": [
+                "Narrative reports",
+                "Long-form explanation"
+              ],
+              "avoid": [
+                "Dense specification tables",
+                "Decorative gradients"
+              ],
+              "distinctiveFeatures": [
+                "Serif display paired with generous body leading",
+                "Asymmetric image and copy",
+                "Square page bands"
+              ]
+            },
+            "origin": {
+              "type": "original",
+              "ref": "J-X-C-Z/Superior-Point",
+              "sourceRevision": "sp-design-language-1.0.0",
+              "license": "MIT",
+              "attribution": "Original Superior Point rules and geometric sample; no Design-Systems code, images or fonts copied."
+            },
+            "visual": {
+              "grid": "editorial",
+              "imageTreatment": "editorial-crop",
+              "shape": "square",
+              "spacingUnit": 8
+            },
+            "motion": {
+              "principles": [
+                "Reading hierarchy",
+                "Editorial rhythm"
+              ],
+              "timing": {
+                "shortMs": 180,
+                "standardMs": 420,
+                "longMs": 640
+              },
+              "easing": "ease-in-out",
+              "enter": "fade",
+              "exit": "fade",
+              "transition": "fade",
+              "reducedMotion": "none",
+              "unsupportedBehavior": "preserve-intent-and-report"
+            }
+          }
+        }
+      },
+      "bindings": {
+        "slides": {
+          "preview-cover": {
+            "background": "#FCF5E9"
+          },
+          "preview-content": {
+            "background": "#FCF5E9"
+          },
+          "preview-data": {
+            "background": "#FCF5E9"
+          },
+          "preview-image": {
+            "background": "#FCF5E9"
+          },
+          "preview-section": {
+            "background": "#FCF5E9"
+          }
+        },
+        "elements": {
+          "preview-cover": {
+            "cover-1": {
+              "fill": "#794337",
+              "stroke": "#794337"
+            },
+            "cover-2": {
+              "fill": "#EEE1D0",
+              "stroke": "#6A584B",
+              "radius": 0,
+              "strokeWidth": 0
+            },
+            "cover-3": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            },
+            "cover-4": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 64,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25
+            },
+            "cover-5": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.5
+            },
+            "cover-6": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            }
+          },
+          "preview-content": {
+            "content-1": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 64,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25
+            },
+            "content-2": {
+              "fill": "#794337",
+              "stroke": "#794337"
+            },
+            "content-3": {
+              "fill": "#EEE1D0",
+              "stroke": "#6A584B",
+              "radius": 0,
+              "strokeWidth": 0
+            },
+            "content-4": {
+              "fill": "#EEE1D0",
+              "stroke": "#6A584B",
+              "radius": 0,
+              "strokeWidth": 0
+            },
+            "content-5": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            },
+            "content-6": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.5
+            },
+            "content-7": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            },
+            "content-8": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.5
+            },
+            "content-9": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            }
+          },
+          "preview-data": {
+            "data-1": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 64,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25
+            },
+            "data-2": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            },
+            "data-3": {
+              "fill": "#EEE1D0",
+              "stroke": "#6A584B",
+              "radius": 0,
+              "strokeWidth": 0
+            },
+            "data-4": {
+              "fill": "#F8FAFC",
+              "chartColor": "#794337",
+              "color": "#794337"
+            },
+            "data-5": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.5
+            },
+            "data-6": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            }
+          },
+          "preview-image": {
+            "image-1": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 64,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25
+            },
+            "image-2": {
+              "fill": "#EEE1D0",
+              "stroke": "#6A584B",
+              "radius": 0,
+              "strokeWidth": 0
+            },
+            "image-3": {},
+            "image-4": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.5
+            },
+            "image-5": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            },
+            "image-6": {
+              "fill": "#794337",
+              "stroke": "#794337"
+            },
+            "image-7": {
+              "color": "#6A584B",
+              "fontFamily": "Georgia",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25
+            }
+          },
+          "preview-section": {
+            "section-1": {
+              "fill": "#794337",
+              "stroke": "#794337"
+            },
+            "section-2": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 64,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25
+            },
+            "section-3": {
+              "color": "#352D27",
+              "fontFamily": "Georgia",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.5
+            }
+          }
+        }
+      },
+      "slideRefs": {}
+    },
+    "themePreview": {
+      "ratio": "16:9",
+      "kinds": [
+        "cover",
+        "content",
+        "data",
+        "image",
+        "section"
+      ],
+      "limitations": [
+        "System fonts vary by device; no fonts are bundled.",
+        "Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.",
+        "Sample data and illustration are original demonstration content, not live project data.",
+        "Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed.",
+        "Generic chart labels and light chart surface are fixed for legibility; native editor chart styling may differ."
+      ]
+    }
+  }
+}

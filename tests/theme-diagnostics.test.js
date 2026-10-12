@@ -14,6 +14,16 @@ test('diagnostics check fonts, unknown motion, generic/PPTX gaps and keep docume
  const before=structuredClone(doc),report=await inspectThemeDiagnostics(doc,{availableFonts:['Arial']});
  assert.equal(report.valid,true);assert.ok(report.diagnostics.some(d=>d.code==='FONT_FALLBACK'&&d.requestedFont==='Missing Fancy Font'&&d.renderedFont==='Arial, sans-serif'));assert.ok(report.diagnostics.some(d=>d.code==='UNKNOWN_MOTION'&&d.status==='refused'));assert.ok(report.diagnostics.some(d=>d.code==='PPTX_LIMITATIONS'));assert.ok(!JSON.stringify(report).includes('SECRET_NOTES'));assert.ok(!JSON.stringify(report).includes(doc.assets[0].dataUrl));assert.deepEqual(doc,before);
 });
+test('PPTX summary explains current exporter limits for documents and manifests without content disclosure',async()=>{
+ const doc=fiveSlideDocument();doc.slides[0].notes='PRIVATE_PPTX_NOTES';doc.slides[0].hidden=true;
+ for(const input of [doc,getBuiltinTheme('sp-margin')]){
+  const before=structuredClone(input),report=await inspectThemeDiagnostics(input);
+  const summary=report.diagnostics.filter(d=>d.code==='PPTX_LIMITATIONS');
+  assert.equal(summary.length,1);assert.equal(summary[0].status,'degraded');assert.equal(summary[0].renderer,'pptx');assert.equal(report.valid,true);
+  for(const phrase of ['does not embed fonts','may substitute','charts use Arial','crop, filters and fit are rasterized','groups become separate objects','editable tables/charts may differ','Notes and hidden slides are included','animations and slide transitions are absent','do not prove visual fidelity','verify the exported deck in PowerPoint'])assert.ok(summary[0].message.includes(phrase),phrase);
+  assert.ok(!JSON.stringify(report).includes('PRIVATE_PPTX_NOTES'));assert.ok(!JSON.stringify(report).includes(doc.assets[0].dataUrl));assert.deepEqual(input,before);
+ }
+});
 test('diagnostics fail missing/corrupt assets, missing slide and tampered theme references',async()=>{
  const doc=fiveSlideDocument();doc.assets=[];assert.equal((await inspectThemeDiagnostics(doc)).valid,false);assert.ok((await inspectThemeDiagnostics(doc)).diagnostics.some(d=>d.code==='ASSET_MISSING'));
  const corrupt=fiveSlideDocument();corrupt.assets[0].hash='sha256:'+'0'.repeat(64);assert.ok((await inspectThemeDiagnostics(corrupt)).diagnostics.some(d=>d.code==='ASSET_INTEGRITY'));

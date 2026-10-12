@@ -5,6 +5,8 @@ import {inspectThemeCompatibility} from './theme-motion.js';
 import {inspectRenderCompatibility} from '../io/html.js';
 import {inspectRasterDataURL} from '../io/image-assets.js';
 
+const pptxLimitations='Current PPTX export does not embed fonts; PowerPoint may substitute them and charts use Arial. Image crop, filters and fit are rasterized; groups become separate objects, and editable tables/charts may differ visually. Notes and hidden slides are included. Object animations and slide transitions are absent. Static diagnostics do not prove visual fidelity; verify the exported deck in PowerPoint.';
+
 /** Metadata-only static diagnostics; never fetches fonts/resources or claims visual acceptance. */
 export async function inspectThemeDiagnostics(input,{kind,availableFonts}={}){
  const diagnostics=[],themeReferences=[];
@@ -30,7 +32,7 @@ export async function inspectThemeDiagnostics(input,{kind,availableFonts}={}){
   visit(theme.tokens,`${path}.tokens`);visit(theme.layouts,`${path}.layouts`);
   for(const asset of theme.assets){try{inspectRasterDataURL(`data:${asset.mimeType};base64,${asset.data}`);}catch{add('ASSET_INVALID','invalid','Theme asset is not a valid supported raster image.',{path,assetId:asset.id});}}
  }
- if(kind==='manifest'){await manifest(input,'theme');add('MOTION_POLICY','degraded','Theme motion policy is declarative; Skin preserves existing intent and does not synthesize playback.');add('PPTX_LIMITATIONS','degraded','PPTX visual fidelity, custom fonts and motion are not validated by static theme diagnostics.',{renderer:'pptx'});return finish();}
+ if(kind==='manifest'){await manifest(input,'theme');add('MOTION_POLICY','degraded','Theme motion policy is declarative; Skin preserves existing intent and does not synthesize playback.');add('PPTX_LIMITATIONS','degraded',pptxLimitations,{renderer:'pptx'});return finish();}
  let doc;try{doc=importDocument(input);}catch{add('INVALID_DOCUMENT','invalid','Document fails the canonical document contract.');if(Array.isArray(input?.assets)&&Array.isArray(input?.slides)){const ids=new Set(input.assets.map(a=>a?.id));for(const slide of input.slides)if(Array.isArray(slide?.elements))for(const el of slide.elements)if(el?.assetId!==undefined&&!ids.has(el.assetId))add('ASSET_MISSING','invalid','Element references a missing document asset.',{slideId:slide.id,elementId:el.id,assetId:el.assetId});}return finish();}
  const refs=doc.extensions.theme||{};
  if(refs.ref)themeReferences.push({path:'extensions.theme.ref',ref:refs.ref});
@@ -48,6 +50,6 @@ export async function inspectThemeDiagnostics(input,{kind,availableFonts}={}){
  for(const warning of renderCompatibility.warnings)add(warning.code,'degraded',warning.message,{renderer:'editable-html',slideId:warning.slideId,elementId:warning.elementId,properties:warning.properties});
  diagnostics.push(...motion);
  add('NATIVE_GENERIC_DIFFERENCE','degraded','Generic HTML is a basic SVG renderer; recognized native editor vocabulary does not establish matching visuals or timing.');
- add('PPTX_LIMITATIONS','degraded','Static diagnostics do not prove PPTX visual fidelity; unsupported motion is reported separately. Verify the exported deck in a PPTX viewer.',{renderer:'pptx'});
+ add('PPTX_LIMITATIONS','degraded',pptxLimitations,{renderer:'pptx'});
  return finish({renderCompatibility,motion});
 }

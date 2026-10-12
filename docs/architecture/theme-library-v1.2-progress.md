@@ -1,6 +1,6 @@
 # 主题库 v1.2 实现进度与验收边界
 
-更新日期：2026-10-12。本文记录 `roadmap/v1.2-theme-resources` 工作树的源码现状，不是完成声明或生产发布说明。本批 84/84 服务测试、类型检查和构建通过；最终常规 JS 测试为 290 项、289 通过、1 项既有跳过、0 失败，原始日志 `/private/tmp/sp-v12-remain-js-final.log`。源码及浏览器验收只证明各自覆盖的范围，不代表整项或 Beta 完成。本地主题创建、选页应用等编辑器验收见[本轮证据](../acceptance/v12-theme-library-local.md)，版本更新和固定历史版本见[本批剩余验收清单](../acceptance/v12-remaining-checklist.md)。
+更新日期：2026-10-12。本文记录 `roadmap/v1.2-theme-resources` 工作树的源码现状，不是完成声明或生产发布说明。本轮 `npm test` 为 291 项、290 通过、1 项既有跳过、0 失败，日志 `/private/tmp/sp-v12-pp-js.log`；类型检查和构建退出码为 0，聚焦 theme/MCP 与 theme-service 测试 6/6 通过（`/private/tmp/sp-v12-pp-service-focused.log`）。源码及浏览器验收只证明各自覆盖的范围，不代表整项或 Beta 完成。本地主题创建、选页应用等 UI 验收见[本轮证据](../acceptance/v12-theme-library-local.md)，版本更新和固定历史版本见[剩余验收清单](../acceptance/v12-remaining-checklist.md)，本机 PowerPoint 限定范围验收见[独立报告](../acceptance/v12-powerpoint-local.md)。
 
 此前已记录的生产批次为 `9841d84`，精确源码 CI 及公网 8 阶段结果见[生产验收](../acceptance/v12-theme-library-hakari.md)。本批资源与版本增补随后以 `0887d41` 完成 Alpha 部署；9 阶段公网验收通过，见[本批生产证据](../acceptance/v12-theme-resources-hakari.md)。即使随后执行 Alpha 部署，也不代表全部 32 项完成；生产备份及实际回滚演练继续延期。
 
@@ -11,6 +11,7 @@
 - Skin 计划支持整篇或指定页面范围，并报告变更与保留覆盖项。计划只读；应用使用文稿修订和现有写入保护。诊断保留既有动画意图。新增的可编辑与观众 HTML 导出会遵循 `prefers-reduced-motion`，减少转场与动画；此行为尚无下载文件离线实播证据。浏览器离线文件验收由用户延期，不阻塞本 Alpha 批次部署，也不能记录为通过。
 - 本地与云端个人主题列表按 24 条分页，只请求列表元数据；新增 1,000 条元数据列表用例。固定版本 API 可读取历史版本，二进制图片端点依据主题身份/版本和内容哈希验证后返回受限图片；仍是主题版本快照内的资源，不另建资产存储。
 - `node tools/theme-validate.js` 与项目主题兼容诊断 API 提供只读静态诊断，可报告资源完整性/缺失、固定引用、字体回退、运动及通用 HTML/PPTX 能力边界。诊断不加载外部资源，PPTX 报告不等于 PowerPoint 实测。
+- 本机 PowerPoint v16.113.4（build 16.113.26100421）已逐页打开三种精选主题和三份保留模式导出，共 6 份五页文件、30 页；结果和截图见[本地 PowerPoint 验收](../acceptance/v12-powerpoint-local.md)。这证明该样例矩阵能在此版本打开，不证明所有主题或 PPTX 功能保真。
 - Design Systems 元数据指向已核对的上游 revision `f958fd2dce57b9f7650785630bb6713d8a612604`，许可为 `null`。适配器只处理人工审阅的原创规则，不加载上游代码，也不复制上游资产；这不是已完成的上游自动转换。
 - 旧主题快照与新派生条目通过独立 ID/固定版本引用；个人或云端发布是新增版本，复制产生独立条目。后续更改目录前需重新核对源代码及文稿中固定快照。
 - 当前没有 AI 聊天式主题编辑或 AI 风格重构。社区分享、审核、评分和推荐属于路线图 P2。生产备份和部署回滚按原计划延期。

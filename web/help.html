@@ -67,12 +67,13 @@
           <ul class="plain-list">
             <li><span>浏览与可编辑样例</span><span>主题列表每页显示 24 项；详情可预览封面、正文、数据、图文和章节页，也可用主题创建可编辑演示文稿。详情预览是静态 SVG，不代表放映效果。</span></li>
             <li><span>应用前预览</span><span>可选整篇、单页或选中页，并先查看只读变更计划。确认应用后，内容、对象 ID、位置和已有动画意图保持原样；重置样式需要再次确认。</span></li>
-            <li><span>动画与减少动态</span><span>兼容性诊断会报告现有动画的支持情况。可编辑和观众 HTML 导出会按浏览器的“减少动态效果”偏好关闭动画和转场；这不代表离线下载文件或 PowerPoint 已完成实测。</span></li>
+            <li><span>动画与减少动态</span><span>兼容性诊断会报告现有动画意图和渲染限制。可编辑与观众 HTML 会按浏览器的“减少动态效果”偏好关闭动画和转场；各渲染器表现可能不同，PPTX 不保证与编辑器完全一致。</span></li>
+            <li><span>PowerPoint 导出与分享</span><span>PPTX 会保留演讲备注和隐藏页，不适合用作观众脱敏分享；请导出观众 HTML。字体不会嵌入；图像裁切/滤镜/适配会烘焙进位图，组合会展平；图表、表格的可编辑性可能不同，动画与转场不会导出。</span></li>
             <li><span>版本与副本</span><span>个人主题可查看历史版本；发布更新会形成新版本，已绑定文稿保留固定快照。查看旧版不会改写文稿。上传云端会创建账号私有副本，本地原件仍保留。</span></li>
             <li><span>导入与许可</span><span>JSON 导入会校验格式、图片和哈希，不执行主题脚本或外部加载内容。上游仓库许可尚未确认；上游资产不会随适配复制。</span></li>
           </ul>
-          <p class="fine-print">可用功能取决于当前部署版本。主题导出文件的断网播放尚未实测，已延期且不阻塞本 Alpha 批次；生产备份与部署回滚仍按原计划延期。</p>
-          <p class="link-row"><a href="https://github.com/J-X-C-Z/Superior-Point/blob/roadmap/v1.2-theme-library/docs/THEMES.md" target="_blank" rel="noopener noreferrer">主题使用与格式说明 <span aria-hidden="true">↗</span></a></p>
+          <p class="fine-print">主题预览与兼容性诊断用于查看静态样例和已知限制，不代表放映效果或 PowerPoint 保真保证。</p>
+          <p class="link-row"><a href="https://github.com/J-X-C-Z/Superior-Point/blob/roadmap/v1.2-theme-resources/docs/THEMES.md" target="_blank" rel="noopener noreferrer">主题使用与格式说明 <span aria-hidden="true">↗</span></a></p>
         </section>
 
         <section id="history" class="help-section" data-search="历史 修订 版本 比较 恢复 冲突 离线 草稿 保存失败">
@@ -102,10 +103,9 @@ curl --fail-with-body \
   "$SP_API_URL/api/v1/projects"</code></pre><button class="copy-button" type="button" aria-label="复制 API 示例">复制</button></div>
           <p class="fine-print">此示例需要 <code>projects:read</code>。请勿把真实令牌粘贴到共享终端或公开日志中。</p>
           <h3 class="subheading">远程 MCP 与 OAuth</h3>
-          <p>支持该功能版本的服务可提供远程 HTTP MCP 入口 <code>/mcp</code>。MCP 传输使用无状态 JSON，不提供 MCP 特有的 SSE 通知流。OAuth 授权码与 PKCE 流程需要用户同意，并可限制项目范围；是否可用取决于部署中的服务版本。第三方桌面客户端与真实浏览器登录尚未逐一验收，请先确认客户端兼容性。OAuth 令牌面向 MCP 入口，不等同于网站登录，也不替代本地 stdio Bridge 所用的 PAT。</p>
-          <div class="callout">开发分支已实现云端项目修订变更的 SSE 提示接口，供浏览器获知项目状态变化；主控真实浏览器验收尚待完成，生产部署尚未进行。它与 MCP 工具传输分开，也不会自动读取、合并或保存正文。</div>
-          <p>云端原生 MCP 当前共有 20 个工具，其中新增 4 个历史工具：<code>sp_list_revisions</code> 列出修订、<code>sp_get_revision</code> 读取快照、<code>sp_revision_diff</code> 比较修订、<code>sp_restore_revision</code> 将较早内容提交为新修订。前三项需要 <code>projects:read</code>；恢复需要 <code>projects:write</code>、当前修订号和稳定的 mutation ID，并遵守项目编辑租约。</p>
-          <div class="callout">本地代码与测试通过不代表功能已部署到你的服务。若服务未提供对应入口或授权选项，请按当前部署实际显示为准。远程 MCP <code>/mcp</code> 仍使用无状态 JSON 传输，没有 MCP SSE 通知流。</div>
+          <p>远程 HTTP MCP 入口为 <code>/mcp</code>，使用无状态 JSON 请求与响应。OAuth 授权码与 PKCE 需要用户同意，并可限制项目范围；OAuth 令牌只用于 MCP 入口，不等同于网站登录，也不替代本地 stdio Bridge 使用的 PAT。</p>
+          <div class="callout">工作台通过 SSE 接收云端项目修订提示，事件只包含项目 ID、修订号和删除状态；账号或会话失效时连接会关闭。它不传输正文，也不会自动合并或保存内容。此通知流独立于远程 MCP，后者仍使用无状态 JSON，不提供 MCP SSE 通知。</div>
+          <p>云端 MCP 当前提供 22 个工具。修订工具包括 <code>sp_list_revisions</code>、<code>sp_get_revision</code>、<code>sp_revision_diff</code> 和 <code>sp_restore_revision</code>；前三项需要 <code>projects:read</code>，恢复需要 <code>projects:write</code>、当前修订号和稳定的 mutation ID，并遵守项目编辑租约。主题工具 <code>sp_preview_theme_application</code> 会生成整篇或选中页的只读应用计划，<code>sp_validate_theme_compatibility</code> 会读取已保存主题的渲染与导出限制；两者都需要 <code>projects:read</code> 和 <code>themes:read</code>。</p>
         </section>
 
         <section id="permissions" class="help-section" data-search="权限 范围 scopes 项目 私有 管理员 PAT themes delete export">
@@ -118,10 +118,10 @@ curl --fail-with-body \
             <div><code>projects:write</code><span>编辑项目与恢复历史修订</span></div>
             <div><code>projects:export</code><span>导出获准访问的项目</span></div>
             <div><code>projects:delete</code><span>删除项目；按需单独授予</span></div>
-            <div><code>assets:write</code><span>服务端支持的资源写入授权；当前 PAT 表单未列出</span></div>
+            <div><code>assets:write</code><span>服务端支持的资源写入权限；当前个人令牌表单未提供此选项</span></div>
             <div><code>themes:read / write / publish</code><span>读取、管理或发布个人主题</span></div>
           </div>
-          <p class="fine-print">项目白名单会进一步限制可访问的项目。私有项目仍由所属账号控制；管理员没有绕过私有内容权限的特权。云端主题能力也取决于服务部署和令牌范围。</p>
+          <p class="fine-print">服务端识别 9 项授权范围；个人令牌表单提供其中 8 项，OAuth 还可请求 <code>assets:write</code>。项目白名单会进一步限制可访问项目。私有项目仍由所属账号控制；管理员没有绕过私有内容权限的特权。</p>
         </section>
 
         <section id="faq" class="help-section faq-section" data-search="常见问题 FAQ 找不到 项目 不同步 令牌 丢失">
