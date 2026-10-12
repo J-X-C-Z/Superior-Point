@@ -2,7 +2,7 @@
 
 更新日期：2026-10-12。本文记录 `roadmap/v1.2-theme-resources` 工作树的源码现状，不是完成声明或生产发布说明。本轮 `npm test` 为 291 项、290 通过、1 项既有跳过、0 失败，日志 `/private/tmp/sp-v12-pp-js.log`；类型检查和构建退出码为 0，聚焦 theme/MCP 与 theme-service 测试 6/6 通过（`/private/tmp/sp-v12-pp-service-focused.log`）。源码及浏览器验收只证明各自覆盖的范围，不代表整项或 Beta 完成。本地主题创建、选页应用等 UI 验收见[本轮证据](../acceptance/v12-theme-library-local.md)，版本更新和固定历史版本见[剩余验收清单](../acceptance/v12-remaining-checklist.md)，本机 PowerPoint 限定范围验收见[独立报告](../acceptance/v12-powerpoint-local.md)。
 
-此前已记录的生产批次为 `9841d84`，精确源码 CI 及公网 8 阶段结果见[生产验收](../acceptance/v12-theme-library-hakari.md)。本批资源与版本增补随后以 `0887d41` 完成 Alpha 部署；9 阶段公网验收通过，见[本批生产证据](../acceptance/v12-theme-resources-hakari.md)。即使随后执行 Alpha 部署，也不代表全部 32 项完成；生产备份及实际回滚演练继续延期。
+此前已记录的生产批次为 `9841d84`，精确源码 CI 及公网 8 阶段结果见[生产验收](../acceptance/v12-theme-library-hakari.md)。本批资源与版本增补随后以 `0887d41` 完成 Alpha 部署；9 阶段公网验收通过，见[本批生产证据](../acceptance/v12-theme-resources-hakari.md)。PowerPoint/帮助增补随后以 `c90c4ff` 完成 Alpha 部署，[精确 CI 与公网验收](../acceptance/v12-powerpoint-hakari.md)通过；这不代表全部 32 项完成；生产备份及实际回滚演练继续延期。
 
 ## 当前边界
 
