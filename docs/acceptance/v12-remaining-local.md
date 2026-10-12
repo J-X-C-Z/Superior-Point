@@ -41,6 +41,8 @@
 
 CUA 临时施加 1,200ms 网络延迟，点击整篇预览后立即改成单页；旧请求完成后“确认应用”仍禁用，必须重新预览才启用。[失效预览截图](../verification/v12-remaining/stale-preview-disabled.png)。随后网络设置恢复。
 
-另一个独立 Chrome for Testing 会话正式登录同一隔离账号，从 `/app` 恢复会话，能读取相同云端文稿和新发布的 1.0.1 主题。[Chrome 回读](../verification/v12-remaining/chrome-cloud-version.png)。这证明两个独立浏览器客户端回读，不等于两台物理设备验收。`/web/` 是本地优先入口，服务会话恢复应使用正式 `/app` 入口；本次没有以文件离线或下载 HTML 的本机 HTTP 方式验收。
+另一个独立 Chrome for Testing 151.0.7922.34（Info.plist 本机读取）会话正式登录同一隔离账号，从 `/app` 恢复会话，能读取相同云端文稿和新发布的 1.0.1 主题。[Chrome 回读](../verification/v12-remaining/chrome-cloud-version.png)。这证明两个独立浏览器客户端回读，不等于两台物理设备验收。`/web/` 是本地优先入口，服务会话恢复应使用正式 `/app` 入口；本次没有以文件离线或下载 HTML 的本机 HTTP 方式验收。
 
 最终源码检查：完整 JS 296 项（295 通过、1 项既有跳过、0 失败），类型检查与构建退出 0；隔离主题服务/MCP 6/6，通过日志为 `/private/tmp/sp-v12-remaining-service.log`。云端 UI 适配器专项 13/13，其中真实服务形状的来源字段回归涵盖详情、编辑、历史应用和归档恢复。
+
+固定文稿独立 API 回读进一步证明：修订 1 仍 pin 1.0.0，旧强调色 #606760 与旧版快照/hash完全匹配；当前主题为1.0.1/#185A79。证据：[pin核对](../verification/v12-remaining/cloud-pin-check.json)。
