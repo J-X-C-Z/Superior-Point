@@ -7,6 +7,8 @@ import type {Actor, Database, Transaction} from '../contracts.js';
 import {checkTokenActor} from '../auth/token-service.js';
 import {ThemeService} from './theme-service.js';
 import {planThemeApplication} from '../../core/theme-application.js';
+import {inspectThemeCompatibility} from '../../core/theme-motion.js';
+import {inspectRenderCompatibility} from '../../io/html.js';
 import {checkAdminActor} from './admin-service.js';
 
 type Mutation = {expectedRevision: number; clientMutationId: string; leaseToken?: string};
@@ -185,13 +187,33 @@ export class ProjectService {
     return this.mutate(actor, id, request, 'project.edit', {operations, ...(request.leaseToken === undefined ? {} : {leaseToken: request.leaseToken})}, document => new DocumentCore(document).edit(operations, {expectedRevision: request.expectedRevision}), {leaseToken: request.leaseToken, snapshot: operations.some(operation => operation?.type === 'replaceContent')});
   }
 
-  async applyTheme(actor:Actor,id:string,request:Mutation&{themeId:string;version:string;hash:string;mode?:'preserve'|'reset'}) {
+  async themeCompatibility(actor:Actor,id:string) {
+    requireScope(actor,'projects:read',id);requireScope(actor,'themes:read');
+    return transaction(this.db,async client=>{
+      await this.active(client,actor);const row=await this.owned(client,actor,id);if(row.deleted_at)throw errors.missing();
+      return {projectId:id,revision:Number(row.revision),motionDiagnostics:inspectThemeCompatibility(row.document_jsonb),renderCompatibility:inspectRenderCompatibility(row.document_jsonb)};
+    });
+  }
+
+  async previewTheme(actor:Actor,id:string,request:{themeId:string;version:string;hash:string;mode?:'preserve'|'reset';slideIds?:string[];expectedRevision?:number}) {
+    requireScope(actor,'projects:read',id);requireScope(actor,'themes:read');
+    if(request.expectedRevision!==undefined&&(!Number.isSafeInteger(request.expectedRevision)||request.expectedRevision<0))throw errors.invalid();
+    return transaction(this.db,async client=>{
+      await this.active(client,actor);const row=await this.owned(client,actor,id);if(row.deleted_at)throw errors.missing();
+      if(request.expectedRevision!==undefined&&Number(row.revision)!==request.expectedRevision)throw conflict('REVISION_CONFLICT','项目已有更新版本',{expectedRevision:request.expectedRevision,actualRevision:Number(row.revision)});
+      const ref=await new ThemeService(this.db).resolveRef(client,actor,request);
+      try {return {projectId:id,revision:Number(row.revision),...await planThemeApplication(row.document_jsonb,ref.snapshot,{mode:request.mode,slideIds:request.slideIds})};}
+      catch(error){if(error instanceof CoreError)throw errors.invalid(error.message);throw error;}
+    });
+  }
+
+  async applyTheme(actor:Actor,id:string,request:Mutation&{themeId:string;version:string;hash:string;mode?:'preserve'|'reset';slideIds?:string[]}) {
     requireScope(actor,'themes:read');
     if(typeof request.themeId!=='string'||request.themeId.length>128||typeof request.version!=='string'||request.version.length>64||typeof request.hash!=='string'||!/^sha256:[a-f0-9]{64}$/.test(request.hash)||!['preserve','reset'].includes(request.mode??'preserve'))throw errors.invalid();
-    const payload={themeId:request.themeId,version:request.version,hash:request.hash,mode:request.mode??'preserve'};
+    const payload={themeId:request.themeId,version:request.version,hash:request.hash,mode:request.mode??'preserve',...(request.slideIds===undefined?{}:{slideIds:request.slideIds})};
     return this.mutate(actor,id,request,'project.theme',payload,async(document,client)=>{
       const ref=await new ThemeService(this.db).resolveRef(client,actor,payload);
-      let plan;try{plan=await planThemeApplication(document,ref.snapshot,{mode:payload.mode as 'preserve'|'reset'});}catch(error){if(error instanceof CoreError)throw errors.invalid(error.message);throw error;}
+      let plan;try{plan=await planThemeApplication(document,ref.snapshot,{mode:payload.mode as 'preserve'|'reset',slideIds:request.slideIds});}catch(error){if(error instanceof CoreError)throw errors.invalid(error.message);throw error;}
       return coreCall(()=>new DocumentCore(document).edit(plan.operations,{expectedRevision:request.expectedRevision}));
     },{leaseToken:request.leaseToken});
   }

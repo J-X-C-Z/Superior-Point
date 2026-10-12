@@ -1,3 +1,4 @@
+import type {DesignLanguage} from './theme-manifest.js';
 import type {JSONValue} from './document-core.js';
 export interface FontToken {fontFamily:string;fallback:string[];license:string;fontSize:number;fontWeight?:number;lineHeight?:number;[key:string]:JSONValue|undefined}
 export interface ThemeAsset {id:string;mimeType:'image/png'|'image/jpeg'|'image/webp';data:string;hash:string;license:string;[key:string]:JSONValue}
@@ -5,6 +6,7 @@ export interface ThemeLayout {id:string;kind:'cover'|'section'|'content'|'data'|
 export interface Theme {
   format:'superior-point-theme';schemaVersion:1;id:string;name:string;version:string;author:string;license:string;tags:string[];supportedRatios:('16:9'|'4:3')[];
   tokens:{colors:Record<string,string>;typography:Record<string,FontToken>;spacing:Record<string,number>;components:Record<string,Record<string,JSONValue>>;motion?:{durationMs:number;easing:'linear'|'ease'|'ease-in'|'ease-out'|'ease-in-out'};[key:string]:unknown};
+  designLanguage?:DesignLanguage;
   layouts:ThemeLayout[];assets:ThemeAsset[];[key:string]:unknown;
 }
 export interface ThemeRef {id:string;version:string;hash:string;snapshot:Theme}

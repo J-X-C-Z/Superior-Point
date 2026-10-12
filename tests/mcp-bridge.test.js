@@ -30,7 +30,7 @@ test('real SDK stdio retries identical atomic mutation without a lease, keeps sn
  const client=new Client({name:'bridge-unit',version:'1'});
  try {
   await client.connect(new StdioClientTransport({command:process.execPath,args:[path.resolve('mcp/bridge/server.js')],env:{SP_API_URL:'http://127.0.0.1:'+api.address().port,SP_API_TOKEN:secret,SP_BRIDGE_ALLOW_HTTP:'1'},stderr:'pipe'}));
-  assert.equal((await client.listTools()).tools.length,20);
+  assert.equal((await client.listTools()).tools.length,22);
   const call=async(name,args)=>{const result=await client.callTool({name,arguments:args});return {error:result.isError,value:JSON.parse(result.content[0].text)};};
   const args={projectId:'project',expectedRevision:0,operations:[{type:'updateProject',properties:{title:'saved'}}]};
   const uncertain=await call('sp_edit',args);assert.equal(uncertain.value.error.code,'API_UNAVAILABLE');assert.ok(uncertain.value.error.details.clientMutationId);

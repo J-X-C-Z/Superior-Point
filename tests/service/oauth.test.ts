@@ -53,7 +53,7 @@ test('buildApp OAuth SDK to MCP preserves origin/cookie/CSRF boundary and keeps 
   let registration:OAuthClientInformationMixed|undefined,tokens:OAuthTokens|undefined,verifier='',authorization:URL|undefined;
   const provider:OAuthClientProvider={redirectUrl:'http://127.0.0.1:43124/callback',clientMetadata:{client_name:'Integrated SDK client',redirect_uris:['http://127.0.0.1:43124/callback'],token_endpoint_auth_method:'none',grant_types:['authorization_code'],response_types:['code']},state:()=> 'integration-state',clientInformation:()=>registration,saveClientInformation:v=>{registration=v;},tokens:()=>tokens,saveTokens:v=>{tokens=v;},saveCodeVerifier:v=>{verifier=v;},codeVerifier:()=>verifier,redirectToAuthorization:v=>{authorization=v;}};
   const prm=await fetch(origin+'/.well-known/oauth-protected-resource/mcp').then(r=>r.json());assert.equal(prm.resource,origin+'/mcp');assert.deepEqual(prm.authorization_servers,[origin]);
-  assert.equal(await sdkAuth(provider,{serverUrl:origin+'/mcp',scope:'projects:read projects:write'}),'REDIRECT');assert.ok(authorization);const started=await fetch(authorization,{redirect:'manual'});assert.equal(started.status,302);const consentUrl=new URL(started.headers.get('location')!),request=consentUrl.searchParams.get('request')!;
+  assert.equal(await sdkAuth(provider,{serverUrl:origin+'/mcp',scope:'projects:read projects:write themes:read'}),'REDIRECT');assert.ok(authorization);const started=await fetch(authorization,{redirect:'manual'});assert.equal(started.status,302);const consentUrl=new URL(started.headers.get('location')!),request=consentUrl.searchParams.get('request')!;
   assert.equal((await fetch(consentUrl)).status,200);
   const approve=(headers:Record<string,string>)=>fetch(origin+'/oauth/consent',{method:'POST',headers:{'Content-Type':'application/json',Cookie:cookie,...headers},body:JSON.stringify({request,approve:true,projectAllowlist:[own.id]})});
   assert.equal((await approve({Origin:'https://evil.invalid','X-CSRF-Token':credentials.csrfToken})).status,403);
@@ -66,10 +66,16 @@ test('buildApp OAuth SDK to MCP preserves origin/cookie/CSRF boundary and keeps 
   const message={jsonrpc:'2.0',id:7,method:'tools/list',params:{}};
   const accessToken=tokens.access_token;const mcp=(extra:Record<string,string>={})=>fetch(origin+'/mcp',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+accessToken,...extra},body:JSON.stringify(message)});
   assert.equal((await mcp({Cookie:cookie})).status,401);assert.equal((await mcp({Origin:'https://evil.invalid'})).status,403);const {request:rawRequest}=await import('node:http');const wrongHost=await new Promise<number>((resolve,reject)=>{const req=rawRequest(origin+'/mcp',{method:'POST',headers:{Host:'evil.invalid','Content-Type':'application/json',Accept:'application/json, text/event-stream',Authorization:'Bearer '+accessToken}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode!));});req.on('error',reject);req.end(JSON.stringify(message));});assert.equal(wrongHost,403);
-  await client.connect(new StreamableHTTPClientTransport(new URL(origin+'/mcp'),{requestInit:{headers:{Authorization:'Bearer '+tokens.access_token}}}));assert.equal((await client.listTools()).tools.length,20);
+  await client.connect(new StreamableHTTPClientTransport(new URL(origin+'/mcp'),{requestInit:{headers:{Authorization:'Bearer '+tokens.access_token}}}));assert.equal((await client.listTools()).tools.length,22);
   const call=async(name:string,args:Record<string,unknown>)=>{const result=await client.callTool({name,arguments:args});return JSON.parse((result.content as {text:string}[])[0].text);};
   assert.equal((await call('sp_get_document',{projectId:own.id,full:true})).title,own.title);
   assert.equal((await call('sp_get_document',{projectId:outside.id})).error.code,'FORBIDDEN');
+  const builtin=(await call('sp_list_themes',{}))[0],themeInput={themeId:builtin.id,version:builtin.version,hash:builtin.hash};
+  assert.equal((await call('sp_preview_theme_application',{projectId:own.id,...themeInput,expectedRevision:0})).revision,0);
+  assert.equal((await call('sp_validate_theme_compatibility',{projectId:own.id})).revision,0);
+  assert.equal((await call('sp_preview_theme_application',{projectId:outside.id,...themeInput})).error.code,'FORBIDDEN');
+  assert.equal((await call('sp_validate_theme_compatibility',{projectId:outside.id})).error.code,'FORBIDDEN');
+
   const edited=await call('sp_edit',{projectId:own.id,expectedRevision:0,clientMutationId:'oauth-integrated-edit',operations:[{type:'updateProject',properties:{title:'OAuth changed same cloud document'}}]});assert.equal(edited.revision,1);assert.equal((await projects.get(webActor,own.id)).title,'OAuth changed same cloud document');
   assert.equal((await call('sp_create_project',{title:'Scope denied'})).error.code,'FORBIDDEN');
   const cookieRevocation=await fetch(origin+'/revoke',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Cookie:cookie,Origin:origin},body:new URLSearchParams({client_id:registration.client_id,token:tokens.access_token})});assert.equal(cookieRevocation.status,400);

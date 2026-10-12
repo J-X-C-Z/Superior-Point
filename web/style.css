@@ -191,3 +191,5 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
  .library-toolbar>div #search{width:auto;min-width:0;flex:1 1 100%}
  .library-toolbar>div #project-source,.library-toolbar>div #sort{width:auto;min-width:0;flex:1 1 120px}
 }
+
+.theme-page-selection{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:16px 0}.theme-page-selection[hidden]{display:none}.theme-page-selection label{display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere}.theme-page-selection input{width:auto}.theme-change-list{max-height:220px;overflow:auto;font-size:12px;line-height:1.8}.theme-dialog .theme-status{white-space:pre-line}

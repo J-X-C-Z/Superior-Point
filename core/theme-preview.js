@@ -7,7 +7,7 @@ const illustration='iVBORw0KGgoAAAANSUhEUgAAAKAAAABkCAIAAACO1KzYAAACJElEQVR4nO3R
 export async function createThemePreviewDocument(input,{ratio='16:9'}={}){
  const theme=await verifyThemeAssets(input);
  if(!theme.supportedRatios.includes(ratio))throw new Error('主题不支持画布比例：'+ratio);
- const width=ratio==='4:3'?960:1280,height=720,doc=createDocument({title:theme.name+' · 四页样例',canvas:{width,height}}),{colors,typography,spacing,components}=theme.tokens;
+ const width=ratio==='4:3'?960:1280,height=720,doc=createDocument({title:theme.name+(theme.designLanguage?' · 五页样例':' · 四页样例'),canvas:{width,height}}),{colors,typography,spacing,components}=theme.tokens;
  let inset=0,gap=0,inner=0;const panel=components.panel??{};
  let current='',counter=0;
  const id=()=>`${current}-${++counter}`;
@@ -36,8 +36,21 @@ export async function createThemePreviewDocument(input,{ratio='16:9'}={}){
  data.push({...shape(inset,245,inner,345),fill:components.chart?.surface||'#F8FAFC',stroke:'#DCE3EA'}, {id:id(),type:'chart',chartType:'bar',x:inset+gap,y:265,w:inner-gap*2,h:250,values:[24,38,52,76],labels:['Q1','Q2','Q3','Q4'],fill:components.chart?.surface||'#F8FAFC',chartColor:components.chart?.color||colors.accent,color:components.chart?.text||'#20323C',fontSize:18,chartTitle:'季度完成量',themeRole:'chart'},text('24 → 76',inset,615,inner*0.5,55),text('样例值 / 非实时数据',inset+inner*0.5,620,inner*0.5,40,'caption'));
  doc.assets.push({id:'preview-landscape',mimeType:'image/png',license:'MIT',author:'Superior Point',description:'Original geometric landscape, generated for theme preview.',dataUrl:'data:image/png;base64,'+illustration});
  const image=slide('image','图片组合页'),imageWidth=Math.min(inner*0.55,560),imageX=motif==='band'?width-inset-imageWidth:inset,textX=imageX===inset?inset+imageWidth+gap:inset,textWidth=inner-imageWidth-gap;
- image.push(text('图像，也是一种语言',inset,70,inner,100,'title'),shape(imageX,245,imageWidth,340),{id:id(),type:'image',assetId:'preview-landscape',x:imageX+16,y:261,w:imageWidth-32,h:308,fit:'contain'},text('山色与暖光',textX,285,textWidth,70),text('原创几何风景\n无外部加载\n图片与文字独立可编辑',textX,390,textWidth,150,'caption'),shape(textX,565,Math.min(textWidth,100),8,'accent'),text('图像 + 面板 + 标注 / 可编辑组合元素',inset,630,inner,35,'caption'));
+ image.push(text('图像，也是一种语言',inset,70,inner,100,'title'),shape(imageX,245,imageWidth,340),{id:id(),type:'image',assetId:'preview-landscape',x:imageX+16,y:261,w:imageWidth-32,h:308,fit:theme.designLanguage?.visual.imageTreatment==='editorial-crop'?'cover':'contain'},text('山色与暖光',textX,285,textWidth,70),text('原创几何风景\n无外部加载\n图片与文字独立可编辑',textX,390,textWidth,150,'caption'),shape(textX,565,Math.min(textWidth,100),8,'accent'),text('图像 + 面板 + 标注 / 可编辑组合元素',inset,630,inner,35,'caption'));
+
+ if(theme.designLanguage){
+  const chapter=slide('section','章节页');
+  const organic=theme.designLanguage.visual.shape==='rounded';
+  chapter.push(shape(inset,130,organic?220:inner,organic?220:12,'accent',organic?'ellipse':'rect'),text('02 / 下一章节',inset,390,inner,110,'title'),text('让证据引出下一步行动',inset,535,inner,60));
+  const motion=theme.designLanguage.motion;
+  for(const page of doc.slides){
+   page.transition=motion.transition;page.duration=motion.timing.standardMs;
+   const title=page.elements.find(e=>e.themeRole==='title');
+   if(title&&motion.enter!=='none')page.animations.push({id:page.id+'-entrance',targetId:title.id,type:({fade:'fade-in',slide:'fade-left',scale:'zoom'})[motion.enter],trigger:'click',duration:motion.timing.standardMs/1000,delay:0,easing:motion.easing,order:0});
+   page.themeMotionIntent={enter:motion.enter,exit:motion.exit,reducedMotion:motion.reducedMotion,timing:motion.timing};
+  }
+ }
  doc.extensions.theme={ref:await createThemeRef(theme),bindings:createThemeBindings(doc)};
- doc.extensions.themePreview={ratio,kinds:['cover','content','data','image'],limitations:[...(theme.preview?.limitations||[]),'Generic chart labels and light chart surface are fixed for legibility; native editor chart styling may differ.']};
+ doc.extensions.themePreview={ratio,kinds:doc.slides.map(s=>s.themeLayout),limitations:[...(theme.preview?.limitations||[]),'Generic chart labels and light chart surface are fixed for legibility; native editor chart styling may differ.']};
  return importDocument(doc);
 }

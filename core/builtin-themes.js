@@ -17,6 +17,24 @@ const catalog=specifications.map(s=>importTheme({
  tokens:{colors:{background:s.colors[0],text:s.colors[1],accent:s.colors[2],surface:s.colors[3],muted:s.colors[4]},typography:{title:font(s.family,s.size,700),body:font(s.family,26),caption:font(s.family,18)},spacing:{unit:8,pageInset:s.inset,gap:s.gap},components:{panel:{radius:s.radius,strokeWidth:s.motif==='frame'?2:0},accent:{motif:s.motif},chart:{chartType:'bar',color:s.motif==='orbit'?'#5064A3':s.colors[2],surface:'#F8FAFC',text:'#20323C'}},motion:{durationMs:0,easing:'linear'}},
  layouts:['cover','section','content','data','image'].map(kind=>({id:kind,kind,rules:{columns:kind==='content'?s.columns:1,pageInset:s.inset,gap:s.gap,motif:s.motif,titlePosition:s.motif==='band'?'top':'inset'}})),assets:[],preview:{kinds:['cover','content','data','image'],limitations:['System fonts vary by device; no fonts are bundled.','Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.','Sample data and illustration are original demonstration content, not live project data.']}
 }));
+
+const curated=[
+ {base:'sp-folio',id:'sp-editorial-language',name:'书页叙事 · 设计语言',principles:['Reading hierarchy','Editorial rhythm'],suitableFor:['Narrative reports','Long-form explanation'],avoid:['Dense specification tables','Decorative gradients'],distinctiveFeatures:['Serif display paired with generous body leading','Asymmetric image and copy','Square page bands'],grid:'editorial',imageTreatment:'editorial-crop',shape:'square',spacingUnit:8,enter:'fade',exit:'fade',transition:'fade',easing:'ease-in-out',timing:[180,420,640]},
+ {base:'sp-caliper',id:'sp-technical-language',name:'标尺精度 · 设计语言',principles:['Measurement before decoration','Indexed evidence'],suitableFor:['Technical review','Specification reports'],avoid:['Emotive collage','Soft decorative silhouettes'],distinctiveFeatures:['Monospaced display and compact body scale','Two aligned specification columns','Hard frames and indexed rules'],grid:'modular',imageTreatment:'contain',shape:'square',spacingUnit:4,enter:'slide',exit:'slide',transition:'slide',easing:'linear',timing:[120,240,360]},
+ {base:'sp-hearth',id:'sp-warm-language',name:'暖光故事 · 设计语言',principles:['Human pacing','Soft emphasis'],suitableFor:['Team stories','Learning sessions'],avoid:['High-density specification grids','Aggressive flashing'],distinctiveFeatures:['Rounded panels and circular chapter mark','Single spacious narrative column','Image inset with warm supporting captions'],grid:'freeform',imageTreatment:'contain',shape:'rounded',spacingUnit:12,enter:'scale',exit:'fade',transition:'fade',easing:'ease-out',timing:[260,560,800]}
+];
+// New IDs preserve every existing 1.0.0 snapshot and its preview semantics.
+for(const s of curated){
+ const theme=structuredClone(catalog.find(t=>t.id===s.base));
+ Object.assign(theme,{id:s.id,name:s.name,description:theme.description+' 完整原创视觉与运动语言。',tags:[...theme.tags,'design-language']});
+ theme.tokens.spacing.unit=s.spacingUnit;theme.tokens.motion={durationMs:s.timing[1],easing:s.easing};
+ theme.tokens.typography.body.lineHeight=s.grid==='editorial'?1.5:s.grid==='modular'?1.15:1.4;
+ theme.designLanguage={identity:{principles:s.principles,suitableFor:s.suitableFor,avoid:s.avoid,distinctiveFeatures:s.distinctiveFeatures},origin:{type:'original',ref:'J-X-C-Z/Superior-Point',sourceRevision:'sp-design-language-1.0.0',license:'MIT',attribution:'Original Superior Point rules and geometric sample; no Design-Systems code, images or fonts copied.'},visual:{grid:s.grid,imageTreatment:s.imageTreatment,shape:s.shape,spacingUnit:s.spacingUnit},motion:{principles:s.principles,timing:{shortMs:s.timing[0],standardMs:s.timing[1],longMs:s.timing[2]},easing:s.easing,enter:s.enter,exit:s.exit,transition:s.transition,reducedMotion:'none',unsupportedBehavior:'preserve-intent-and-report'}};
+ theme.preview.kinds=['cover','content','data','image','section'];
+ theme.preview.limitations.push('Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed.');
+ catalog.push(importTheme(theme));
+}
+
 /** Built-ins are read-only; each caller receives an independently validated snapshot. */
 export function listBuiltinThemes(){return catalog.map(theme=>freeze(importTheme(theme)));}
-export function getBuiltinTheme(id){const theme=catalog.find(item=>item.id===id);return theme?freeze(importTheme(theme)):null;}
+export function getBuiltinTheme(id,version){const theme=catalog.find(item=>item.id===id&&(!version||item.version===version));return theme?freeze(importTheme(theme)):null;}
