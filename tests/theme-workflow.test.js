@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {JSDOM} from 'jsdom';
 import 'fake-indexeddb/auto';
-import {getBuiltinTheme} from '../core/builtin-themes.js';
+import {getBuiltinTheme,listBuiltinThemes} from '../core/builtin-themes.js';
 import {importHTML} from '../io/html.js';
 import {CloudAPI} from '../storage/cloud-project-store.js';
 
@@ -25,10 +25,10 @@ test('theme workflow creates, reopens, confirms once, undoes, redoes and round-t
   assert.deepEqual(requests,[],'local startup does not probe the cloud endpoint');
   const cloudAPI=new CloudAPI();await assert.rejects(cloudAPI.restoreSession(),{code:'UNAUTHENTICATED'});assert.equal(requests.length,1,'an unauthenticated cloud check ends after one request');
 
-  document.querySelector('[data-view="themes"]').click();await wait(()=>viewVisible('theme-view')&&!viewVisible('home-view')&&app.getDocument()===undefined);await wait(()=>document.querySelectorAll('#theme-view .theme-card').length===6);
+  document.querySelector('[data-view="themes"]').click();await wait(()=>viewVisible('theme-view')&&!viewVisible('home-view')&&app.getDocument()===undefined);await wait(()=>document.querySelectorAll('#theme-view .theme-card').length===listBuiltinThemes().length);
   const firstTheme=getBuiltinTheme('sp-margin');
   const firstCard=[...document.querySelectorAll('#theme-view .theme-card')].find(card=>card.textContent.includes(firstTheme.name));assert.ok(firstCard);
-  findButton(firstCard,'详情与四页预览').click();await wait(()=>document.querySelector('.theme-dialog'));
+  findButton(firstCard,'详情与可编辑预览').click();await wait(()=>document.querySelector('.theme-dialog'));
   const details=document.querySelector('.theme-dialog');details.querySelector('select').value='4:3';findButton(details,'使用主题新建').click();
   await wait(()=>document.body.classList.contains('editor-open')&&app.getDocument()?.extensions?.theme?.ref?.id===firstTheme.id);
   const created=app.getDocument();assert.deepEqual(created.canvas,{width:960,height:720});assert.equal(created.title,firstTheme.name+' · 演示文稿');assert.deepEqual(created.extensions.theme.ref.snapshot,firstTheme);await app.flush();
@@ -49,12 +49,12 @@ test('theme workflow creates, reopens, confirms once, undoes, redoes and round-t
   const before=app.getDocument(),savedBefore=await app.store.get(created.id);
   assert.equal(savedBefore.document.slides[0].elements.find(element=>element.id===title.id).color,'#912345');
 
-  document.querySelector('[data-view="themes"]').click();await wait(()=>viewVisible('theme-view')&&!viewVisible('home-view')&&app.getDocument()===undefined);await wait(()=>document.querySelectorAll('#theme-view .theme-card').length===6);
+  document.querySelector('[data-view="themes"]').click();await wait(()=>viewVisible('theme-view')&&!viewVisible('home-view')&&app.getDocument()===undefined);await wait(()=>document.querySelectorAll('#theme-view .theme-card').length===listBuiltinThemes().length);
   const nextTheme=getBuiltinTheme('sp-signal'),nextCard=[...document.querySelectorAll('#theme-view .theme-card')].find(card=>card.textContent.includes(nextTheme.name));assert.ok(nextCard);
-  findButton(nextCard,'详情与四页预览').click();await wait(()=>document.querySelector('.theme-dialog'));
+  findButton(nextCard,'详情与可编辑预览').click();await wait(()=>document.querySelector('.theme-dialog'));
   findButton(document.querySelector('.theme-dialog'),'应用到已有项目').click();await wait(()=>document.querySelector('.theme-dialog h2')?.textContent==='应用主题前预览'&&findButton(document.querySelector('.theme-dialog'),'确认应用'));
   const applyPreview=document.querySelector('.theme-dialog');
-  const applyButton=findButton(applyPreview,'确认应用');applyButton.click();
+  const applyButton=findButton(applyPreview,'确认应用');findButton(applyPreview,'预览变更').click();await wait(()=>!applyButton.disabled);applyButton.click();
   await wait(()=>[...document.querySelectorAll('dialog button')].some(control=>control.textContent==='应用并保存'));
   const confirmation=[...document.querySelectorAll('dialog')].find(dialog=>dialog.querySelector('h2')?.textContent==='确认主题变更');
   assert.equal(app.getDocument(),undefined,'confirmation leaves the editor unopened until approval');

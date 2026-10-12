@@ -38,5 +38,29 @@ test('theme HTTP routes enforce CSRF and independent bearer scopes and return re
   const created=await app.inject({method:'POST',url:'/api/v1/themes',headers:bearer,payload:{theme,clientMutationId:'bearer-create'}});assert.equal(created.statusCode,201);
   const publish=await app.inject({method:'POST',url:'/api/v1/themes/'+item.id+'/publish',headers:bearer,payload:{theme:{...item.ref.snapshot,version:'1.1.0'},expectedRevision:0,clientMutationId:'http-publish'}});assert.equal(publish.statusCode,200);
   assert.deepEqual((await app.inject({method:'GET',url:'/api/v1/themes/'+item.id+'/versions/1.0.0',headers:bearer})).json(),item.ref);
+  const project=(await app.inject({method:'POST',url:'/api/v1/projects',headers,payload:{title:'preview-http'}})).json();const builtins=(await app.inject({url:'/api/v1/themes/builtins',headers})).json();const fixed=builtins[0],route='/api/v1/projects/'+project.id+'/theme/preview',payload={themeId:fixed.id,version:fixed.version,hash:fixed.hash,expectedRevision:0};
+  assert.equal((await app.inject({method:'POST',url:route,headers:{origin,cookie},payload})).statusCode,403);
+  const dryRun=await app.inject({method:'POST',url:route,headers,payload});assert.equal(dryRun.statusCode,200,dryRun.body);assert.equal(dryRun.json().revision,0);
+  assert.equal((await app.inject({method:'POST',url:route,headers,payload:{...payload,slideIds:[]}})).statusCode,400);
+  assert.equal((await app.inject({method:'POST',url:route,headers,payload:{...payload,slideIds:['same','same']}})).statusCode,400);
+  assert.equal((await app.inject({url:'/api/v1/projects/'+project.id+'/theme/compatibility',headers})).statusCode,200);
+  assert.equal((await app.inject({method:'POST',url:route,headers:bearer,payload})).statusCode,403);
+
  }finally{await app.close();await cleanupTestDatabase(db);}
 });
+test('project theme dry-run is scoped, private, revision-bound and never persists',()=>fixture(async(db,s,a,b)=>{
+ const {ProjectService}=await import('../../server/services/project-service.js');const projects=new ProjectService(db),created=await projects.create(a);
+ const doc=await projects.edit(a,created.id,{expectedRevision:0,clientMutationId:'preview-content',operations:['one','two'].map(id=>({type:'createSlide' as const,slide:{id,notes:'keep',elements:[{id:'text-'+id,type:'text' as const,x:10,y:20,w:100,h:40,text:id,color:'#123456'}],animations:[]}}))});
+ const item=await s.importTheme(a,{theme,clientMutationId:'preview-theme'}),input={themeId:item.ref.id,version:item.ref.version,hash:item.ref.hash,slideIds:['one'],mode:'reset' as const,expectedRevision:1};
+ const before=await db.query('SELECT count(*)::int AS n FROM mutation_receipts');const plan=await projects.previewTheme(a,doc.id,input);
+ assert.equal(plan.revision,1);assert.ok(plan.changes.length);assert.ok(plan.changes.every(change=>change.slideId==='one'));assert.deepEqual(plan.scope.slideIds,['one']);
+ assert.deepEqual(await projects.get(a,doc.id),doc);assert.deepEqual((await db.query('SELECT count(*)::int AS n FROM mutation_receipts')).rows,before.rows);
+ await assert.rejects(projects.previewTheme(a,doc.id,{...input,slideIds:['missing']}),{code:'INVALID_REQUEST'});await assert.rejects(projects.previewTheme(a,doc.id,{...input,expectedRevision:0}),{code:'REVISION_CONFLICT'});
+ await assert.rejects(projects.previewTheme(b,doc.id,input),{code:'NOT_FOUND'});const other=await s.importTheme(b,{theme,clientMutationId:'private'});await assert.rejects(projects.previewTheme(a,doc.id,{...input,themeId:other.ref.id,hash:other.ref.hash}),{code:'NOT_FOUND'});
+ const applied=await projects.applyTheme(a,doc.id,{...input,clientMutationId:'scoped-apply'});assert.equal(applied.revision,2);assert.deepEqual(applied.slides[1],doc.slides[1]);assert.equal(applied.slides[0].notes,'keep');
+ assert.deepEqual(await projects.applyTheme(a,doc.id,{...input,clientMutationId:'scoped-apply'}),applied);await assert.rejects(projects.applyTheme(a,doc.id,{...input,slideIds:['two'],clientMutationId:'scoped-apply'}),{code:'MUTATION_ID_REUSED'});
+ const compatibility=await projects.themeCompatibility(a,doc.id);assert.equal(compatibility.revision,2);assert.ok(Array.isArray(compatibility.motionDiagnostics));assert.deepEqual(await projects.get(a,doc.id),applied);
+ const tokens=new TokenService(db);const read=await tokens.create(a,{name:'dry-run',scopes:['projects:read','themes:read'],projectAllowlist:[doc.id]});const actor=await tokens.authenticate(read.token);assert.equal((await projects.previewTheme(actor,doc.id,{...input,expectedRevision:2})).revision,2);await assert.rejects(projects.applyTheme(actor,doc.id,{...input,expectedRevision:2,clientMutationId:'read-write'}),{code:'FORBIDDEN'});
+ const outside=await projects.create(a);await assert.rejects(projects.previewTheme(actor,outside.id,input),{code:'FORBIDDEN'});await assert.rejects(projects.themeCompatibility(actor,outside.id),{code:'FORBIDDEN'});
+ const legacy=await tokens.create(a,{name:'legacy',scopes:['projects:read']});await assert.rejects(projects.themeCompatibility(await tokens.authenticate(legacy.token),doc.id),{code:'FORBIDDEN'});
+}));

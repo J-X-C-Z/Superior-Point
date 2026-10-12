@@ -4,6 +4,8 @@
 
 2026-10-11，v1.1 非编辑器服务批次已部署 Hakari（源码 `93ebf03`）。包括统一工作台与主题、历史恢复、固定修订分享、原生 Streamable HTTP MCP、OAuth PKCE S256、SSE 修订提示、配额/会话治理和真实主机监控。共享云端 MCP 为20工具；OAuth仅用于MCP，外部REST继续使用PAT。验收范围、准确CI结果和延期项见 [本批次生产验收](docs/acceptance/v11-services-hakari.md)。
 
+2026-10-12，主题库 v1.2 本轮增量已部署（源码 `9841d84`）：三套原创设计语言、五页可编辑样例、选页 Skin 的只读差异/修订确认和兼容诊断，云端 MCP 现为22工具。完整路线图仍有待办，详见[本轮主题发布验收](docs/acceptance/v12-theme-library-hakari.md)。
+
 ## Alpha 候选已部署
 
 Alpha 候选已部署到 [sp.jxcz.top](https://sp.jxcz.top/)，管理入口为 [/admin](https://sp.jxcz.top/admin)。部署包括 API、PostgreSQL、云端工作台、PAT、连接同一 PostgreSQL 的 stdio MCP Bridge、单写者租约、CAS 草稿与恢复、独立 Admin。此版本作为 **pre-release 候选**发布，不是 Stable，也不代表路线图全部完成。

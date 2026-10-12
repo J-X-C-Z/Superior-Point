@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Superior Point Theme Manifest v1",
+  "type": "object",
+  "required": [
+    "format",
+    "schemaVersion",
+    "id",
+    "name",
+    "version",
+    "author",
+    "license",
+    "tags",
+    "supportedRatios",
+    "tokens",
+    "layouts",
+    "assets"
+  ],
+  "properties": {
+    "format": {
+      "const": "superior-point-theme"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$"
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "supportedRatios": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "16:9",
+          "4:3"
+        ]
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "required": [
+        "colors",
+        "typography",
+        "spacing",
+        "components"
+      ]
+    },
+    "layouts": {
+      "type": "array"
+    },
+    "assets": {
+      "type": "array"
+    },
+    "designLanguage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "origin",
+        "visual",
+        "motion"
+      ],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "principles",
+            "suitableFor",
+            "avoid",
+            "distinctiveFeatures"
+          ],
+          "properties": {
+            "principles": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "suitableFor": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "avoid": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "distinctiveFeatures": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            }
+          }
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "ref",
+            "sourceRevision",
+            "license",
+            "attribution"
+          ],
+          "properties": {
+            "type": {
+              "enum": [
+                "design-systems",
+                "original",
+                "derived"
+              ]
+            },
+            "ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "sourceRevision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "license": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "attribution": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        },
+        "visual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "grid",
+            "imageTreatment",
+            "shape",
+            "spacingUnit"
+          ],
+          "properties": {
+            "grid": {
+              "enum": [
+                "modular",
+                "editorial",
+                "freeform",
+                "radial"
+              ]
+            },
+            "imageTreatment": {
+              "enum": [
+                "editorial-crop",
+                "contain",
+                "monochrome",
+                "duotone",
+                "none"
+              ]
+            },
+            "shape": {
+              "enum": [
+                "square",
+                "rounded",
+                "organic"
+              ]
+            },
+            "spacingUnit": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 512
+            }
+          }
+        },
+        "motion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "principles",
+            "timing",
+            "easing",
+            "enter",
+            "exit",
+            "transition",
+            "reducedMotion",
+            "unsupportedBehavior"
+          ],
+          "properties": {
+            "principles": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "timing": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "shortMs",
+                "standardMs",
+                "longMs"
+              ],
+              "properties": {
+                "shortMs": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "standardMs": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "longMs": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                }
+              }
+            },
+            "easing": {
+              "enum": [
+                "linear",
+                "ease",
+                "ease-in",
+                "ease-out",
+                "ease-in-out"
+              ]
+            },
+            "enter": {
+              "enum": [
+                "none",
+                "fade",
+                "slide",
+                "scale"
+              ]
+            },
+            "exit": {
+              "enum": [
+                "none",
+                "fade",
+                "slide",
+                "scale"
+              ]
+            },
+            "transition": {
+              "enum": [
+                "none",
+                "fade",
+                "slide"
+              ]
+            },
+            "reducedMotion": {
+              "enum": [
+                "none",
+                "fade"
+              ]
+            },
+            "unsupportedBehavior": {
+              "enum": [
+                "preserve-intent-and-report"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true,
+  "description": "Safe legacy extension fields survive. Runtime validateTheme additionally enforces asset bytes/hashes, fonts, token bounds and executable-field restrictions. New curated themes must include designLanguage."
+}

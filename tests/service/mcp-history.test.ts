@@ -19,7 +19,7 @@ for(const transport of ['http','stdio'])test(`SDK ${transport} revision tools pr
   await projects.edit(owner,original.id,{expectedRevision:1,clientMutationId:'second-edit',operations:[{type:'updateElement',slideId:'historical-slide',elementId:'text',properties:{text:'later text'}}]});
   const writer=await tokens.create(owner,{name:'history writer',scopes:['projects:read','projects:write'],projectAllowlist:[original.id]});await app.listen({host:'127.0.0.1',port});
   const connect=async(raw:string)=>{const client=new Client({name:'history-acceptance',version:'1'});clients.push(client);await client.connect(transport==='http'?new StreamableHTTPClientTransport(new URL(origin+'/mcp'),{requestInit:{headers:{authorization:'Bearer '+raw}}}):new StdioClientTransport({command:process.execPath,args:[path.resolve('mcp/bridge/server.js')],env:{SP_API_URL:origin,SP_API_TOKEN:raw,SP_BRIDGE_ALLOW_HTTP:'1'},stderr:'pipe'}));return client;};
-  const client=await connect(writer.token);assert.equal((await client.listTools()).tools.length,20);
+  const client=await connect(writer.token);assert.equal((await client.listTools()).tools.length,22);
   const call=async(name:string,args:Record<string,unknown>,current=client)=>{const result=await current.callTool({name,arguments:args});return {isError:result.isError,value:JSON.parse((result.content as {text:string}[])[0].text)};};
   assert.deepEqual((await call('sp_list_revisions',{projectId:original.id})).value.map((row:{revision:number})=>row.revision),[2,1,0]);
   assert.deepEqual((await call('sp_get_revision',{projectId:original.id,revision:1})).value,first);

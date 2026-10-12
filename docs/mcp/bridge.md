@@ -16,7 +16,7 @@
 
 浏览器自动读回已确认修订。双方修改不同字段或对象时三方合并；同一字段、删除与修改、同时更改数组顺序不自动裁决，保留本地草稿并提示恢复副本。同步远端版本会重置撤销历史，防止撤销覆盖 AI 已提交的内容。本地离线模式不连接云端 Agent。
 
-主题工具增加 `sp_list_themes`、`sp_get_theme`、`sp_preview_theme`、`sp_apply_theme`、`sp_save_theme`。列表合并只读内置主题和用户私人云端主题；读取固定版本返回 `{id,version,hash,snapshot}`。预览只渲染服务端四页原创样例，返回静态 SVG 和字体/图表降级限制，不读取用户文稿。
+主题工具增加 `sp_list_themes`、`sp_get_theme`、`sp_preview_theme`、`sp_apply_theme`、`sp_save_theme`。列表合并只读内置主题和用户私人云端主题；读取固定版本返回 `{id,version,hash,snapshot}`。预览只渲染服务端原创多页样例，返回静态 SVG 和字体/图表降级限制，不读取用户文稿。
 
 查询/预览需 `themes:read`，保存新主题需 `themes:write`，发布现有主题的新版本需 `themes:publish`。应用同时需 `projects:write` 与 `themes:read`，不要求额外项目读取权限，项目 allowlist 仍生效。`sp_apply_theme` 输入 `projectId, expectedRevision, themeId, version, hash, mode, clientMutationId?`；默认 preserve 保留手工样式；reset 由调用方在确认后选择。服务端验证固定主题哈希/私人归属，再以现有 Core 原子批次、CAS 和幂等回执提交；同账号 Agent 使用与普通原子编辑相同的活动浏览器租约规则。旧请求重放返回原结果，不基于新文稿重新计算主题计划。
 
@@ -25,3 +25,5 @@
 主题纵向验证：`TEST_DATABASE_URL=回环独立测试库 node --import tsx --test tests/service/theme-mcp.test.ts`，覆盖真实 SDK→stdio→HTTP→PAT→PostgreSQL 查询、样例预览、私人导入、版本发布、活动浏览器租约下主题应用、回执、CAS、私人 ACL、项目范围及吊销。
 
 历史工具新增 `sp_list_revisions`、`sp_get_revision`、`sp_revision_diff`、`sp_restore_revision`。前三者需要 `projects:read` 并受项目范围约束；恢复需要 `projects:write`、`expectedRevision` 和显式 `clientMutationId`。恢复先尝试取得相同请求的幂等回执；新恢复会通过现有接口获取排他租约，浏览器持有写入权时返回 PROJECT_BUSY，完成后尝试释放。恢复生成新修订，不重写历史；未确认结果仍按相同 mutation ID 与原 expectedRevision 重试。差异是保存修订的对象 ID、主题/资源变化诊断，不等于渲染预览。当前没有独立素材读写服务，不提供虚构的资源上传工具。HTTP/OAuth 的当前开发状态另见 http.md 与 oauth.md；本指南的文件根目录规则仅适用于 stdio Bridge。
+
+主题增量工具：`sp_preview_theme_application` 接收固定主题引用、`projectId`、可选 `mode,slideIds,expectedRevision`，返回保存修订上的非持久化计划、样式差异、手工覆盖与动效诊断；需要 `projects:read` + `themes:read`。`sp_validate_theme_compatibility` 接收 `projectId`，读取已保存主题快照的渲染/导出限制，也需要这两个 scope。`sp_apply_theme` 新增可选非空、不重复的 `slideIds`，范围进入 CAS 幂等指纹；未选择页面不变。`sp_list_themes` 可用 `query` 搜索当前授权列表的名称、ID、标签。

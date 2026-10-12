@@ -1,4 +1,5 @@
 import {cloneJSON, CoreError} from './document-core.js';
+import {validateDesignLanguage} from './theme-manifest.js';
 
 export const THEME_FORMAT = 'superior-point-theme';
 export const THEME_SCHEMA_VERSION = 1;
@@ -64,6 +65,10 @@ export function validateTheme(raw) {
       checkStyle(v);
     }
     if(t.motion!==undefined){if(!object(t.motion)||!bounded(t.motion.durationMs,0,10000)||!['linear','ease','ease-in','ease-out','ease-in-out'].includes(t.motion.easing))errors.push('Invalid motion');}
+  }
+  if(theme.designLanguage!==undefined){
+    errors.push(...validateDesignLanguage(theme.designLanguage));
+    if(!Object.keys(theme.tokens?.colors||{}).length||!Object.keys(theme.tokens?.typography||{}).length)errors.push('Design language requires color and typography tokens');
   }
   const layoutIds=new Set();
   if(!Array.isArray(theme.layouts)||theme.layouts.length>32)errors.push('Invalid layouts');

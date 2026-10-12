@@ -21,7 +21,7 @@ test('native stateless SDK HTTP uses shared tools, live bearer ACL, CAS, theme r
   const connect=async(raw:string)=>{const client=new Client({name:'http-acceptance',version:'1'});clients.push(client);await client.connect(new StreamableHTTPClientTransport(new URL('/mcp',url),{requestInit:{headers:{authorization:'Bearer '+raw,host}}}));return client;};
   const client=await connect(writer.token);
   const call=async(name:string,args:Record<string,unknown>,c=client)=>{const result=await c.callTool({name,arguments:args});return {isError:result.isError,value:JSON.parse((result.content as {text:string}[])[0].text)};};
-  const tools=await client.listTools();assert.equal(tools.tools.length,20);
+  const tools=await client.listTools();assert.equal(tools.tools.length,22);
   const document=(await call('sp_create_project',{title:'HTTP MCP'})).value;assert.equal(document.revision,0);
   assert.equal((await call('sp_get_document',{projectId:document.id,full:true})).value.title,'HTTP MCP');
   const edit={projectId:document.id,expectedRevision:0,clientMutationId:'remote-edit',operations:[{type:'createSlide',slide:{id:'remote-slide',elements:[]}}]};

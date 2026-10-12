@@ -212,6 +212,8 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
  .library-toolbar>div #search{width:auto;min-width:0;flex:1 1 100%}
  .library-toolbar>div #project-source,.library-toolbar>div #sort{width:auto;min-width:0;flex:1 1 120px}
 }
+
+.theme-page-selection{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:16px 0}.theme-page-selection[hidden]{display:none}.theme-page-selection label{display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere}.theme-page-selection input{width:auto}.theme-change-list{max-height:220px;overflow:auto;font-size:12px;line-height:1.8}.theme-dialog .theme-status{white-space:pre-line}
 </style></head><body>
 <aside><a class="brand" href="#home"><span>SP</span> SUPERIOR<br>POINT<span class="edition">LOCAL WORKSPACE / 01</span></a><nav><button data-view="home" class="active">工作台 <span>01</span></button><button data-view="recent">最近使用 <span>02</span></button><button data-view="all">我的幻灯片 <span>03</span></button><button data-view="trash">回收站 <span>04</span></button><button data-view="themes">主题库 <span>05</span></button></nav><div class="local-note"><i></i> 本地优先<br><small>项目保存在当前浏览器。<br>导出 HTML 可带走内容。</small></div></aside>
 <main><header><div class="breadcrumb">WORKSPACE <span>/</span> 我的幻灯片</div><a href="/web/help.html" class="secondary">帮助中心</a><button id="import-top" class="secondary">打开本地文件 ↗</button></header>
@@ -822,12 +824,12 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
     }
     return `<g opacity="${Math.max(0, Math.min(1, num(el.opacity, 1)))}" data-element-id="${esc(el.id)}"${fragmentIndex == null ? "" : ` class="fragment" data-fragment-index="${fragmentIndex}"`}${el.rotation ? ` transform="rotate(${num(el.rotation)} ${x + w / 2} ${y + h / 2})"` : ""}>${body}</g>`;
   }
-  function slideSVG(doc, slide, fragments = false) {
+  function slideSVG(doc, slide, fragments2 = false) {
     const hidden = hiddenElementIds(slide);
     const animations = (slide.animations || []).filter((a) => ["appear", "fragment", "fade-in"].includes(a.type));
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${doc.canvas.width}" height="${doc.canvas.height}" viewBox="0 0 ${doc.canvas.width} ${doc.canvas.height}" role="img" aria-label="${esc(slide.title || doc.title)}"><title>${esc(slide.title || doc.title)}</title><desc>${esc(RENDERER_LIMITATIONS.join(" "))}</desc><defs><marker id="sp-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5272a1"/></marker></defs><rect width="100%" height="100%" fill="${color(typeof slide.background === "string" ? slide.background : slide.background?.color ?? slide.bg, "#ffffff")}"/>${slide.elements.filter((el) => !hidden.has(el.id)).map((el) => {
       const a = animations.find((a2) => (a2.targetId ?? a2.targetElementId ?? a2.elementId ?? a2.target) === el.id);
-      return elementSVG(doc, el, fragments ? el.fragment === true ? num(el.fragmentIndex, 0) : a ? num(a.order, animations.indexOf(a)) : null : null);
+      return elementSVG(doc, el, fragments2 ? el.fragment === true ? num(el.fragmentIndex, 0) : a ? num(a.order, animations.indexOf(a)) : null : null);
     }).join("")}</svg>`;
   }
   function renderSlideSVG(document2, slideId) {
@@ -1305,31 +1307,31 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
         async save(accountId, document2, { sourceRevision, mutation } = {}) {
           const snapshot = importDocument(document2);
           if (!accountId || !Number.isSafeInteger(sourceRevision) || sourceRevision < 0) throw new Error("\u8349\u7A3F\u7F3A\u5C11\u8D26\u53F7\u6216\u6765\u6E90\u4FEE\u8BA2");
-          const record = { key: [accountId, snapshot.id, sourceRevision, this.branch], accountId, projectId: snapshot.id, sourceRevision, document: snapshot, updatedAt: Date.now(), ...mutation ? { mutation: structuredClone(mutation) } : {} };
+          const record2 = { key: [accountId, snapshot.id, sourceRevision, this.branch], accountId, projectId: snapshot.id, sourceRevision, document: snapshot, updatedAt: Date.now(), ...mutation ? { mutation: structuredClone(mutation) } : {} };
           return this.tx("readwrite", (store2, done) => {
-            const request = store2.get(record.key);
+            const request = store2.get(record2.key);
             request.onsuccess = () => {
               const old = request.result;
               if (old && old.document.revision > snapshot.revision) {
                 done(old);
                 return;
               }
-              store2.put(record);
-              done(record);
+              store2.put(record2);
+              done(record2);
             };
           });
         }
         async list(accountId, projectId) {
           return this.tx("readonly", (store2, done) => {
             const request = store2.getAll();
-            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId && (!projectId || record.projectId === projectId)).sort((a, b) => b.updatedAt - a.updatedAt));
+            request.onsuccess = () => done(request.result.filter((record2) => record2.accountId === accountId && (!projectId || record2.projectId === projectId)).sort((a, b) => b.updatedAt - a.updatedAt));
           });
         }
         async clearSaved(accountId, projectId, revision, branch = this.branch) {
           return this.tx("readwrite", (store2, done) => {
             const request = store2.getAll();
             request.onsuccess = () => {
-              for (const record of request.result) if (record.accountId === accountId && record.projectId === projectId && record.key[3] === branch && record.document.revision <= revision) store2.delete(record.key);
+              for (const record2 of request.result) if (record2.accountId === accountId && record2.projectId === projectId && record2.key[3] === branch && record2.document.revision <= revision) store2.delete(record2.key);
               done(true);
             };
           });
@@ -1342,16 +1344,16 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
           });
         }
         async markMigration(accountId, source, cloudId) {
-          const record = { key: [accountId, source.id], accountId, sourceProjectId: source.id, sourceRevision: source.revision, cloudProjectId: cloudId, verifiedAt: Date.now() };
+          const record2 = { key: [accountId, source.id], accountId, sourceProjectId: source.id, sourceRevision: source.revision, cloudProjectId: cloudId, verifiedAt: Date.now() };
           return this.tx("readwrite", (store2, done) => {
-            store2.put(record);
-            done(record);
+            store2.put(record2);
+            done(record2);
           }, "migrations");
         }
         async migrations(accountId) {
           return this.tx("readonly", (store2, done) => {
             const request = store2.getAll();
-            request.onsuccess = () => done(request.result.filter((record) => record.accountId === accountId));
+            request.onsuccess = () => done(request.result.filter((record2) => record2.accountId === accountId));
           }, "migrations");
         }
       };
@@ -1554,7 +1556,7 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
           const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(stableJSON({ document: doc, expectedRevision, leaseToken: lock2.token }))), fingerprint = Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("");
           let pending = this.mutations.get(fingerprint);
           if (!pending) {
-            const existing = (await this.drafts.list(this.accountId, doc.id)).find((record) => record.mutation?.fingerprint === fingerprint), failure = existing?.mutation?.failure;
+            const existing = (await this.drafts.list(this.accountId, doc.id)).find((record2) => record2.mutation?.fingerprint === fingerprint), failure = existing?.mutation?.failure;
             pending = { request: { document: doc, expectedRevision, leaseToken: lock2.token, clientMutationId: existing?.mutation?.clientMutationId || crypto.randomUUID() }, error: failure ? new CloudError(failure.code, failure.message, failure.status) : null, previousBranch: existing?.key[3] };
             this.mutations.set(fingerprint, pending);
           }
@@ -1582,10 +1584,10 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
           return this.record(saved);
         }
         async setDeleted(id, deleted, { owner: owner2 } = {}) {
-          const record = await this.get(id);
-          if (!record) throw new CloudError("NOT_FOUND", "\u9879\u76EE\u4E0D\u5B58\u5728", 404);
+          const record2 = await this.get(id);
+          if (!record2) throw new CloudError("NOT_FOUND", "\u9879\u76EE\u4E0D\u5B58\u5728", 404);
           const lease = this.locks.get(id);
-          const body = { expectedRevision: record.document.revision, clientMutationId: crypto.randomUUID(), ...lease && lease.owner === owner2 ? { leaseToken: lease.token } : {} };
+          const body = { expectedRevision: record2.document.revision, clientMutationId: crypto.randomUUID(), ...lease && lease.owner === owner2 ? { leaseToken: lease.token } : {} };
           await this.api.request("/projects/" + encodeURIComponent(id) + (deleted ? "" : "/restore"), { method: deleted ? "DELETE" : "POST", body });
           return true;
         }
@@ -1598,12 +1600,12 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
           await this.drafts.markMigration(this.accountId, local.document, saved.id);
           return saved;
         }
-        async recoverDraft(record) {
-          if (record.accountId !== this.accountId) throw new CloudError("FORBIDDEN", "\u4E0D\u80FD\u6062\u590D\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F", 403);
-          const doc = structuredClone(record.document);
+        async recoverDraft(record2) {
+          if (record2.accountId !== this.accountId) throw new CloudError("FORBIDDEN", "\u4E0D\u80FD\u6062\u590D\u5176\u4ED6\u8D26\u53F7\u7684\u8349\u7A3F", 403);
+          const doc = structuredClone(record2.document);
           doc.title += " \xB7 \u4E91\u7AEF\u6062\u590D\u526F\u672C";
           const saved = await this.create(doc);
-          await this.drafts.remove(this.accountId, record.key);
+          await this.drafts.remove(this.accountId, record2.key);
           return saved;
         }
       };
@@ -1842,9 +1844,9 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
       head.append(header);
       table2.append(head);
       const body = document2.createElement("tbody");
-      for (const record of records) {
+      for (const record2 of records) {
         const row = document2.createElement("tr");
-        for (const value of cells(record)) {
+        for (const value of cells(record2)) {
           const cell = document2.createElement("td");
           cell.append(value?.nodeType ? value : document2.createTextNode(String(value ?? "\u2014")));
           row.append(cell);
@@ -1903,15 +1905,15 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
       toolbar();
       const start = data.total ? offset + 1 : 0, end = Math.min(offset + rows.length, data.total);
       content.append(node("p", `\u5171 ${data.total} \u4E2A\u8D26\u53F7 \xB7 \u663E\u793A ${start}\u2013${end} \u6761`, "admin-detail"));
-      table(["\u8D26\u53F7", "\u9879\u76EE\u6570", "\u5B58\u50A8\u914D\u989D", "\u7528\u91CF\u6784\u6210", "\u544A\u8B66"], rows, (record) => {
-        const usage = record.usage, quota = record.limits;
+      table(["\u8D26\u53F7", "\u9879\u76EE\u6570", "\u5B58\u50A8\u914D\u989D", "\u7528\u91CF\u6784\u6210", "\u544A\u8B66"], rows, (record2) => {
+        const usage = record2.usage, quota = record2.limits;
         const breakdown = node("div");
         for (const [label, key] of [["\u9879\u76EE\u6570\u636E", "projectBytes"], ["\u5386\u53F2", "historyBytes"], ["\u4E3B\u9898\u5143\u6570\u636E", "themeMetadataBytes"], ["\u4E3B\u9898\u7248\u672C", "themeVersionBytes"], ["\u56DE\u6267", "receiptBytes"], ["\u5206\u4EAB", "shareBytes"]]) breakdown.append(details(label, storageBytes(usage[key])));
         const quotaDetail = node("span", `${usage.activeProjects} / ${quota.maxProjects} \u4E2A\u6D3B\u8DC3\u9879\u76EE`);
         quotaDetail.append(node("small", `${storageBytes(usage.totalBytes)} / ${storageBytes(quota.maxBytes)} \xB7 \u544A\u8B66\u7EBF ${quota.warningPercent}%`));
-        const state = node("span", record.overQuota ? "\u8D85\u51FA\u914D\u989D" : record.warning ? "\u63A5\u8FD1\u914D\u989D" : "\u6B63\u5E38", record.overQuota || record.warning ? "error" : "");
+        const state = node("span", record2.overQuota ? "\u8D85\u51FA\u914D\u989D" : record2.warning ? "\u63A5\u8FD1\u914D\u989D" : "\u6B63\u5E38", record2.overQuota || record2.warning ? "error" : "");
         state.setAttribute("role", "status");
-        return [details(record.username, record.userId), details(`${usage.activeProjects} \u4E2A\u6D3B\u8DC3`, `${usage.trashedProjects} \u4E2A\u56DE\u6536\u7AD9\u9879\u76EE`), quotaDetail, breakdown, state];
+        return [details(record2.username, record2.userId), details(`${usage.activeProjects} \u4E2A\u6D3B\u8DC3`, `${usage.trashedProjects} \u4E2A\u56DE\u6536\u7AD9\u9879\u76EE`), quotaDetail, breakdown, state];
       });
       pages(data.total);
     }
@@ -1970,13 +1972,13 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
     }
     function renderDashboard(data) {
       if (data.security?.warning) content.append(node("p", `\u5F02\u5E38\u767B\u5F55\u63D0\u9192\uFF1A\u6700\u8FD1 ${data.security.windowMinutes} \u5206\u949F\u5DF2\u8BB0\u5F55 ${data.security.failures} \u6B21\u5931\u8D25\u3002\u8BF7\u6838\u67E5\u5BA1\u8BA1\u8BB0\u5F55\uFF1B\u6B64\u63D0\u9192\u4E0D\u8868\u793A\u8D26\u53F7\u5DF2\u88AB\u5165\u4FB5\u3002`, "error"));
-      const list = node("dl", void 0, "summary-list");
+      const list2 = node("dl", void 0, "summary-list");
       for (const [label, value] of [["\u670D\u52A1\u72B6\u6001", data.service.status === "ok" ? "\u5728\u7EBF" : data.service.status], ["\u6709\u6548\u8D26\u53F7 / \u5168\u90E8\u8D26\u53F7", `${data.users.active} / ${data.users.total}`], ["\u6709\u6548\u7BA1\u7406\u5458", data.users.admins], ["\u6D3B\u8DC3\u9879\u76EE / \u56DE\u6536\u7AD9", `${data.projects.active} / ${data.projects.trash}`], ["\u6709\u6548 Agent \u6388\u6743", data.tokens.active], ["\u6587\u7A3F\u6570\u636E", bytes2(data.storage.documentBytes)], ["\u6570\u636E\u5E93\u7A7A\u95F4", bytes2(data.storage.databaseBytes)]]) {
         const item = node("div");
         item.append(node("dt", label), node("dd", value));
-        list.append(item);
+        list2.append(item);
       }
-      content.append(list);
+      content.append(list2);
       content.append(node("p", "\u7A7A\u95F4\u7EDF\u8BA1\u6765\u81EA\u5F53\u524D\u6570\u636E\u5E93\uFF1B\u9879\u76EE\u5185\u5BB9\u4E0D\u4F1A\u5728\u540E\u53F0\u9884\u89C8\u3002", "admin-detail"));
       content.append(button("\u5237\u65B0\u72B6\u6001", load));
     }
@@ -2176,7 +2178,7 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
   // web/share-center.js
   async function openShareCenter({ api, projectId, accountId, document: document2 = globalThis.document }) {
     if (!accountId || api.user?.id !== accountId) throw Error("\u8BF7\u767B\u5F55\u9879\u76EE\u6240\u5C5E\u8D26\u53F7\u3002");
-    const previous = document2.activeElement, dialog = document2.createElement("dialog"), title = document2.createElement("h2"), note = document2.createElement("p"), status = document2.createElement("p"), list = document2.createElement("div"), create = document2.createElement("button"), close = document2.createElement("button");
+    const previous = document2.activeElement, dialog = document2.createElement("dialog"), title = document2.createElement("h2"), note = document2.createElement("p"), status = document2.createElement("p"), list2 = document2.createElement("div"), create = document2.createElement("button"), close = document2.createElement("button");
     title.textContent = "\u5206\u4EAB\u94FE\u63A5";
     title.id = "share-center-title";
     dialog.setAttribute("aria-labelledby", title.id);
@@ -2196,7 +2198,7 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
       e.preventDefault();
       finish();
     });
-    dialog.append(title, note, status, create, list, close);
+    dialog.append(title, note, status, create, list2, close);
     document2.body.append(dialog);
     dialog.showModal?.();
     const same3 = () => dialog.isConnected && api.user?.id === accountId;
@@ -2204,11 +2206,11 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
     async function reload() {
       const rows = await api.request(path);
       if (!same3()) return;
-      list.replaceChildren();
+      list2.replaceChildren();
       if (!rows.length) {
         const empty = document2.createElement("p");
         empty.textContent = "\u6682\u65E0\u5206\u4EAB\u94FE\u63A5\u3002";
-        list.append(empty);
+        list2.append(empty);
       }
       for (const row of rows) {
         const item = document2.createElement("p"), label = document2.createElement("span"), revoke = document2.createElement("button");
@@ -2235,7 +2237,7 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
           }
         };
         item.append(label, revoke);
-        list.append(item);
+        list2.append(item);
       }
     }
     create.onclick = async () => {
@@ -2270,7 +2272,7 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
           box.remove();
         };
         box.append(secret, copy2, done);
-        dialog.insertBefore(box, list);
+        dialog.insertBefore(box, list2);
         status.textContent = "\u94FE\u63A5\u53EA\u663E\u793A\u4E00\u6B21\uFF0C\u8BF7\u4FDD\u5B58\u540E\u5173\u95ED\u3002";
         delete result.token;
         delete result.url;
@@ -3055,7 +3057,7 @@ function v24OfflineExportBootstrap(width,height){
   async function openStorageUsage({ api, document: document2 = globalThis.document }) {
     const accountId = api.user?.id, previous = document2.activeElement, dialog = document2.createElement("dialog");
     if (!accountId) throw Error("\u8BF7\u5148\u767B\u5F55\u3002");
-    const title = document2.createElement("h2"), status = document2.createElement("p"), list = document2.createElement("dl"), close = document2.createElement("button");
+    const title = document2.createElement("h2"), status = document2.createElement("p"), list2 = document2.createElement("dl"), close = document2.createElement("button");
     title.textContent = "\u5B58\u50A8\u7528\u91CF";
     title.id = "storage-usage-title";
     dialog.setAttribute("aria-labelledby", title.id);
@@ -3073,7 +3075,7 @@ function v24OfflineExportBootstrap(width,height){
       e.preventDefault();
       finish();
     });
-    dialog.append(title, status, list, close);
+    dialog.append(title, status, list2, close);
     document2.body.append(dialog);
     dialog.showModal?.();
     try {
@@ -3088,7 +3090,7 @@ function v24OfflineExportBootstrap(width,height){
         const term = document2.createElement("dt"), description = document2.createElement("dd");
         term.textContent = name;
         description.textContent = String(text2);
-        list.append(term, description);
+        list2.append(term, description);
       }
     } catch (error) {
       if (dialog.isConnected) status.textContent = error.message || "\u65E0\u6CD5\u8BFB\u53D6\u5B58\u50A8\u7528\u91CF\u3002";
@@ -3106,7 +3108,7 @@ function v24OfflineExportBootstrap(width,height){
   async function openSessionCenter({ api, document: document2 = globalThis.document, navigate: navigate2 = (url) => globalThis.location.assign(url) }) {
     const accountId = api.user?.id, previous = document2.activeElement;
     if (!accountId) throw Error("\u8BF7\u5148\u767B\u5F55\u3002");
-    const dialog = document2.createElement("dialog"), heading = document2.createElement("h2"), status = document2.createElement("p"), list = document2.createElement("div"), close = document2.createElement("button");
+    const dialog = document2.createElement("dialog"), heading = document2.createElement("h2"), status = document2.createElement("p"), list2 = document2.createElement("div"), close = document2.createElement("button");
     heading.textContent = "\u6D3B\u8DC3\u767B\u5F55\u4F1A\u8BDD";
     heading.id = "session-center-title";
     dialog.setAttribute("aria-labelledby", heading.id);
@@ -3123,7 +3125,7 @@ function v24OfflineExportBootstrap(width,height){
       event.preventDefault();
       finish();
     });
-    dialog.append(heading, status, list, close);
+    dialog.append(heading, status, list2, close);
     document2.body.append(dialog);
     dialog.showModal?.();
     const same3 = () => api.user?.id === accountId && dialog.isConnected;
@@ -3131,7 +3133,7 @@ function v24OfflineExportBootstrap(width,height){
       status.textContent = "\u6B63\u5728\u8BFB\u53D6\u4F1A\u8BDD\u2026";
       const sessions = await api.request("/me/sessions");
       if (!same3()) return;
-      list.replaceChildren();
+      list2.replaceChildren();
       status.textContent = "\u4EC5\u5C55\u793A\u4F60\u7684\u6709\u6548\u4F1A\u8BDD\uFF1B\u9000\u51FA\u4F1A\u8BDD\u4E0D\u4F1A\u5220\u9664\u6587\u7A3F\u3002";
       for (const session2 of sessions) {
         const row = document2.createElement("p"), label = document2.createElement("span"), revoke = document2.createElement("button");
@@ -3139,7 +3141,7 @@ function v24OfflineExportBootstrap(width,height){
         revoke.type = "button";
         revoke.textContent = "\u9000\u51FA\u6B64\u4F1A\u8BDD";
         row.append(label, revoke);
-        list.append(row);
+        list2.append(row);
         revoke.onclick = async () => {
           if (!same3()) return;
           revoke.disabled = true;
@@ -3210,8 +3212,8 @@ function v24OfflineExportBootstrap(width,height){
     const toolbar = document2.createElement("div");
     toolbar.className = "token-toolbar";
     container.append(toolbar);
-    const list = document2.createElement("div");
-    container.append(list);
+    const list2 = document2.createElement("div");
+    container.append(list2);
     let busy = false;
     function notice(text2, error = false) {
       status.textContent = text2;
@@ -3349,18 +3351,18 @@ function v24OfflineExportBootstrap(width,height){
     }
     toolbar.append(button("\u5B58\u50A8\u7528\u91CF", () => openStorageUsage({ api, document: document2 })), button("\u6D3B\u8DC3\u767B\u5F55\u4F1A\u8BDD", () => openSessionCenter({ api, document: document2, navigate: navigate2 })), button("\u521B\u5EFA\u6388\u6743", create, true), button("\u5237\u65B0\u5217\u8868", reload), button("\u4FEE\u6539\u5BC6\u7801", password, true));
     async function reload() {
-      list.setAttribute("aria-busy", "true");
-      list.replaceChildren();
+      list2.setAttribute("aria-busy", "true");
+      list2.replaceChildren();
       const loading = document2.createElement("p");
       loading.textContent = "\u6B63\u5728\u8BFB\u53D6\u6388\u6743\u2026";
-      list.append(loading);
+      list2.append(loading);
       try {
         const tokens = await api.request("/me/tokens");
-        list.replaceChildren();
+        list2.replaceChildren();
         if (!tokens.length) {
           const empty = document2.createElement("p");
           empty.textContent = "\u6682\u65E0\u6388\u6743\u3002\u521B\u5EFA\u4E00\u4EFD\u9650\u65F6\u6388\u6743\u540E\uFF0C\u5373\u53EF\u8BA9 Agent \u8BBF\u95EE\u81EA\u5DF1\u7684\u9879\u76EE\u3002";
-          list.append(empty);
+          list2.append(empty);
         }
         for (const token of tokens) {
           const row = document2.createElement("div");
@@ -3375,13 +3377,13 @@ function v24OfflineExportBootstrap(width,height){
           }
           row.append(info);
           if (!token.revokedAt) row.append(button("\u64A4\u9500\u6388\u6743", () => revoke(token), true));
-          list.append(row);
+          list2.append(row);
         }
       } catch (error) {
-        list.replaceChildren();
+        list2.replaceChildren();
         report(error);
       } finally {
-        list.setAttribute("aria-busy", "false");
+        list2.setAttribute("aria-busy", "false");
       }
     }
     try {
@@ -3797,13 +3799,13 @@ claude mcp list
       await refreshProjects?.();
       if (cloud && api.user?.id === cloud.accountId) {
         const local = await getLocalStore().list(), migrated = await cloud.drafts.migrations(cloud.accountId), select = $2("cloud-local-project"), previous = select.value;
-        select.replaceChildren(...local.map((record) => {
+        select.replaceChildren(...local.map((record2) => {
           const option = document.createElement("option");
-          option.value = record.id;
-          option.textContent = record.document.title + (migrated.some((item) => item.sourceProjectId === record.id && item.sourceRevision === record.document.revision) ? " \xB7 \u5DF2\u6838\u5BF9\u4E91\u7AEF\u526F\u672C" : "");
+          option.value = record2.id;
+          option.textContent = record2.document.title + (migrated.some((item) => item.sourceProjectId === record2.id && item.sourceRevision === record2.document.revision) ? " \xB7 \u5DF2\u6838\u5BF9\u4E91\u7AEF\u526F\u672C" : "");
           return option;
         }));
-        if (local.some((record) => record.id === previous)) select.value = previous;
+        if (local.some((record2) => record2.id === previous)) select.value = previous;
         $2("migrate-local").disabled = !local.length;
         await refreshDrafts();
       } else {
@@ -3827,10 +3829,10 @@ claude mcp list
       recoveryButton.textContent = "\u6062\u590D\u8349\u7A3F \xB7 " + drafts.length;
       recoveryButton.hidden = !drafts.length || document.body.classList.contains("editor-open");
       $2("cloud-draft-controls").hidden = !drafts.length;
-      $2("cloud-draft").replaceChildren(...drafts.map((record, index2) => {
+      $2("cloud-draft").replaceChildren(...drafts.map((record2, index2) => {
         const option = document.createElement("option");
         option.value = String(index2);
-        option.textContent = record.document.title + " \xB7 \u4E91\u7AEF\u6765\u6E90 r" + record.sourceRevision + " / \u8349\u7A3F r" + record.document.revision;
+        option.textContent = record2.document.title + " \xB7 \u4E91\u7AEF\u6765\u6E90 r" + record2.sourceRevision + " / \u8349\u7A3F r" + record2.document.revision;
         return option;
       }));
     }
@@ -3868,9 +3870,9 @@ claude mcp list
       await refresh();
     });
     $2("migrate-local").onclick = run(async () => {
-      const record = await cloud.migrate(getLocalStore(), $2("cloud-local-project").value);
+      const record2 = await cloud.migrate(getLocalStore(), $2("cloud-local-project").value);
       $2("migration-result").textContent = "\u5DF2\u6838\u5BF9\u4E91\u7AEF\u526F\u672C\uFF1B\u672C\u5730\u539F\u9879\u76EE\u4FDD\u7559\u3002";
-      await openProject2(record.id);
+      await openProject2(record2.id);
       await refresh();
     });
     $2("refresh-cloud-drafts").onclick = run(refreshDrafts);
@@ -3879,8 +3881,8 @@ claude mcp list
       if (!draft) throw new Error("\u8BF7\u5148\u9009\u62E9\u6062\u590D\u8349\u7A3F");
       closeRecovery();
       if (getStore() !== cloud) await switchStore2(cloud);
-      const record = await recoverDraft(draft);
-      if (!record.alreadyOpened) await openProject2(record.id);
+      const record2 = await recoverDraft(draft);
+      if (!record2.alreadyOpened) await openProject2(record2.id);
       await refreshDrafts();
       notify2("\u6062\u590D\u8349\u7A3F\u5DF2\u6838\u5BF9\u5E76\u4FDD\u5B58\u4E3A\u72EC\u7ACB\u4E91\u7AEF\u9879\u76EE\uFF0C\u539F\u4E91\u7AEF\u6587\u6863\u672A\u88AB\u8986\u76D6\u3002");
     });
@@ -3970,8 +3972,8 @@ claude mcp list
           this.localStore = localStore2;
           this.getCloudStore = getCloudStore;
         }
-        entry(source, record, store2) {
-          return { source, id: record.id, accountId: source === "cloud" ? store2.accountId : null, record };
+        entry(source, record2, store2) {
+          return { source, id: record2.id, accountId: source === "cloud" ? store2.accountId : null, record: record2 };
         }
         cloudStore() {
           const store2 = this.getCloudStore();
@@ -4023,11 +4025,11 @@ claude mcp list
             remote.records = [];
             remote.error = error;
           }
-          const localEntries = localRecords.map((record) => {
-            const entry = this.entry("local", record, this.localStore), migration = recovery.migrations.find((item) => item.sourceProjectId === record.id);
-            return { ...entry, syncState: migration ? migration.sourceRevision === record.document.revision ? "uploaded" : "local-changed" : "local", ...migration ? { cloudProjectId: migration.cloudProjectId } : {} };
+          const localEntries = localRecords.map((record2) => {
+            const entry = this.entry("local", record2, this.localStore), migration = recovery.migrations.find((item) => item.sourceProjectId === record2.id);
+            return { ...entry, syncState: migration ? migration.sourceRevision === record2.document.revision ? "uploaded" : "local-changed" : "local", ...migration ? { cloudProjectId: migration.cloudProjectId } : {} };
           });
-          return { entries: [...localEntries, ...remote.records.map((record) => ({ ...this.entry("cloud", record, cloud), syncState: "cloud", hasDraft: recovery.drafts.some((draft) => draft.projectId === record.id) }))], drafts: recovery.drafts, cloudError: remote.error || recovery.error || null };
+          return { entries: [...localEntries, ...remote.records.map((record2) => ({ ...this.entry("cloud", record2, cloud), syncState: "cloud", hasDraft: recovery.drafts.some((draft) => draft.projectId === record2.id) }))], drafts: recovery.drafts, cloudError: remote.error || recovery.error || null };
         }
         storeFor(entry) {
           if (entry.source === "local") return this.localStore;
@@ -4038,10 +4040,68 @@ claude mcp list
         }
         async migrate(entry) {
           if (entry.source !== "local") throw new TypeError("\u53EA\u80FD\u4E0A\u4F20\u672C\u5730\u9879\u76EE");
-          const store2 = this.cloudStore(), record = await store2.migrate(this.localStore, entry.id);
+          const store2 = this.cloudStore(), record2 = await store2.migrate(this.localStore, entry.id);
           this.checkCloud(store2);
-          return this.entry("cloud", record, store2);
+          return this.entry("cloud", record2, store2);
         }
+      };
+    }
+  });
+
+  // core/theme-manifest.js
+  function validateDesignLanguage(value) {
+    const errors = [];
+    function check(value2, schema, path) {
+      if (schema.enum) {
+        if (!schema.enum.includes(value2)) errors.push(`Unsupported ${path}`);
+        return;
+      }
+      if (schema.type === "object") {
+        if (!value2 || typeof value2 !== "object" || Array.isArray(value2)) {
+          errors.push(`${path} must be an object`);
+          return;
+        }
+        for (const key of Object.keys(value2)) if (!Object.hasOwn(schema.properties, key)) errors.push(`Unknown ${path}.${key}`);
+        for (const key of schema.required) check(value2[key], schema.properties[key], `${path}.${key}`);
+      } else if (schema.type === "array") {
+        if (!Array.isArray(value2) || value2.length < schema.minItems || value2.length > schema.maxItems) {
+          errors.push(`Invalid ${path}`);
+          return;
+        }
+        value2.forEach((item, i) => check(item, schema.items, `${path}[${i}]`));
+      } else if (schema.type === "string") {
+        if (typeof value2 !== "string" || !value2.trim() || value2.length > schema.maxLength || /[<>\u0000-\u001f]/.test(value2)) errors.push(`Invalid ${path}`);
+      } else if (typeof value2 !== "number" || !Number.isFinite(value2) || value2 < schema.minimum || value2 > schema.maximum) errors.push(`Invalid ${path}`);
+    }
+    check(value, DESIGN_LANGUAGE_SCHEMA, "designLanguage");
+    const timing = value?.motion?.timing;
+    if (timing && !(timing.shortMs <= timing.standardMs && timing.standardMs <= timing.longMs)) errors.push("Motion durations must be ordered short <= standard <= long");
+    return errors;
+  }
+  var string, list, choice, number, record, behavior, DESIGN_LANGUAGE_SCHEMA, THEME_MANIFEST_SCHEMA;
+  var init_theme_manifest = __esm({
+    "core/theme-manifest.js"() {
+      init_theme_schema();
+      string = { type: "string", minLength: 1, maxLength: 500 };
+      list = { type: "array", minItems: 1, maxItems: 32, items: string };
+      choice = (...values) => ({ enum: values });
+      number = (minimum, maximum) => ({ type: "number", minimum, maximum });
+      record = (properties2) => ({ type: "object", additionalProperties: false, required: Object.keys(properties2), properties: properties2 });
+      behavior = choice("none", "fade", "slide", "scale");
+      DESIGN_LANGUAGE_SCHEMA = record({
+        identity: record({ principles: list, suitableFor: list, avoid: list, distinctiveFeatures: list }),
+        origin: record({ type: choice("design-systems", "original", "derived"), ref: string, sourceRevision: string, license: string, attribution: string }),
+        visual: record({ grid: choice("modular", "editorial", "freeform", "radial"), imageTreatment: choice("editorial-crop", "contain", "monochrome", "duotone", "none"), shape: choice("square", "rounded", "organic"), spacingUnit: number(0, 512) }),
+        motion: record({ principles: list, timing: record({ shortMs: number(0, 1e4), standardMs: number(0, 1e4), longMs: number(0, 1e4) }), easing: choice("linear", "ease", "ease-in", "ease-out", "ease-in-out"), enter: behavior, exit: behavior, transition: choice("none", "fade", "slide"), reducedMotion: choice("none", "fade"), unsupportedBehavior: choice("preserve-intent-and-report") })
+      });
+      THEME_MANIFEST_SCHEMA = {
+        $schema: "https://json-schema.org/draft/2020-12/schema",
+        title: "Superior Point Theme Manifest v1",
+        type: "object",
+        required: ["format", "schemaVersion", "id", "name", "version", "author", "license", "tags", "supportedRatios", "tokens", "layouts", "assets"],
+        properties: { format: { const: "superior-point-theme" }, schemaVersion: { const: 1 }, id: string, name: string, version: { type: "string", pattern: "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$" }, author: string, license: string, tags: { type: "array", items: string }, supportedRatios: { type: "array", minItems: 1, uniqueItems: true, items: choice("16:9", "4:3") }, tokens: { type: "object", required: ["colors", "typography", "spacing", "components"] }, layouts: { type: "array" }, assets: { type: "array" }, designLanguage: DESIGN_LANGUAGE_SCHEMA },
+        additionalProperties: true,
+        description: "Safe legacy extension fields survive. Runtime validateTheme additionally enforces asset bytes/hashes, fonts, token bounds and executable-field restrictions. New curated themes must include designLanguage."
       };
     }
   });
@@ -4119,6 +4179,10 @@ claude mcp list
       if (t.motion !== void 0) {
         if (!object3(t.motion) || !bounded(t.motion.durationMs, 0, 1e4) || !["linear", "ease", "ease-in", "ease-out", "ease-in-out"].includes(t.motion.easing)) errors.push("Invalid motion");
       }
+    }
+    if (theme.designLanguage !== void 0) {
+      errors.push(...validateDesignLanguage(theme.designLanguage));
+      if (!Object.keys(theme.tokens?.colors || {}).length || !Object.keys(theme.tokens?.typography || {}).length) errors.push("Design language requires color and typography tokens");
     }
     const layoutIds = /* @__PURE__ */ new Set();
     if (!Array.isArray(theme.layouts) || theme.layouts.length > 32) errors.push("Invalid layouts");
@@ -4220,6 +4284,7 @@ claude mcp list
   var init_theme_schema = __esm({
     "core/theme-schema.js"() {
       init_document_core();
+      init_theme_manifest();
       THEME_FORMAT = "superior-point-theme";
       THEME_SCHEMA_VERSION = 1;
       THEME_LIMITS = Object.freeze({ packageBytes: 12 * 1024 * 1024, assetBytes: 2 * 1024 * 1024, totalAssetBytes: 8 * 1024 * 1024, assets: 16 });
@@ -4300,8 +4365,8 @@ claude mcp list
             const request = tx.objectStore("themes").get(id);
             request.onsuccess = () => {
               if (!request.result) return done(null);
-              const record = request.result, read = tx.objectStore("versions").get([id, version || record.version]);
-              read.onsuccess = () => done(read.result ? { ...record, ref: read.result.ref } : null);
+              const record2 = request.result, read = tx.objectStore("versions").get([id, version || record2.version]);
+              read.onsuccess = () => done(read.result ? { ...record2, ref: read.result.ref } : null);
             };
           });
         }
@@ -4316,10 +4381,10 @@ claude mcp list
               const read = versions.get([theme.id, theme.version]);
               read.onsuccess = () => {
                 if (read.result && read.result.ref.hash !== ref.hash) return fail3(new StorageError("IMMUTABLE_VERSION", "\u5DF2\u53D1\u5E03\u7684\u4E3B\u9898\u7248\u672C\u4E0D\u53EF\u8986\u76D6\uFF0C\u8BF7\u589E\u52A0\u7248\u672C\u53F7"));
-                const record = { id: theme.id, name: theme.name, version: theme.version, tags: theme.tags, revision: (previous?.revision ?? -1) + 1, modifiedAt: Date.now(), deletedAt: null, storage: "local" };
+                const record2 = { id: theme.id, name: theme.name, version: theme.version, tags: theme.tags, revision: (previous?.revision ?? -1) + 1, modifiedAt: Date.now(), deletedAt: null, storage: "local" };
                 versions.put({ id: theme.id, version: theme.version, ref });
-                themes.put(record);
-                done({ ...record, ref });
+                themes.put(record2);
+                done({ ...record2, ref });
               };
             };
           });
@@ -4328,13 +4393,13 @@ claude mcp list
           return this.tx(["themes"], "readwrite", (tx, done, fail3) => {
             const store2 = tx.objectStore("themes"), request = store2.get(id);
             request.onsuccess = () => {
-              const record = request.result;
-              if (!record) return fail3(new StorageError("NOT_FOUND", "\u4E3B\u9898\u4E0D\u5B58\u5728"));
-              if (record.revision !== expectedRevision) return fail3(new StorageError("REVISION_CONFLICT", "\u4E3B\u9898\u5DF2\u88AB\u53E6\u4E00\u9875\u9762\u4FEE\u6539"));
-              record.deletedAt = deleted ? Date.now() : null;
-              record.revision++;
-              store2.put(record);
-              done(record);
+              const record2 = request.result;
+              if (!record2) return fail3(new StorageError("NOT_FOUND", "\u4E3B\u9898\u4E0D\u5B58\u5728"));
+              if (record2.revision !== expectedRevision) return fail3(new StorageError("REVISION_CONFLICT", "\u4E3B\u9898\u5DF2\u88AB\u53E6\u4E00\u9875\u9762\u4FEE\u6539"));
+              record2.deletedAt = deleted ? Date.now() : null;
+              record2.revision++;
+              store2.put(record2);
+              done(record2);
             };
           });
         }
@@ -4390,7 +4455,7 @@ claude mcp list
           return result;
         }
         async list({ trash = false } = {}) {
-          return (await this.request("/themes" + (trash ? "?archived=true" : ""))).map((record) => ({ ...record, deletedAt: record.deletedAt || (record.archived ? record.updatedAt : null), storage: "cloud", accountId: this.accountId }));
+          return (await this.request("/themes" + (trash ? "?archived=true" : ""))).map((record2) => ({ ...record2, deletedAt: record2.deletedAt || (record2.archived ? record2.updatedAt : null), storage: "cloud", accountId: this.accountId }));
         }
         async get(id, version) {
           const detail = await this.request("/themes/" + encodeURIComponent(id) + (version ? "/versions/" + encodeURIComponent(version) : ""));
@@ -4436,7 +4501,7 @@ claude mcp list
   function listBuiltinThemes() {
     return catalog.map((theme) => freeze(importTheme(theme)));
   }
-  var systemFontLicense, font, specifications, catalog;
+  var systemFontLicense, font, specifications, catalog, curated;
   var init_builtin_themes = __esm({
     "core/builtin-themes.js"() {
       init_theme_schema();
@@ -4467,6 +4532,52 @@ claude mcp list
         assets: [],
         preview: { kinds: ["cover", "content", "data", "image"], limitations: ["System fonts vary by device; no fonts are bundled.", "Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.", "Sample data and illustration are original demonstration content, not live project data."] }
       }));
+      curated = [
+        { base: "sp-folio", id: "sp-editorial-language", name: "\u4E66\u9875\u53D9\u4E8B \xB7 \u8BBE\u8BA1\u8BED\u8A00", principles: ["Reading hierarchy", "Editorial rhythm"], suitableFor: ["Narrative reports", "Long-form explanation"], avoid: ["Dense specification tables", "Decorative gradients"], distinctiveFeatures: ["Serif display paired with generous body leading", "Asymmetric image and copy", "Square page bands"], grid: "editorial", imageTreatment: "editorial-crop", shape: "square", spacingUnit: 8, enter: "fade", exit: "fade", transition: "fade", easing: "ease-in-out", timing: [180, 420, 640] },
+        { base: "sp-caliper", id: "sp-technical-language", name: "\u6807\u5C3A\u7CBE\u5EA6 \xB7 \u8BBE\u8BA1\u8BED\u8A00", principles: ["Measurement before decoration", "Indexed evidence"], suitableFor: ["Technical review", "Specification reports"], avoid: ["Emotive collage", "Soft decorative silhouettes"], distinctiveFeatures: ["Monospaced display and compact body scale", "Two aligned specification columns", "Hard frames and indexed rules"], grid: "modular", imageTreatment: "contain", shape: "square", spacingUnit: 4, enter: "slide", exit: "slide", transition: "slide", easing: "linear", timing: [120, 240, 360] },
+        { base: "sp-hearth", id: "sp-warm-language", name: "\u6696\u5149\u6545\u4E8B \xB7 \u8BBE\u8BA1\u8BED\u8A00", principles: ["Human pacing", "Soft emphasis"], suitableFor: ["Team stories", "Learning sessions"], avoid: ["High-density specification grids", "Aggressive flashing"], distinctiveFeatures: ["Rounded panels and circular chapter mark", "Single spacious narrative column", "Image inset with warm supporting captions"], grid: "freeform", imageTreatment: "contain", shape: "rounded", spacingUnit: 12, enter: "scale", exit: "fade", transition: "fade", easing: "ease-out", timing: [260, 560, 800] }
+      ];
+      for (const s of curated) {
+        const theme = structuredClone(catalog.find((t) => t.id === s.base));
+        Object.assign(theme, { id: s.id, name: s.name, description: theme.description + " \u5B8C\u6574\u539F\u521B\u89C6\u89C9\u4E0E\u8FD0\u52A8\u8BED\u8A00\u3002", tags: [...theme.tags, "design-language"] });
+        theme.tokens.spacing.unit = s.spacingUnit;
+        theme.tokens.motion = { durationMs: s.timing[1], easing: s.easing };
+        theme.tokens.typography.body.lineHeight = s.grid === "editorial" ? 1.5 : s.grid === "modular" ? 1.15 : 1.4;
+        theme.designLanguage = { identity: { principles: s.principles, suitableFor: s.suitableFor, avoid: s.avoid, distinctiveFeatures: s.distinctiveFeatures }, origin: { type: "original", ref: "J-X-C-Z/Superior-Point", sourceRevision: "sp-design-language-1.0.0", license: "MIT", attribution: "Original Superior Point rules and geometric sample; no Design-Systems code, images or fonts copied." }, visual: { grid: s.grid, imageTreatment: s.imageTreatment, shape: s.shape, spacingUnit: s.spacingUnit }, motion: { principles: s.principles, timing: { shortMs: s.timing[0], standardMs: s.timing[1], longMs: s.timing[2] }, easing: s.easing, enter: s.enter, exit: s.exit, transition: s.transition, reducedMotion: "none", unsupportedBehavior: "preserve-intent-and-report" } };
+        theme.preview.kinds = ["cover", "content", "data", "image", "section"];
+        theme.preview.limitations.push("Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed.");
+        catalog.push(importTheme(theme));
+      }
+    }
+  });
+
+  // core/theme-motion.js
+  function inspectThemeCompatibility(input, { theme, slideIds } = {}) {
+    const document2 = importDocument(input), diagnostics = [];
+    if (slideIds !== void 0 && (!Array.isArray(slideIds) || !slideIds.length || new Set(slideIds).size !== slideIds.length || slideIds.some((id) => !document2.slides.some((s) => s.id === id)))) throw new CoreError("INVALID_THEME_SCOPE", "Selected slide IDs must be nonempty, unique and exist");
+    for (const slide of document2.slides) {
+      if (slideIds && !slideIds.includes(slide.id)) continue;
+      const motion = (theme || document2.extensions.theme?.slideRefs?.[slide.id]?.snapshot || document2.extensions.theme?.ref?.snapshot)?.designLanguage?.motion;
+      if (motion) for (const behavior2 of ["enter", "exit", "transition"]) for (const renderer of renderers) {
+        const value = motion[behavior2], available = value === "none" || renderer === "editor" && value === "fade" || behavior2 === "transition" && renderer !== "pptx" && ["fade", "slide"].includes(value);
+        diagnostics.push({ renderer, status: available ? "supported" : renderer === "pptx" ? "refused" : "degraded", code: "THEME_MOTION_POLICY", slideId: slide.id, behavior: behavior2, message: available ? "Renderer supports this vocabulary; Skin preserves existing motion and does not create effects." : "Theme motion has no faithful mapping; existing intent is preserved and reported." });
+      }
+      if (motion) for (const renderer of renderers) diagnostics.push({ renderer, status: "degraded", code: "THEME_MOTION_POLICY", slideId: slide.id, behavior: "reducedMotion", message: `Reduced-motion policy (${motion.reducedMotion}) is recorded; Skin does not change existing animation or enforce browser reduced-motion playback.` });
+      for (const animation of slide.animations || []) for (const renderer of renderers) {
+        const supported = renderer === "editor" ? editorEffects.has(animation.type) || fragments.has(animation.type) : renderer === "pptx" ? false : fragments.has(animation.type) && animation.trigger === "click" && animation.delay === 0;
+        const unknown = !editorEffects.has(animation.type) && !fragments.has(animation.type);
+        diagnostics.push({ renderer, status: supported ? "supported" : unknown || renderer === "pptx" ? "refused" : "degraded", code: "EXISTING_ANIMATION", slideId: slide.id, animationId: animation.id, message: supported ? "Existing animation vocabulary is supported." : "Existing animation is preserved; this renderer cannot faithfully play it." });
+      }
+    }
+    return diagnostics;
+  }
+  var renderers, fragments, editorEffects;
+  var init_theme_motion = __esm({
+    "core/theme-motion.js"() {
+      init_document_core();
+      renderers = ["editor", "reveal", "editable-html", "audience-html", "pptx"];
+      fragments = /* @__PURE__ */ new Set(["appear", "fragment", "fade-in"]);
+      editorEffects = /* @__PURE__ */ new Set(["fade", "float", "zoom", "fade-left", "fade-right", "wipe", "fade-up", "fade-down", "wipe-left", "wipe-right", "wipe-top", "wipe-bottom", "appear", "split-h", "split-v", "stretch-h", "stretch-v", "bounce", "swivel", "grow-turn", "pulse", "shake", "spin", "highlight-red", "grow", "blink", "teeter", "disappear"]);
     }
   });
 
@@ -4516,17 +4627,24 @@ claude mcp list
     }
     return bindings;
   }
-  async function planThemeApplication(input, theme, { mode = "preserve" } = {}) {
+  async function planThemeApplication(input, theme, { mode = "preserve", slideIds } = {}) {
     if (!["preserve", "reset"].includes(mode)) throw new CoreError("INVALID_THEME_MODE", "Unknown theme application mode");
     const document2 = importDocument(input), ref = await createThemeRef(theme), snapshot = ref.snapshot;
+    if (slideIds !== void 0 && (!Array.isArray(slideIds) || !slideIds.length || new Set(slideIds).size !== slideIds.length || slideIds.some((id) => !document2.slides.some((s) => s.id === id)))) throw new CoreError("INVALID_THEME_SCOPE", "Selected slide IDs must be nonempty, unique and exist");
+    const selected = new Set(slideIds ?? document2.slides.map((s) => s.id)), all = selected.size === document2.slides.length;
     const ratio = document2.canvas.width / document2.canvas.height;
     if (!snapshot.supportedRatios.some((value) => Math.abs(ratio - (value === "16:9" ? 16 / 9 : 4 / 3)) < 1e-3)) throw new CoreError("THEME_RATIO_UNSUPPORTED", "\u4E3B\u9898\u4E0D\u652F\u6301\u5F53\u524D\u6587\u7A3F\u6BD4\u4F8B");
-    const prior = document2.extensions.theme?.bindings || {}, bindings = { slides: {}, elements: {} }, operations = [], changes = [];
-    const update = (target, desired, oldBinding) => {
+    const prior = document2.extensions.theme?.bindings || {}, bindings = cloneJSON({ slides: prior.slides || {}, elements: prior.elements || {} }), operations = [], changes = [], manualOverrides = [];
+    const slideRefs = cloneJSON(document2.extensions.theme?.slideRefs || {});
+    for (const slide of document2.slides) if (!selected.has(slide.id) && !slideRefs[slide.id] && document2.extensions.theme?.ref) slideRefs[slide.id] = cloneJSON(document2.extensions.theme.ref);
+    const update = (target, desired, oldBinding, location) => {
       const properties2 = {}, baseline = {};
       for (const [property, after] of Object.entries(desired)) {
         const exists = Object.hasOwn(target, property), driven = Object.hasOwn(oldBinding || {}, property) && same2(target[property], oldBinding[property]);
-        if (mode === "preserve" && exists && !driven) continue;
+        if (mode === "preserve" && exists && !driven) {
+          manualOverrides.push({ ...location, property, value: cloneJSON(target[property]) });
+          continue;
+        }
         baseline[property] = cloneJSON(after);
         if (!exists || !same2(target[property], after)) {
           properties2[property] = after;
@@ -4536,11 +4654,14 @@ claude mcp list
       return { properties: properties2, baseline };
     };
     for (const slide of document2.slides) {
+      if (!selected.has(slide.id)) continue;
+      if (all) delete slideRefs[slide.id];
+      else slideRefs[slide.id] = cloneJSON(ref);
       bindings.elements[slide.id] = {};
       const override = slide.themeOverrides?.background, background = override ?? snapshot.tokens.colors.background ?? "#FFFFFF";
       if (typeof background !== "string" || !/^#[a-fA-F0-9]{6}(?:[a-fA-F0-9]{2})?$/.test(background)) throw new CoreError("INVALID_THEME_STYLE", "Invalid page background override");
       let offset = changes.length;
-      const page = update(slide, { background }, prior.slides?.[slide.id]);
+      const page = update(slide, { background }, prior.slides?.[slide.id], { slideId: slide.id });
       bindings.slides[slide.id] = page.baseline;
       for (const change of changes.slice(offset)) change.slideId = slide.id;
       if (Object.keys(page.properties).length) operations.push({ type: "updateSlide", slideId: slide.id, properties: page.properties });
@@ -4548,12 +4669,13 @@ claude mcp list
         const style = themeElementStyle(snapshot, element, slide), old = prior.elements?.[slide.id]?.[element.id];
         if (mode === "preserve" && element.type === "text") {
           if (["bold", "fontWeight"].some((key) => Object.hasOwn(element, key) && (!Object.hasOwn(old || {}, key) || !same2(element[key], old[key])))) {
+            for (const key of ["bold", "fontWeight"]) if (Object.hasOwn(element, key)) manualOverrides.push({ slideId: slide.id, elementId: element.id, property: key, value: cloneJSON(element[key]) });
             delete style.fontWeight;
             delete style.bold;
           }
         }
         offset = changes.length;
-        const result = update(element, style, old);
+        const result = update(element, style, old, { slideId: slide.id, elementId: element.id });
         bindings.elements[slide.id][element.id] = result.baseline;
         for (const change of changes.slice(offset)) {
           change.slideId = slide.id;
@@ -4562,14 +4684,15 @@ claude mcp list
         if (Object.keys(result.properties).length) operations.push({ type: "updateElement", slideId: slide.id, elementId: element.id, properties: result.properties });
       }
     }
-    operations.push({ type: "updateProject", properties: { extensions: { ...document2.extensions, theme: { ...document2.extensions.theme, ref, bindings } } } });
-    return { operations, changes, ref, limitations: ["\u4EC5\u5E94\u7528\u53D7\u652F\u6301\u7684\u989C\u8272\u3001\u5B57\u4F53\u3001\u80CC\u666F\u548C\u7EC4\u4EF6\u6837\u5F0F\uFF1B\u5E03\u5C40\u5750\u6807\u3001\u5185\u5BB9\u3001\u56FE\u50CF\u3001\u5907\u6CE8\u4E0E\u52A8\u753B\u4FDD\u6301\u539F\u6837\u3002", "\u91CD\u7F6E\u6A21\u5F0F\u9700\u8C03\u7528\u65B9\u5148\u786E\u8BA4\uFF1B\u65E7\u6587\u7A3F\u7684\u663E\u5F0F\u6837\u5F0F\u5728\u4FDD\u7559\u6A21\u5F0F\u4E2D\u89C6\u4E3A\u624B\u5DE5\u8BBE\u7F6E\u3002", "\u7CFB\u7EDF\u5B57\u4F53\u53D6\u51B3\u4E8E\u8BBE\u5907\uFF1B\u901A\u7528 SVG \u5B57\u4F53\u4E0E\u884C\u8DDD\u53EF\u80FD\u964D\u7EA7\u3002"] };
+    operations.push({ type: "updateProject", properties: { extensions: { ...document2.extensions, theme: { ...document2.extensions.theme, ...all ? { ref } : {}, bindings, slideRefs } } } });
+    return { operations, changes, ref, scope: { type: all ? "all" : "slides", slideIds: [...selected] }, manualOverrides, summary: { styleChanges: changes.length, manualOverrides: manualOverrides.length, preservedOverrides: manualOverrides.length, selectedSlides: selected.size }, motionDiagnostics: inspectThemeCompatibility(document2, { theme: snapshot, ...all ? {} : { slideIds: [...selected] } }), limitations: ["\u4EC5\u5E94\u7528\u53D7\u652F\u6301\u7684\u989C\u8272\u3001\u5B57\u4F53\u3001\u80CC\u666F\u548C\u7EC4\u4EF6\u6837\u5F0F\uFF1B\u5E03\u5C40\u5750\u6807\u3001\u5185\u5BB9\u3001\u56FE\u50CF\u3001\u5907\u6CE8\u4E0E\u52A8\u753B\u4FDD\u6301\u539F\u6837\u3002", "\u91CD\u7F6E\u6A21\u5F0F\u9700\u8C03\u7528\u65B9\u5148\u786E\u8BA4\uFF1B\u65E7\u6587\u7A3F\u7684\u663E\u5F0F\u6837\u5F0F\u5728\u4FDD\u7559\u6A21\u5F0F\u4E2D\u89C6\u4E3A\u624B\u5DE5\u8BBE\u7F6E\u3002", "\u7CFB\u7EDF\u5B57\u4F53\u53D6\u51B3\u4E8E\u8BBE\u5907\uFF1B\u901A\u7528 SVG \u5B57\u4F53\u4E0E\u884C\u8DDD\u53EF\u80FD\u964D\u7EA7\u3002"] };
   }
   var fields, colors, same2;
   var init_theme_application = __esm({
     "core/theme-application.js"() {
       init_document_core();
       init_theme_schema();
+      init_theme_motion();
       fields = /* @__PURE__ */ new Set(["fontFamily", "fontSize", "fontWeight", "bold", "lineHeight", "color", "fill", "stroke", "strokeWidth", "radius", "chartColor", "align"]);
       colors = /* @__PURE__ */ new Set(["color", "fill", "stroke", "chartColor"]);
       same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -4580,7 +4703,7 @@ claude mcp list
   async function createThemePreviewDocument(input, { ratio = "16:9" } = {}) {
     const theme = await verifyThemeAssets(input);
     if (!theme.supportedRatios.includes(ratio)) throw new Error("\u4E3B\u9898\u4E0D\u652F\u6301\u753B\u5E03\u6BD4\u4F8B\uFF1A" + ratio);
-    const width = ratio === "4:3" ? 960 : 1280, height = 720, doc = createDocument({ title: theme.name + " \xB7 \u56DB\u9875\u6837\u4F8B", canvas: { width, height } }), { colors: colors2, typography, spacing, components } = theme.tokens;
+    const width = ratio === "4:3" ? 960 : 1280, height = 720, doc = createDocument({ title: theme.name + (theme.designLanguage ? " \xB7 \u4E94\u9875\u6837\u4F8B" : " \xB7 \u56DB\u9875\u6837\u4F8B"), canvas: { width, height } }), { colors: colors2, typography, spacing, components } = theme.tokens;
     let inset = 0, gap = 0, inner = 0;
     const panel = components.panel ?? {};
     let current = "", counter = 0;
@@ -4628,9 +4751,22 @@ claude mcp list
     data.push({ ...shape(inset, 245, inner, 345), fill: components.chart?.surface || "#F8FAFC", stroke: "#DCE3EA" }, { id: id(), type: "chart", chartType: "bar", x: inset + gap, y: 265, w: inner - gap * 2, h: 250, values: [24, 38, 52, 76], labels: ["Q1", "Q2", "Q3", "Q4"], fill: components.chart?.surface || "#F8FAFC", chartColor: components.chart?.color || colors2.accent, color: components.chart?.text || "#20323C", fontSize: 18, chartTitle: "\u5B63\u5EA6\u5B8C\u6210\u91CF", themeRole: "chart" }, text2("24 \u2192 76", inset, 615, inner * 0.5, 55), text2("\u6837\u4F8B\u503C / \u975E\u5B9E\u65F6\u6570\u636E", inset + inner * 0.5, 620, inner * 0.5, 40, "caption"));
     doc.assets.push({ id: "preview-landscape", mimeType: "image/png", license: "MIT", author: "Superior Point", description: "Original geometric landscape, generated for theme preview.", dataUrl: "data:image/png;base64," + illustration });
     const image = slide("image", "\u56FE\u7247\u7EC4\u5408\u9875"), imageWidth = Math.min(inner * 0.55, 560), imageX = motif === "band" ? width - inset - imageWidth : inset, textX = imageX === inset ? inset + imageWidth + gap : inset, textWidth = inner - imageWidth - gap;
-    image.push(text2("\u56FE\u50CF\uFF0C\u4E5F\u662F\u4E00\u79CD\u8BED\u8A00", inset, 70, inner, 100, "title"), shape(imageX, 245, imageWidth, 340), { id: id(), type: "image", assetId: "preview-landscape", x: imageX + 16, y: 261, w: imageWidth - 32, h: 308, fit: "contain" }, text2("\u5C71\u8272\u4E0E\u6696\u5149", textX, 285, textWidth, 70), text2("\u539F\u521B\u51E0\u4F55\u98CE\u666F\n\u65E0\u5916\u90E8\u52A0\u8F7D\n\u56FE\u7247\u4E0E\u6587\u5B57\u72EC\u7ACB\u53EF\u7F16\u8F91", textX, 390, textWidth, 150, "caption"), shape(textX, 565, Math.min(textWidth, 100), 8, "accent"), text2("\u56FE\u50CF + \u9762\u677F + \u6807\u6CE8 / \u53EF\u7F16\u8F91\u7EC4\u5408\u5143\u7D20", inset, 630, inner, 35, "caption"));
+    image.push(text2("\u56FE\u50CF\uFF0C\u4E5F\u662F\u4E00\u79CD\u8BED\u8A00", inset, 70, inner, 100, "title"), shape(imageX, 245, imageWidth, 340), { id: id(), type: "image", assetId: "preview-landscape", x: imageX + 16, y: 261, w: imageWidth - 32, h: 308, fit: theme.designLanguage?.visual.imageTreatment === "editorial-crop" ? "cover" : "contain" }, text2("\u5C71\u8272\u4E0E\u6696\u5149", textX, 285, textWidth, 70), text2("\u539F\u521B\u51E0\u4F55\u98CE\u666F\n\u65E0\u5916\u90E8\u52A0\u8F7D\n\u56FE\u7247\u4E0E\u6587\u5B57\u72EC\u7ACB\u53EF\u7F16\u8F91", textX, 390, textWidth, 150, "caption"), shape(textX, 565, Math.min(textWidth, 100), 8, "accent"), text2("\u56FE\u50CF + \u9762\u677F + \u6807\u6CE8 / \u53EF\u7F16\u8F91\u7EC4\u5408\u5143\u7D20", inset, 630, inner, 35, "caption"));
+    if (theme.designLanguage) {
+      const chapter = slide("section", "\u7AE0\u8282\u9875");
+      const organic = theme.designLanguage.visual.shape === "rounded";
+      chapter.push(shape(inset, 130, organic ? 220 : inner, organic ? 220 : 12, "accent", organic ? "ellipse" : "rect"), text2("02 / \u4E0B\u4E00\u7AE0\u8282", inset, 390, inner, 110, "title"), text2("\u8BA9\u8BC1\u636E\u5F15\u51FA\u4E0B\u4E00\u6B65\u884C\u52A8", inset, 535, inner, 60));
+      const motion = theme.designLanguage.motion;
+      for (const page of doc.slides) {
+        page.transition = motion.transition;
+        page.duration = motion.timing.standardMs;
+        const title = page.elements.find((e) => e.themeRole === "title");
+        if (title && motion.enter !== "none") page.animations.push({ id: page.id + "-entrance", targetId: title.id, type: { fade: "fade-in", slide: "fade-left", scale: "zoom" }[motion.enter], trigger: "click", duration: motion.timing.standardMs / 1e3, delay: 0, easing: motion.easing, order: 0 });
+        page.themeMotionIntent = { enter: motion.enter, exit: motion.exit, reducedMotion: motion.reducedMotion, timing: motion.timing };
+      }
+    }
     doc.extensions.theme = { ref: await createThemeRef(theme), bindings: createThemeBindings(doc) };
-    doc.extensions.themePreview = { ratio, kinds: ["cover", "content", "data", "image"], limitations: [...theme.preview?.limitations || [], "Generic chart labels and light chart surface are fixed for legibility; native editor chart styling may differ."] };
+    doc.extensions.themePreview = { ratio, kinds: doc.slides.map((s) => s.themeLayout), limitations: [...theme.preview?.limitations || [], "Generic chart labels and light chart surface are fixed for legibility; native editor chart styling may differ."] };
     return importDocument(doc);
   }
   var illustration;
@@ -4664,7 +4800,7 @@ claude mcp list
     if (!read?.ref || (await createThemeRef({ ...theme, id: saved.id })).hash !== read.ref.hash) throw new Error("\u4E91\u7AEF\u4E3B\u9898\u56DE\u8BFB\u4E0D\u4E00\u81F4\uFF1B\u672C\u5730\u539F\u4EF6\u4ECD\u4FDD\u7559");
     return read;
   }
-  function mountThemeLibrary({ container, localStore: localStore2, getCloudStore = () => null, getProjects = async () => [], onCreate, onApply, notify: notify2 = () => {
+  function mountThemeLibrary({ container, localStore: localStore2, getCloudStore = () => null, getProjects = async () => [], onReadProject, onPreview, onCreate, onApply, notify: notify2 = () => {
   } }) {
     const document2 = container.ownerDocument;
     let entries = [], cloud = null, epoch = 0, destroyed = false, preferences = [], dialog = null;
@@ -4746,17 +4882,17 @@ claude mcp list
     };
     const readEntry = async (entry) => {
       if (entry.source === "builtin") return entry;
-      const store2 = storeFor(entry), record = await store2.get(entry.id);
-      if (record && record.version !== entry.version) throw new Error("\u4E3B\u9898\u5DF2\u6709\u65B0\u7248\u672C\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u65B0\u6253\u5F00");
+      const store2 = storeFor(entry), record2 = await store2.get(entry.id);
+      if (record2 && record2.version !== entry.version) throw new Error("\u4E3B\u9898\u5DF2\u6709\u65B0\u7248\u672C\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u65B0\u6253\u5F00");
       if (entry.source === "cloud") {
         checkCloud(store2);
         if (await getCloudStore() !== store2) throw new Error("\u4E91\u7AEF\u8D26\u53F7\u5DF2\u53D8\u5316\uFF0C\u8BF7\u5237\u65B0\u4E3B\u9898\u5E93");
       }
-      if (!record) throw new Error("\u4E3B\u9898\u4E0D\u5B58\u5728\uFF0C\u8BF7\u5237\u65B0");
-      return { ...entry, ...record, theme: record.ref.snapshot };
+      if (!record2) throw new Error("\u4E3B\u9898\u4E0D\u5B58\u5728\uFF0C\u8BF7\u5237\u65B0");
+      return { ...entry, ...record2, theme: record2.ref.snapshot };
     };
     const heading = el("div", void 0, "theme-heading");
-    heading.append(el("h1", "\u4E3B\u9898\u5E93"), el("p", "\u8BBE\u8BA1\u89C4\u5219\u4E0E\u56DB\u9875\u5B9E\u9645\u6837\u4F8B\u3002\u4E2A\u4EBA\u4E3B\u9898\u56FA\u5B9A\u7248\u672C\uFF1B\u4E91\u7AEF\u4E3B\u9898\u4EC5\u5F53\u524D\u8D26\u53F7\u53EF\u89C1\u3002", "subtitle"));
+    heading.append(el("h1", "\u4E3B\u9898\u5E93"), el("p", "\u72EC\u7ACB\u8BBE\u8BA1\u8BED\u8A00\u4E0E\u53EF\u7F16\u8F91\u591A\u9875\u6837\u4F8B\u3002\u4E2A\u4EBA\u4E3B\u9898\u56FA\u5B9A\u7248\u672C\uFF1B\u4E91\u7AEF\u4E3B\u9898\u4EC5\u5F53\u524D\u8D26\u53F7\u53EF\u89C1\u3002", "subtitle"));
     const toolbar = el("div", void 0, "theme-filters");
     const source = field(toolbar, "\u6765\u6E90", select([["all", "\u5168\u90E8"], ["builtin", "\u5185\u7F6E\u4E3B\u9898"], ["local", "\u672C\u5730\u4E3B\u9898"], ["cloud", "\u4E91\u7AEF\u4E3B\u9898"], ["favorites", "\u6536\u85CF"], ["recent", "\u6700\u8FD1\u4F7F\u7528"], ["trash", "\u5DF2\u5F52\u6863"]]));
     const search = field(toolbar, "\u641C\u7D22\u540D\u79F0\u3001\u4F5C\u8005\u3001\u6807\u7B7E", input("", "search"));
@@ -4811,7 +4947,7 @@ claude mcp list
           await refresh();
         });
         favorite.setAttribute("aria-pressed", String(favorites.has(themeIdentity(entry))));
-        actions.append(button("\u8BE6\u60C5\u4E0E\u56DB\u9875\u9884\u89C8", () => details(entry)), favorite);
+        actions.append(button("\u8BE6\u60C5\u4E0E\u53EF\u7F16\u8F91\u9884\u89C8", () => details(entry)), favorite);
         card.append(actions);
         grid.append(card);
       }
@@ -4832,10 +4968,10 @@ claude mcp list
       preferences = prefs;
       const builtins = source.value === "trash" ? [] : listBuiltinThemes().map((theme) => ({ source: "builtin", accountId: null, id: theme.id, version: theme.version, theme }));
       const personal = [];
-      for (const [sourceName, rows, s] of [["local", local, localStore2], ["cloud", remote, store2]]) for (const record of rows) {
+      for (const [sourceName, rows, s] of [["local", local, localStore2], ["cloud", remote, store2]]) for (const record2 of rows) {
         try {
-          const full = await s.get(record.id);
-          if (full) personal.push({ ...record, source: sourceName, accountId: sourceName === "cloud" ? s.accountId : null, theme: full.ref.snapshot });
+          const full = await s.get(record2.id);
+          if (full) personal.push({ ...record2, source: sourceName, accountId: sourceName === "cloud" ? s.accountId : null, theme: full.ref.snapshot });
         } catch (e) {
           error = e;
         }
@@ -4880,6 +5016,12 @@ claude mcp list
       };
       r.onchange = () => run(redraw);
       await redraw();
+      const language = theme.designLanguage;
+      if (language) {
+        const info = el("dl", void 0, "theme-rules");
+        for (const [label, value] of [["\u8BBE\u8BA1\u539F\u5219", language.identity.principles.join(" \xB7 ")], ["\u9002\u7528\u573A\u666F", language.identity.suitableFor.join(" \xB7 ")], ["\u907F\u514D\u4E8B\u9879", language.identity.avoid.join(" \xB7 ")], ["\u72EC\u7ACB\u7279\u5F81", language.identity.distinctiveFeatures.join(" \xB7 ")], ["\u6765\u6E90", `${language.origin.ref} / ${language.origin.sourceRevision}`], ["\u8BB8\u53EF\u4E0E\u7F72\u540D", `${language.origin.license} / ${language.origin.attribution}`], ["\u89C6\u89C9\u89C4\u5219", `${language.visual.grid} / ${language.visual.imageTreatment} / ${language.visual.shape}`], ["\u8FD0\u52A8\u8BED\u8A00", `${language.motion.principles.join(" \xB7 ")}\uFF1B\u8FDB\u5165 ${language.motion.enter} / \u9000\u51FA ${language.motion.exit} / \u8F6C\u573A ${language.motion.transition}\uFF1B${language.motion.timing.standardMs}ms\uFF1B\u51CF\u5C11\u52A8\u6001 ${language.motion.reducedMotion}`]]) info.append(el("dt", label), el("dd", value));
+        d.append(info, el("p", "\u8FD0\u52A8\u8BED\u8A00\u662F\u58F0\u660E\u5F0F\u8BBE\u8BA1\u89C4\u5219\uFF1B\u672C\u9884\u89C8\u4E3A\u9759\u6001\u56FE\u3002\u73B0\u6709\u5185\u5BB9\u7684\u52A8\u753B\u610F\u56FE\u4E0D\u4F1A\u88AB\u4E3B\u9898\u5207\u6362\u8986\u76D6\uFF0C\u5B9E\u9645\u652F\u6301\u4E0E\u964D\u7EA7\u5728\u5E94\u7528\u8BA1\u5212\u4E2D\u5217\u51FA\u3002", "theme-limitations"));
+      } else d.append(el("p", "\u517C\u5BB9\u65E7\u7248\u4E3B\u9898\uFF1A\u5C1A\u65E0\u5B8C\u6574\u8BBE\u8BA1\u8BED\u8A00\u4E0E\u8FD0\u52A8\u89C4\u8303\u3002", "theme-limitations"));
       const rules = el("dl", void 0, "theme-rules");
       for (const [label, value] of [["\u989C\u8272", Object.entries(theme.tokens.colors).map(([k, v]) => `${{ background: "\u80CC\u666F", text: "\u6587\u5B57", accent: "\u5F3A\u8C03", surface: "\u9762\u677F", muted: "\u8F85\u52A9\u6587\u5B57" }[k] || k}: ${v}`).join(" / ")], ["\u6392\u7248", Object.entries(theme.tokens.typography).map(([k, v]) => `${{ title: "\u6807\u9898", body: "\u6B63\u6587", caption: "\u8BF4\u660E\u6587\u5B57" }[k] || k}: ${v.fontFamily} ${v.fontSize}px`).join("\uFF1B ")], ["\u5E03\u5C40", theme.layouts.map((l) => `${{ cover: "\u5C01\u9762", section: "\u7AE0\u8282", content: "\u6B63\u6587", data: "\u6570\u636E", image: "\u56FE\u6587" }[l.kind] || l.kind}\uFF1A${l.rules.columns || 1} \u680F\uFF0C\u9875\u8FB9\u8DDD ${l.rules.pageInset ?? theme.tokens.spacing.pageInset}\uFF0C\u95F4\u8DDD ${l.rules.gap ?? theme.tokens.spacing.unit}`).join("\uFF1B ")]]) rules.append(el("dt", label), el("dd", value));
       d.append(rules, el("p", "\u6837\u4F8B\u5185\u5BB9\u4E0E\u56FE\u7247\u4E3A\u539F\u521B\u3002\u5B57\u4F53\u4F7F\u7528\u8BBE\u5907\u5DF2\u6709\u5B57\u4F53\uFF0C\u4E0D\u6253\u5305\u5B57\u4F53\u6587\u4EF6\u3002\u9884\u89C8\u4E2D\u7684\u5B57\u4F53\u4E0E\u884C\u8DDD\u53EF\u80FD\u964D\u7EA7\uFF1B\u5BCC\u6587\u672C\u3001\u590D\u6742\u52A8\u753B\u3001\u6BCD\u7248\u548C PPTX \u5B57\u4F53\u6548\u679C\u5C1A\u672A\u5B8C\u6210\u4E00\u81F4\u6027\u9A8C\u6536\u3002", "theme-limitations"));
@@ -5014,15 +5156,20 @@ claude mcp list
       if (!onApply) throw new Error("\u5E94\u7528\u5165\u53E3\u4E0D\u53EF\u7528");
       const result = await getProjects(), projects = Array.isArray(result) ? result : result.entries || [];
       if (!projects.length) throw new Error("\u8BF7\u5148\u521B\u5EFA\u6F14\u793A\u6587\u7A3F");
-      const d = openDialog("\u5E94\u7528\u4E3B\u9898\u524D\u9884\u89C8"), project = field(d, "\u76EE\u6807\u9879\u76EE", select(projects.map((p, i) => [String(i), (p.record?.document?.metadata?.title || p.record?.document?.title || p.title || p.id) + " / " + ({ local: "\u672C\u5730", cloud: "\u4E91\u7AEF" }[p.source] || p.source)]))), mode = field(d, "\u5E94\u7528\u65B9\u5F0F", select([["preserve", "\u4FDD\u7559\u624B\u5DE5\u8986\u76D6\uFF08\u9ED8\u8BA4\uFF09"], ["reset", "\u91CD\u7F6E\u4E3A\u4E3B\u9898\u6837\u5F0F"]]));
-      d.append(el("p", "\u66F4\u65B0\u4E3B\u9898\u9A71\u52A8\u7684\u80CC\u666F\u3001\u989C\u8272\u3001\u5B57\u4F53\u548C\u7EC4\u4EF6\u6837\u5F0F\u3002\u4FDD\u7559\u5185\u5BB9\u3001\u56FE\u7247\u3001\u5907\u6CE8\u3001\u52A8\u753B\u548C\u5750\u6807\uFF1B\u4E0D\u4F1A\u81EA\u52A8\u5B8C\u7F8E\u91CD\u6392\u3002\u786E\u8BA4\u540E\u901A\u8FC7\u6587\u7A3F\u539F\u5B50\u64CD\u4F5C\u5E94\u7528\uFF0C\u53EF\u4F7F\u7528\u7F16\u8F91\u5668\u64A4\u9500\u3002", "theme-limitations"));
+      const d = openDialog("\u5E94\u7528\u4E3B\u9898\u524D\u9884\u89C8"), project = field(d, "\u76EE\u6807\u9879\u76EE", select(projects.map((p, i) => [String(i), (p.record?.document?.metadata?.title || p.record?.document?.title || p.title || p.id) + " / " + ({ local: "\u672C\u5730", cloud: "\u4E91\u7AEF" }[p.source] || p.source)]))), mode = field(d, "\u5E94\u7528\u65B9\u5F0F", select([["preserve", "\u4FDD\u7559\u624B\u5DE5\u8986\u76D6\uFF08\u9ED8\u8BA4\uFF09"], ["reset", "\u91CD\u7F6E\u4E3A\u4E3B\u9898\u6837\u5F0F"]])), scope = field(d, "\u5E94\u7528\u8303\u56F4", select([["all", "\u6574\u7BC7"], ["current", "\u5355\u9875"], ["selected", "\u9009\u4E2D\u9875"]])), pages = el("div", void 0, "theme-page-selection"), summary = el("p", "\u8BF7\u9884\u89C8\u53D8\u66F4\u540E\u518D\u786E\u8BA4\u3002", "theme-status");
+      summary.setAttribute("role", "status");
+      d.append(pages, summary);
+      d.append(el("p", "\u53EA\u66F4\u65B0\u6837\u5F0F\u4E0E\u56FA\u5B9A\u4E3B\u9898\u5173\u7CFB\u3002\u5185\u5BB9\u3001\u56FE\u7247\u3001\u5907\u6CE8\u3001\u5BF9\u8C61 ID\u3001\u4F4D\u7F6E\u548C\u5DF2\u6709\u52A8\u753B\u4FDD\u6301\u539F\u6837\u3002", "theme-limitations"));
       const samples = el("div", void 0, "theme-samples");
       d.append(samples);
       await previews(samples, entry.theme, selectedRatio);
+      let targetDocument = null, preview = null, generation = 0;
+      const options = () => ({ mode: mode.value, projectRef: projects[Number(project.value)], ...scope.value === "all" ? {} : { slideIds: [...pages.querySelectorAll("input:checked")].map((node) => node.value) } });
       const applyButton = button("\u786E\u8BA4\u5E94\u7528", async () => {
-        const selected = projects[Number(project.value)], perform = async () => {
+        if (onPreview && !preview) throw new Error("\u8BF7\u5148\u9884\u89C8\u5F53\u524D\u9009\u62E9\u7684\u53D8\u66F4");
+        const captured = { ...options(), ...preview ? { expectedRevision: preview.revision } : {} }, perform = async () => {
           const fresh = await readEntry(entry);
-          const applied = await onApply(fresh.theme, { mode: mode.value, projectRef: selected });
+          const applied = await onApply(fresh.theme, captured);
           if (applied === false) return;
           await localStore2.markUsed(themeIdentity(fresh));
           close();
@@ -5030,11 +5177,70 @@ claude mcp list
         };
         if (mode.value === "reset") {
           const c = openDialog("\u786E\u8BA4\u91CD\u7F6E\u624B\u5DE5\u6837\u5F0F");
-          c.append(el("p", "\u5C06\u8986\u76D6\u76EE\u6807\u9879\u76EE\u4E2D\u652F\u6301\u7684\u624B\u5DE5\u989C\u8272\u3001\u5B57\u4F53\u548C\u7EC4\u4EF6\u6837\u5F0F\u3002\u5185\u5BB9\u4E0E\u4F4D\u7F6E\u4FDD\u7559\u3002"));
+          c.append(el("p", "\u8986\u76D6\u6240\u9009\u9875\u9762\u4E2D\u53D7\u652F\u6301\u7684\u624B\u5DE5\u6837\u5F0F\uFF0C\u5185\u5BB9\u548C\u4F4D\u7F6E\u4FDD\u7559\u3002"));
           c.append(button("\u786E\u8BA4\u91CD\u7F6E\u5E76\u5E94\u7528", perform, false), button("\u53D6\u6D88", close));
         } else await perform();
       }, false);
-      d.append(applyButton, button("\u53D6\u6D88", close));
+      const invalidate = () => {
+        preview = null;
+        applyButton.disabled = !!onPreview;
+        summary.textContent = "\u9009\u62E9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8\u3002";
+      };
+      const drawPages = () => {
+        pages.replaceChildren();
+        pages.hidden = scope.value === "all";
+        if (!targetDocument) return;
+        for (const [i, slide] of targetDocument.slides.entries()) {
+          const label = el("label"), node = input("", scope.value === "current" ? "radio" : "checkbox");
+          node.name = "theme-scope-page";
+          node.value = slide.id;
+          node.checked = i === 0;
+          node.onchange = invalidate;
+          label.append(node, document2.createTextNode(`\u7B2C ${i + 1} \u9875 \xB7 ${slide.title || slide.id}`));
+          pages.append(label);
+        }
+      };
+      const load = async () => {
+        const ticket = ++generation;
+        invalidate();
+        const selected = projects[Number(project.value)];
+        const record2 = onReadProject ? await onReadProject(selected) : selected.record;
+        if (ticket !== generation || !d.isConnected) return;
+        targetDocument = record2?.document || null;
+        drawPages();
+      };
+      project.onchange = () => run(load);
+      scope.onchange = () => {
+        drawPages();
+        invalidate();
+      };
+      mode.onchange = invalidate;
+      const previewButton = button("\u9884\u89C8\u53D8\u66F4", async () => {
+        if (!onPreview) {
+          summary.textContent = "\u5C06\u5728\u6700\u7EC8\u786E\u8BA4\u4E2D\u663E\u793A\u6837\u5F0F\u53D8\u5316\uFF0C\u539F\u6587\u7A3F\u5C1A\u672A\u4FEE\u6539\u3002";
+          return;
+        }
+        const ticket = ++generation, result2 = await onPreview(entry.theme, options());
+        if (ticket !== generation || !d.isConnected) return;
+        preview = result2;
+        const preserved = result2.plan.summary?.preservedOverrides ?? result2.plan.preservedOverrides?.length ?? 0;
+        summary.textContent = `\u5C06\u53D8\u66F4 ${result2.plan.changes.length} \u9879\u6837\u5F0F\uFF1B\u4FDD\u7559 ${preserved} \u9879\u624B\u5DE5\u8986\u76D6\u3002\u6587\u7A3F\u4FEE\u8BA2 ${result2.revision}\u3002`;
+        for (const warning of result2.plan.limitations || []) summary.textContent += "\n" + warning;
+        const diagnostics = result2.plan.motionDiagnostics || result2.plan.diagnostics || [], rendererNames = { editor: "\u7F16\u8F91\u5668", reveal: "\u653E\u6620", "editable-html": "\u53EF\u7F16\u8F91 HTML", "audience-html": "\u89C2\u4F17 HTML", pptx: "PPTX" };
+        for (const renderer of new Set(diagnostics.map((item) => item.renderer))) {
+          const rows = diagnostics.filter((item) => item.renderer === renderer), count = (status2) => rows.filter((item) => item.status === status2).length;
+          summary.textContent += `
+${rendererNames[renderer] || renderer}\uFF1A\u652F\u6301 ${count("supported")} \xB7 \u964D\u7EA7 ${count("degraded")} \xB7 \u4E0D\u652F\u6301 ${count("refused")}`;
+        }
+        if (diagnostics.some((item) => item.status !== "supported")) summary.textContent += "\n\u4E0D\u652F\u6301\u7684\u52A8\u6548\u4FDD\u7559\u539F\u59CB\u610F\u56FE\u5E76\u8BB0\u5F55\u8BCA\u65AD\uFF1B\u51CF\u5C11\u52A8\u6001\u7B56\u7565\u5C1A\u672A\u5F3A\u5236\u4F5C\u7528\u4E8E\u64AD\u653E\u3002";
+        const list2 = el("ul", void 0, "theme-change-list");
+        for (const change of result2.plan.changes.slice(0, 24)) list2.append(el("li", `\u7B2C ${targetDocument?.slides.findIndex((slide) => slide.id === change.slideId) + 1} \u9875${change.elementId ? "\u5BF9\u8C61" : ""}\uFF1A${{ color: "\u6587\u5B57\u989C\u8272", background: "\u80CC\u666F", fill: "\u586B\u5145", stroke: "\u8FB9\u6846\u989C\u8272", fontFamily: "\u5B57\u4F53", fontSize: "\u5B57\u53F7", fontWeight: "\u5B57\u91CD", bold: "\u7C97\u4F53", lineHeight: "\u884C\u9AD8", chartColor: "\u56FE\u8868\u989C\u8272" }[change.property] || change.property} \xB7 ${change.before ?? "\u7EE7\u627F"} \u2192 ${change.after}`));
+        d.querySelector(".theme-change-list")?.remove();
+        summary.after(list2);
+        applyButton.disabled = false;
+      });
+      d.append(previewButton, applyButton, button("\u53D6\u6D88", close));
+      await load();
     }
     importInput.onchange = () => run(async () => {
       const file = importInput.files?.[0];
@@ -5208,7 +5414,7 @@ claude mcp list
       line(preview, `\u4E3B\u9898\uFF1A${diff.themeChanged ? `${diff.beforeTheme} \u2192 ${diff.afterTheme}${diff.beforeTheme === diff.afterTheme ? "\uFF08\u4E3B\u9898\u7248\u672C\u6216\u914D\u7F6E\u6709\u53D8\u5316\uFF09" : ""}` : `\u672A\u53D8\u5316\uFF08${diff.beforeTheme}\uFF09`}`);
       line(preview, `\u9875\u9762\uFF1A\u65B0\u589E ${diff.counts.slides.added}\u3001\u5220\u9664 ${diff.counts.slides.removed}\u3001\u4FEE\u6539 ${diff.counts.slides.modified}${diff.slideOrderChanged ? "\uFF1B\u9875\u9762\u987A\u5E8F\u6709\u53D8\u5316" : ""}\u3002`);
       line(preview, `\u5143\u7D20\uFF1A\u65B0\u589E ${diff.counts.elements.added}\u3001\u5220\u9664 ${diff.counts.elements.removed}\u3001\u4FEE\u6539 ${diff.counts.elements.modified}\u3002\u5907\u6CE8${diff.notesChanged ? "\u6709\u53D8\u5316" : "\u672A\u53D8\u5316"}\u3002`);
-      const list = document2.createElement("ul");
+      const list2 = document2.createElement("ul");
       for (const slide of diff.slides) {
         const itemLine = document2.createElement("li"), change = labels[slide.status];
         itemLine.textContent = `\u9875\u9762 ${slide.afterTitle || slide.beforeTitle || "\u672A\u547D\u540D"}\uFF08${change}\uFF09${slide.beforeTitle !== slide.afterTitle ? `\uFF1A${slide.beforeTitle || "\u65E0\u6807\u9898"} \u2192 ${slide.afterTitle || "\u65E0\u6807\u9898"}` : ""}${slide.notesChanged ? "\uFF1B\u5907\u6CE8\u5DF2\u4FEE\u6539" : ""}`;
@@ -5223,14 +5429,14 @@ claude mcp list
           }
           itemLine.append(elements);
         }
-        list.append(itemLine);
+        list2.append(itemLine);
       }
       if (!diff.slides.length) {
         const unchanged = document2.createElement("li");
         unchanged.textContent = "\u9875\u9762\u548C\u5BF9\u8C61\u5185\u5BB9\u672A\u53D8\u5316\u3002";
-        list.append(unchanged);
+        list2.append(unchanged);
       }
-      preview.append(list);
+      preview.append(list2);
       const restoreable = item.revision < current.revision;
       line(preview, restoreable ? "\u6062\u590D\u4F1A\u5728\u5F53\u524D\u4E91\u7AEF\u7248\u672C\u4E4B\u540E\u521B\u5EFA\u4E00\u6761\u65B0\u4FEE\u8BA2\uFF1B\u4E0D\u4F1A\u6539\u5199\u5386\u53F2\u8BB0\u5F55\u3002" : "\u5F53\u524D\u7248\u672C\u4E0D\u53EF\u6062\u590D\u4E3A\u81EA\u8EAB\u3002");
       confirmButton.textContent = pendingRestore ? `\u91CD\u8BD5\u6062\u590D r${item.revision}` : "\u6062\u590D\u6B64\u7248\u672C";
@@ -5484,24 +5690,24 @@ claude mcp list
           scheduleLeaseWait(waiting);
           return;
         }
-        const record = await store.get(waiting.id);
+        const record2 = await store.get(waiting.id);
         if (!current() || await preserveDraft() || !current()) {
           stopLeaseWait(waiting);
           return;
         }
-        if (!record || record.deletedAt) {
+        if (!record2 || record2.deletedAt) {
           stopLeaseWait(waiting);
           $("save-state").textContent = "\u53EA\u8BFB \xB7 \u9879\u76EE\u5DF2\u4E0D\u5B58\u5728\u6216\u5DF2\u79FB\u5165\u56DE\u6536\u7AD9\uFF0C\u5F53\u524D\u5185\u5BB9\u4ECD\u53EF\u5BFC\u51FA\u5907\u4EFD\u3002";
           syncWorkspaceChrome();
           return;
         }
-        new DocumentCore(record.document);
+        new DocumentCore(record2.document);
         stopLeaseWait(waiting);
         clearCurrent();
         const lease = acquired;
         acquired = null;
         activating = true;
-        await activateProject(record, lease);
+        await activateProject(record2, lease);
         notify("\u5199\u5165\u6743\u5DF2\u6062\u590D\uFF0C\u5DF2\u8BFB\u53D6\u6700\u65B0\u4FDD\u5B58\u7684\u5185\u5BB9\u3002");
       } catch (error) {
         if (activating) notify("\u5199\u5165\u6743\u5DF2\u53D6\u5F97\uFF0C\u4F46\u91CD\u65B0\u6253\u5F00\u9879\u76EE\u5931\u8D25\uFF0C\u8BF7\u8FD4\u56DE\u5DE5\u4F5C\u53F0\u91CD\u8BD5\uFF1A" + error.message, true);
@@ -5744,7 +5950,7 @@ claude mcp list
     try {
       await sourceQueue.waitForIdle();
       const recovered = createRecoveryDocument(rejectedDocument || sourceCore.getDocument(), { persistedRevision, reason: sourceQueue.lastError?.code || (!lock ? "READ_ONLY" : "SAVE_FAILED") });
-      const record = await store.create(recovered);
+      const record2 = await store.create(recovered);
       committed = true;
       const oldLease = lock;
       sourceQueue.cancel();
@@ -5757,13 +5963,13 @@ claude mcp list
       }
       let lease = null;
       try {
-        lease = await store.acquire(record.id, owner);
+        lease = await store.acquire(record2.id, owner);
       } catch {
         cleanupWarning += "\u65B0\u526F\u672C\u6682\u65F6\u53EA\u8BFB\uFF0C\u53EF\u8FD4\u56DE\u5DE5\u4F5C\u53F0\u91CD\u65B0\u6253\u5F00\u3002";
       }
       clearCurrent();
       closing = false;
-      const doc = await activateProject(record, lease);
+      const doc = await activateProject(record2, lease);
       announce(doc.id);
       notify("\u5DF2\u4FDD\u5B58\u5E76\u6253\u5F00\u72EC\u7ACB\u6062\u590D\u526F\u672C\uFF0C\u539F\u9879\u76EE\u672A\u88AB\u8986\u76D6\u3002" + cleanupWarning);
       return doc;
@@ -5852,8 +6058,8 @@ claude mcp list
   }
   async function newProject(title, ratio = "16:9") {
     const doc = createDocument({ title, slides: [{ id: crypto.randomUUID(), elements: [], animations: [] }], canvas: ratio === "4:3" ? { width: 960, height: 720 } : { width: 1280, height: 720 } });
-    const record = await store.create(doc);
-    const opened = await openProject(record.id);
+    const record2 = await store.create(doc);
+    const opened = await openProject(record2.id);
     announce();
     return opened;
   }
@@ -5882,7 +6088,7 @@ claude mcp list
     return importFlight;
   }
   async function importFileNow(file) {
-    let record = null, stage = "read";
+    let record2 = null, stage = "read";
     try {
       const imported = await readImportFile(file, { allowEditorCandidate: !!getEditorAdapter()?.candidate });
       stage = "save";
@@ -5897,7 +6103,7 @@ claude mcp list
       stage = "create";
       const existing = await store.list();
       const document2 = createImportDocument(imported, existing.map((rec) => rec.document.title));
-      record = await store.create(document2);
+      record2 = await store.create(document2);
       let warning = "";
       const oldLease = lock;
       try {
@@ -5908,23 +6114,23 @@ claude mcp list
       clearCurrent();
       let lease = null;
       try {
-        lease = await store.acquire(record.id, owner);
+        lease = await store.acquire(record2.id, owner);
       } catch {
       }
       if (!lease) warning += "\u5BFC\u5165\u526F\u672C\u6682\u65F6\u53EA\u8BFB\uFF0C\u53EF\u5728\u5DE5\u4F5C\u53F0\u91CD\u65B0\u6253\u5F00\u3002";
       closing = false;
-      const result = await activateProject(record, lease);
+      const result = await activateProject(record2, lease);
       if (!editor) warning += "\u7F16\u8F91\u5668\u52A0\u8F7D\u5931\u8D25\uFF0C\u6570\u636E\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u5BFC\u51FA\u5907\u4EFD\u6216\u5728\u5DE5\u4F5C\u53F0\u91CD\u65B0\u6253\u5F00\u3002";
-      announce(record.id);
+      announce(record2.id);
       const message = `\u5DF2\u5BFC\u5165\u300C${result.title}\u300D\u4E3A\u72EC\u7ACB\u9879\u76EE\uFF0C\u539F\u6587\u4EF6\u548C\u539F\u9879\u76EE\u672A\u88AB\u8986\u76D6\u3002${imported.migrated ? "\u539F\u578B schemaVersion 0 \u5DF2\u8FC1\u79FB\u4E3A 1\u3002" : ""}${imported.candidateImported ? "\u539F\u7F16\u8F91\u5668\u6570\u636E\u5DF2\u63A5\u5165\u5019\u9009\u9002\u914D\uFF0C\u5916\u94FE\u8D44\u6E90\u4F1A\u88AB\u9694\u79BB\uFF0C\u4E0D\u4EE3\u8868\u5168\u90E8\u529F\u80FD\u5DF2\u9A8C\u6536\u3002" : ""}${warning}`;
-      showImportStatus(message, !!warning, record.id);
+      showImportStatus(message, !!warning, record2.id);
       notify(message, !!warning);
       return result;
     } catch (error) {
       const reason = importErrorMessage(error);
-      const message = record ? `\u300C${record.document.title}\u300D\u5DF2\u4FDD\u5B58\u5230\u9879\u76EE\u5E93\uFF0C\u4F46\u6253\u5F00\u5931\u8D25\uFF1A${reason}\u3002\u8BF7\u70B9\u201C\u5728\u5DE5\u4F5C\u53F0\u67E5\u770B\u201D\u6253\u5F00\u5DF2\u5BFC\u5165\u7684\u526F\u672C\uFF0C\u65E0\u9700\u91CD\u590D\u5BFC\u5165\u3002` : stage === "save" ? `\u672A\u5BFC\u5165\uFF1A\u5F53\u524D\u9879\u76EE\u5C1A\u672A\u5B89\u5168\u4FDD\u5B58\uFF0C\u6539\u52A8\u4ECD\u4FDD\u7559\u3002\u8BF7\u5148\u91CD\u8BD5\u4FDD\u5B58\u3001\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u6216\u5BFC\u51FA JSON \u5907\u4EFD\u3002\u539F\u56E0\uFF1A${reason}` : stage === "create" ? `\u5BFC\u5165\u526F\u672C\u672A\u4FDD\u5B58\uFF0C\u539F\u9879\u76EE\u548C\u5F53\u524D\u4F1A\u8BDD\u4ECD\u4FDD\u7559\u3002\u539F\u56E0\uFF1A${reason}` : `\u672A\u5BFC\u5165\uFF1A${reason}`;
-      showImportStatus(message, true, record?.id);
-      throw Object.assign(new Error(message, { cause: error }), { code: record ? "IMPORT_OPEN_FAILED" : "IMPORT_FAILED", projectId: record?.id });
+      const message = record2 ? `\u300C${record2.document.title}\u300D\u5DF2\u4FDD\u5B58\u5230\u9879\u76EE\u5E93\uFF0C\u4F46\u6253\u5F00\u5931\u8D25\uFF1A${reason}\u3002\u8BF7\u70B9\u201C\u5728\u5DE5\u4F5C\u53F0\u67E5\u770B\u201D\u6253\u5F00\u5DF2\u5BFC\u5165\u7684\u526F\u672C\uFF0C\u65E0\u9700\u91CD\u590D\u5BFC\u5165\u3002` : stage === "save" ? `\u672A\u5BFC\u5165\uFF1A\u5F53\u524D\u9879\u76EE\u5C1A\u672A\u5B89\u5168\u4FDD\u5B58\uFF0C\u6539\u52A8\u4ECD\u4FDD\u7559\u3002\u8BF7\u5148\u91CD\u8BD5\u4FDD\u5B58\u3001\u6062\u590D\u4E3A\u72EC\u7ACB\u9879\u76EE\u6216\u5BFC\u51FA JSON \u5907\u4EFD\u3002\u539F\u56E0\uFF1A${reason}` : stage === "create" ? `\u5BFC\u5165\u526F\u672C\u672A\u4FDD\u5B58\uFF0C\u539F\u9879\u76EE\u548C\u5F53\u524D\u4F1A\u8BDD\u4ECD\u4FDD\u7559\u3002\u539F\u56E0\uFF1A${reason}` : `\u672A\u5BFC\u5165\uFF1A${reason}`;
+      showImportStatus(message, true, record2?.id);
+      throw Object.assign(new Error(message, { cause: error }), { code: record2 ? "IMPORT_OPEN_FAILED" : "IMPORT_FAILED", projectId: record2?.id });
     } finally {
       closing = false;
       if (core) {
@@ -6094,7 +6300,7 @@ claude mcp list
     if (cloudWorkspace?.getCloudStore()) {
       const local = await localStore.list({ trash });
       if (ticket !== listRender) return;
-      renderEntries({ entries: local.map((record) => ({ source: "local", id: record.id, accountId: null, record })), cloudError: null }, trash);
+      renderEntries({ entries: local.map((record2) => ({ source: "local", id: record2.id, accountId: null, record: record2 })), cloudError: null }, trash);
       $("library-status").hidden = false;
       $("library-status").textContent = "\u6B63\u5728\u8BFB\u53D6\u4E91\u7AEF\u9879\u76EE\uFF1B\u672C\u5730\u9879\u76EE\u53EF\u7EE7\u7EED\u4F7F\u7528\u3002";
     }
@@ -6245,26 +6451,36 @@ claude mcp list
       const document2 = await createThemePreviewDocument(theme, { ratio });
       document2.id = crypto.randomUUID();
       document2.title = theme.name + " \xB7 \u6F14\u793A\u6587\u7A3F";
-      const record = await store.create(document2);
-      await openProjectNow(record.id);
+      const record2 = await store.create(document2);
+      await openProjectNow(record2.id);
       announce();
     });
   }
-  async function applyProjectTheme(theme, { mode = "preserve", projectRef } = {}) {
-    const selected = library.storeFor(projectRef), record = await selected.get(projectRef.id);
-    if (!record || record.deletedAt) throw new Error("\u76EE\u6807\u9879\u76EE\u4E0D\u5B58\u5728");
-    const plan = await planThemeApplication(record.document, theme, { mode });
+  async function readThemeProject(projectRef) {
+    const selected = library.storeFor(projectRef), record2 = await selected.get(projectRef.id);
+    if (!record2 || record2.deletedAt) throw new Error("\u76EE\u6807\u9879\u76EE\u4E0D\u5B58\u5728");
+    return record2;
+  }
+  async function previewProjectTheme(theme, { mode = "preserve", projectRef, slideIds } = {}) {
+    const record2 = await readThemeProject(projectRef);
+    return { revision: record2.document.revision, plan: await planThemeApplication(record2.document, theme, { mode, slideIds }) };
+  }
+  async function applyProjectTheme(theme, { mode = "preserve", projectRef, slideIds, expectedRevision } = {}) {
+    const selected = library.storeFor(projectRef), record2 = await selected.get(projectRef.id);
+    if (!record2 || record2.deletedAt) throw new Error("\u76EE\u6807\u9879\u76EE\u4E0D\u5B58\u5728");
+    if (expectedRevision !== void 0 && record2.document.revision !== expectedRevision) throw new Error("\u9879\u76EE\u5DF2\u6709\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8\u4E3B\u9898\u53D8\u66F4");
+    const plan = await planThemeApplication(record2.document, theme, { mode, slideIds });
     const labels2 = { background: "\u80CC\u666F", fill: "\u586B\u5145\u8272", stroke: "\u8FB9\u6846\u8272", color: "\u6587\u5B57\u989C\u8272", fontFamily: "\u5B57\u4F53", fontSize: "\u5B57\u53F7", fontWeight: "\u5B57\u91CD", bold: "\u7C97\u4F53", lineHeight: "\u884C\u8DDD", radius: "\u5706\u89D2", strokeWidth: "\u8FB9\u6846\u5BBD\u5EA6", chartColor: "\u56FE\u8868\u989C\u8272" };
-    const summary = plan.changes.slice(0, 8).map((change) => `\u7B2C ${record.document.slides.findIndex((slide) => slide.id === change.slideId) + 1} \u9875${change.elementId ? "\u5BF9\u8C61" : ""}\uFF1A${labels2[change.property] || "\u6837\u5F0F"}`).join("\n");
-    const answer = await formDialog(document, "\u786E\u8BA4\u4E3B\u9898\u53D8\u66F4", [], { message: `\u300C${record.document.title}\u300D\u5C06\u4FEE\u6539 ${plan.changes.length} \u9879\u6837\u5F0F\uFF0C\u8BB0\u5F55\u4E3B\u9898\u56FA\u5B9A\u7248\u672C\u3002${mode === "reset" ? "\u91CD\u7F6E\u6A21\u5F0F\u5C06\u8986\u76D6\u53D7\u652F\u6301\u7684\u624B\u5DE5\u6837\u5F0F\u3002" : "\u4FDD\u7559\u6A21\u5F0F\u4E0D\u8986\u76D6\u5DF2\u6709\u624B\u5DE5\u6837\u5F0F\u3002"}
+    const summary = plan.changes.slice(0, 8).map((change) => `\u7B2C ${record2.document.slides.findIndex((slide) => slide.id === change.slideId) + 1} \u9875${change.elementId ? "\u5BF9\u8C61" : ""}\uFF1A${labels2[change.property] || "\u6837\u5F0F"}`).join("\n");
+    const answer = await formDialog(document, "\u786E\u8BA4\u4E3B\u9898\u53D8\u66F4", [], { message: `\u300C${record2.document.title}\u300D\u5C06\u4FEE\u6539 ${plan.changes.length} \u9879\u6837\u5F0F\uFF0C\u8BB0\u5F55\u4E3B\u9898\u56FA\u5B9A\u7248\u672C\u3002${mode === "reset" ? "\u91CD\u7F6E\u6A21\u5F0F\u5C06\u8986\u76D6\u53D7\u652F\u6301\u7684\u624B\u5DE5\u6837\u5F0F\u3002" : "\u4FDD\u7559\u6A21\u5F0F\u4E0D\u8986\u76D6\u5DF2\u6709\u624B\u5DE5\u6837\u5F0F\u3002"}
 ${summary}
 ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
     if (!answer) return false;
     library.storeFor(projectRef);
     await openEntry(projectRef);
     if (!lock) throw new Error("\u9879\u76EE\u6B63\u5728\u5176\u4ED6\u5199\u5165\u65B9\u7F16\u8F91\uFF0C\u672A\u5E94\u7528\u4E3B\u9898");
-    if (core.getDocument().revision !== record.document.revision) throw new Error("\u9879\u76EE\u5DF2\u6709\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8\u4E3B\u9898\u53D8\u66F4");
-    edit(plan.operations, record.document.revision);
+    if (core.getDocument().revision !== record2.document.revision) throw new Error("\u9879\u76EE\u5DF2\u6709\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8\u4E3B\u9898\u53D8\u66F4");
+    edit(plan.operations, record2.document.revision);
     await autosave.flush();
     notify("\u4E3B\u9898\u5DF2\u5E94\u7528\u5E76\u4FDD\u5B58\uFF0C\u53EF\u5728\u7F16\u8F91\u5668\u4E2D\u64A4\u9500\u3002");
     return true;
@@ -6393,8 +6609,8 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
         doc.id = crypto.randomUUID();
         doc.metadata.createdAt = (/* @__PURE__ */ new Date()).toISOString();
         doc.metadata.updatedAt = doc.metadata.createdAt;
-        const record = await store.create(doc);
-        await openProject(record.id);
+        const record2 = await store.create(doc);
+        await openProject(record2.id);
       });
       $("new-project").onclick = () => {
         $("new-dialog").showModal();
@@ -6503,7 +6719,7 @@ ${plan.limitations.join("\n")}`, confirm: "\u5E94\u7528\u5E76\u4FDD\u5B58" });
         await renderProjects();
         await themeLibrary?.refresh();
       }, notify });
-      themeLibrary = mountThemeLibrary({ container: $("theme-view"), localStore: localThemes, getCloudStore: getCloudThemes, getProjects: () => library.list(), onCreate: createFromTheme, onApply: applyProjectTheme, notify });
+      themeLibrary = mountThemeLibrary({ container: $("theme-view"), localStore: localThemes, getCloudStore: getCloudThemes, getProjects: () => library.list(), onReadProject: readThemeProject, onPreview: previewProjectTheme, onCreate: createFromTheme, onApply: applyProjectTheme, notify });
       cloudWorkspace.initialize().then(async (selected) => {
         store = selected;
         await localStore.open();
