@@ -1,5 +1,6 @@
 import {quotaBefore,enforceStorageQuota} from './quota-service.js';
 import {createHash,randomUUID} from 'node:crypto';
+import {readThemeAsset} from '../../core/theme-assets.js';
 import {createThemeRef} from '../../core/theme-schema.js';
 import type {ThemeRef} from '../../core/theme-schema.js';
 import {listBuiltinThemes,getBuiltinTheme} from '../../core/builtin-themes.js';
@@ -34,10 +35,12 @@ export class ThemeService{
  }
  private audit(c:Transaction,a:Actor,id:string,action:string){return c.query("INSERT INTO audit_logs(actor_id,action,resource_type,resource_id,outcome) VALUES($1,$2,'theme',$3,'success')",[a.id,action,id]);}
  async list(a:Actor,{archived=false,trash=false}:{archived?:boolean;trash?:boolean}={}){
-  requireScope(a,'themes:read');return transaction(this.db,async c=>{await this.active(c,a);return (await c.query(`SELECT ${columns} FROM themes t JOIN theme_versions v ON v.theme_id=t.id AND v.version=t.current_version WHERE t.owner_id=$1 AND t.archived=$2 AND (t.deleted_at IS NOT NULL)=$3 ORDER BY t.updated_at DESC,t.id`,[a.id,archived,trash])).rows.map(metadata);});
+  requireScope(a,'themes:read');return transaction(this.db,async c=>{await this.active(c,a);return (await c.query(`SELECT ${columns},v.snapshot_jsonb->'author' AS author,v.snapshot_jsonb->'tags' AS tags,v.snapshot_jsonb->'supportedRatios' AS "supportedRatios",v.snapshot_jsonb#>'{tokens,colors}' AS colors FROM themes t JOIN theme_versions v ON v.theme_id=t.id AND v.version=t.current_version WHERE t.owner_id=$1 AND t.archived=$2 AND (t.deleted_at IS NOT NULL)=$3 ORDER BY t.updated_at DESC,t.id`,[a.id,archived,trash])).rows.map(metadata);});
  }
  async get(a:Actor,id:string){requireScope(a,'themes:read');return transaction(this.db,async c=>{await this.active(c,a);const r=await this.owned(c,a,id);if(r.deletedAt)throw errors.missing();return detail(r);});}
  async getVersion(a:Actor,id:string,version:string){requireScope(a,'themes:read');return transaction(this.db,async c=>{await this.active(c,a);const r=await this.owned(c,a,id);if(r.deletedAt)throw errors.missing();const v=(await c.query('SELECT hash,snapshot_jsonb FROM theme_versions WHERE theme_id=$1 AND version=$2',[id,version])).rows[0];if(!v)throw errors.missing();return {id,version,hash:v.hash,snapshot:v.snapshot_jsonb} as ThemeRef;});}
+ async versions(a:Actor,id:string,{limit=100,offset=0}:{limit?:number;offset?:number}={}){requireScope(a,'themes:read');if(!Number.isSafeInteger(limit)||limit<1||limit>100||!Number.isSafeInteger(offset)||offset<0||offset>10000)throw errors.invalid('主题版本分页无效');return transaction(this.db,async c=>{await this.active(c,a);const row=await this.owned(c,a,id);if(row.deletedAt)throw errors.missing();return (await c.query('SELECT version,hash,(version=$2) AS current,published_at AS "createdAt" FROM theme_versions WHERE theme_id=$1 ORDER BY version DESC LIMIT $3 OFFSET $4',[id,row.version,limit,offset])).rows.map(v=>({...v,createdAt:v.createdAt.toISOString()}));});}
+ async asset(a:Actor,id:string,version:string,assetId:string,{builtin=false}={}){const ref=builtin?(await this.builtin(a,id,version)).ref:await this.getVersion(a,id,version);try{return await readThemeAsset(ref,assetId);}catch(e){if(e instanceof CoreError)throw new ServiceError(e.code,e.code==='THEME_ASSET_MISSING'?404:409,e.message);throw e;}}
  async builtins(a:Actor){requireScope(a,'themes:read');return transaction(this.db,async c=>{await this.active(c,a);return Promise.all(listBuiltinThemes().map(async theme=>{const ref=await validated(theme);return {id:ref.id,name:theme.name,version:ref.version,hash:ref.hash,builtin:true,tags:theme.tags,supportedRatios:theme.supportedRatios};}));});}
  async builtin(a:Actor,id:string,version?:string){requireScope(a,'themes:read');return transaction(this.db,async c=>{await this.active(c,a);const theme=getBuiltinTheme(id,version);if(!theme)throw errors.missing();return {id,name:theme.name,builtin:true,ref:await validated(theme)};});}
  async resolveRef(c:Transaction,a:Actor,input:{themeId:string;version:string;hash:string}):Promise<ThemeRef>{

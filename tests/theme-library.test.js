@@ -66,3 +66,14 @@ test('scoped UI requires a fresh dry-run and binds confirmation to its revision'
  scope.value='all';scope.dispatchEvent(new dom.window.Event('change'));assert.equal(confirm.disabled,true);findButton(d,'预览变更').click();await until(()=>!confirm.disabled);confirm.click();await until(()=>calls.length===1);assert.equal(calls[0].expectedRevision,7);assert.equal(calls[0].slideIds,undefined);
  mounted.destroy();local.close();dom.window.close();
 });
+
+test('gallery keeps large library reads bounded to the visible page and opens an immutable historical version',async()=>{
+ const dom=new JSDOM('<body><main></main></body>',{url:'http://localhost'}),container=dom.window.document.querySelector('main'),local=store(),theme=copyPersonalTheme(listBuiltinThemes()[0],{name:'历史主题'});
+ const old=await local.save(theme),newer={...structuredClone(theme),version:'1.0.1',name:'当前主题'};await local.save(newer,{expectedRevision:old.revision});
+ let reads=0;const base=listBuiltinThemes()[0],cloud={accountId:'fixture-account',async list(){return Array.from({length:1000},(_,i)=>({id:'fixture-'+i,name:'A '+String(i).padStart(4,'0'),version:'1.0.0',author:base.author,tags:base.tags,supportedRatios:base.supportedRatios,colors:base.tokens.colors}));},async get(id){reads++;const i=Number(id.split('-')[1]),snapshot={...structuredClone(base),id,name:'A '+String(i).padStart(4,'0')};return {id,version:'1.0.0',ref:await createThemeRef(snapshot)};}};
+ const mounted=mountThemeLibrary({container,localStore:local,getCloudStore:()=>cloud});await mounted.refresh();assert.equal(container.querySelectorAll('.theme-card').length,24);assert.ok(reads<60,'not all 1000 packages are fetched');
+ const next=findButton(container,'下一页');reads=0;next.click();await until(()=>container.querySelectorAll('.theme-card').length===24&&container.querySelector('.theme-pages span')?.textContent.startsWith('第 2'));await until(()=>reads>=24);assert.equal(reads,24);
+ container.querySelector('select').value='local';await mounted.refresh();container.querySelector('.theme-actions button').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);findButton(dom.window.document.querySelector('dialog'),'查看历史版本').click();await until(()=>dom.window.document.querySelector('dialog h2')?.textContent.startsWith('主题版本'));
+ findButton(dom.window.document.querySelector('dialog'),'1.0.0').click();await until(()=>dom.window.document.querySelector('dialog h2')?.textContent==='历史主题');assert.match(dom.window.document.querySelector('dialog').textContent,/固定历史版本：1.0.0/);assert.equal(findButton(dom.window.document.querySelector('dialog'),'编辑 / 重命名'),undefined);assert.equal((await local.get(theme.id)).version,'1.0.1');
+ mounted.destroy();local.close();dom.window.close();
+});

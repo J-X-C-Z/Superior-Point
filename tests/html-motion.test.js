@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {JSDOM} from 'jsdom';import {runInNewContext} from 'node:vm';import {readFile} from 'node:fs/promises';
+import {exportHTML,importHTML} from '../io/html.js';import {exportEditorHTML} from '../io/editor-export.js';import {fiveSlideDocument} from '../examples/five-slides.js';
+function protocol(output,native=false){
+ const dom=new JSDOM(output),document=dom.window.document,calls=[];let onChange;const media={matches:true,addEventListener:(type,fn)=>{assert.equal(type,'change');onChange=fn;}};
+ const api={configure:options=>calls.push(options),initialize:()=>Promise.resolve()};const window={matchMedia:query=>{assert.equal(query,'(prefers-reduced-motion: reduce)');return media;}};
+ const originalTransition=document.querySelector('.reveal .slides section').getAttribute('data-transition');const source=[...document.scripts].at(-1).textContent;
+ if(native){const hook=source.slice(source.indexOf('var spReducedMotion='),source.indexOf("document.documentElement.dataset.spReady='true'"));runInNewContext(hook,{window,document,Reveal:api});}
+ else{function Reveal(){return api;}runInNewContext(source,{window,document,Reveal});}
+ const first=document.querySelector('.reveal .slides section');assert.equal(calls.at(-1).transition,'none');assert.equal(first.dataset.transition,'none');assert.equal(document.documentElement.dataset.spReducedMotion,'true');media.matches=false;onChange();assert.equal(calls.at(-1).transition,'fade');assert.equal(document.documentElement.dataset.spReducedMotion,'false');assert.equal(first.getAttribute('data-transition'),originalTransition);media.matches=true;onChange();assert.equal(first.dataset.transition,'none');assert.match(output,/@media\(prefers-reduced-motion:reduce\)/);dom.window.close();return calls;
+}
+test('offline generic HTML honors dynamic reduced motion, preserves click fragments and original document',async()=>{
+ const doc=fiveSlideDocument();doc.slides[0].transition='zoom';const before=structuredClone(doc),output=await exportHTML(doc);const calls=protocol(output);assert.equal(calls[0].backgroundTransition,'none');assert.deepEqual(importHTML(output),before);assert.ok(output.includes('data-fragment-index'));assert.deepEqual(doc,before);
+ const delayed=fiveSlideDocument();delayed.slides[2].animations[0].delay=1;delete delayed.slides[2].elements.find(e=>e.id===delayed.slides[2].animations[0].targetId).fragment;const html=await exportHTML(delayed);const dom=new JSDOM(html);const animation=delayed.slides[2].animations[0];assert.equal(dom.window.document.querySelector(`[data-element-id="${animation.targetId}"]`).classList.contains('fragment'),false);dom.window.close();
+});
+test('native offline output hooks only known successful Reveal startup, disables autoAnimate and retains reimport',async()=>{
+ const doc=JSON.parse(await readFile(new URL('./evidence/candidate-native-render.document.json',import.meta.url))),html=await readFile(new URL('./evidence/candidate-native-render.html',import.meta.url),'utf8'),dom=new JSDOM('');try{const output=await exportEditorHTML(doc,html,{domDocument:dom.window.document});assert.equal(protocol(output,true)[0].autoAnimate,false);assert.deepEqual(importHTML(output),doc);assert.match(output,/\.then\(\(\)=>\{window.SuperiorPointMotion\?\.attach\(Reveal\);var spReducedMotion=/);const audience=await exportEditorHTML(doc,html,{domDocument:dom.window.document,audience:true});protocol(audience,true);assert.ok(!audience.includes('id="sp-document"'));}finally{dom.window.close();}
+});

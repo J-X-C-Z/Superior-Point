@@ -193,3 +193,5 @@ body.editor-integrated #remote-revision-notice:not([hidden]){display:block;margi
 }
 
 .theme-page-selection{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:16px 0}.theme-page-selection[hidden]{display:none}.theme-page-selection label{display:flex;align-items:center;gap:8px;min-width:0;overflow-wrap:anywhere}.theme-page-selection input{width:auto}.theme-change-list{max-height:220px;overflow:auto;font-size:12px;line-height:1.8}.theme-dialog .theme-status{white-space:pre-line}
+
+.theme-pages{display:flex;align-items:center;justify-content:center;gap:16px;margin:24px 0}.theme-pages[hidden]{display:none}.theme-dialog input[type=checkbox],.theme-dialog input[type=radio]{width:auto}
