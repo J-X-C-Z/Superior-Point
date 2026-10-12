@@ -1,0 +1,220 @@
+{
+  "format": "superior-point-theme",
+  "schemaVersion": 1,
+  "id": "6c39b9ce-0a8e-4ddd-985e-ca718c0c4d79",
+  "name": "v1.2 剩余验收 · 个人书页",
+  "version": "1.0.0",
+  "author": "Superior Point",
+  "license": "MIT",
+  "provenance": "Original Superior Point theme; not an imported or licensed third-party Design System.",
+  "description": "衬线大标题、书页边框和左右图文节奏。 完整原创视觉与运动语言。",
+  "tags": [
+    "magazine",
+    "serif",
+    "叙事",
+    "design-language"
+  ],
+  "supportedRatios": [
+    "16:9",
+    "4:3"
+  ],
+  "tokens": {
+    "colors": {
+      "background": "#FCF5E9",
+      "text": "#352D27",
+      "accent": "#185A79",
+      "surface": "#EEE1D0",
+      "muted": "#6A584B"
+    },
+    "typography": {
+      "title": {
+        "fontFamily": "Georgia",
+        "fallback": [
+          "Arial",
+          "sans-serif"
+        ],
+        "fontSize": 64,
+        "fontWeight": 700,
+        "lineHeight": 1.25,
+        "license": "System font reference only; no font files redistributed. Availability depends on the device."
+      },
+      "body": {
+        "fontFamily": "Georgia",
+        "fallback": [
+          "Arial",
+          "sans-serif"
+        ],
+        "fontSize": 26,
+        "fontWeight": 400,
+        "lineHeight": 1.5,
+        "license": "System font reference only; no font files redistributed. Availability depends on the device."
+      },
+      "caption": {
+        "fontFamily": "Georgia",
+        "fallback": [
+          "Arial",
+          "sans-serif"
+        ],
+        "fontSize": 18,
+        "fontWeight": 400,
+        "lineHeight": 1.25,
+        "license": "System font reference only; no font files redistributed. Availability depends on the device."
+      }
+    },
+    "spacing": {
+      "unit": 8,
+      "pageInset": 64,
+      "gap": 36
+    },
+    "components": {
+      "panel": {
+        "radius": 0,
+        "strokeWidth": 0
+      },
+      "accent": {
+        "motif": "band"
+      },
+      "chart": {
+        "chartType": "bar",
+        "color": "#794337",
+        "surface": "#F8FAFC",
+        "text": "#20323C"
+      }
+    },
+    "motion": {
+      "durationMs": 420,
+      "easing": "ease-in-out"
+    }
+  },
+  "layouts": [
+    {
+      "id": "cover",
+      "kind": "cover",
+      "rules": {
+        "columns": 1,
+        "pageInset": 64,
+        "gap": 36,
+        "motif": "band",
+        "titlePosition": "top"
+      }
+    },
+    {
+      "id": "section",
+      "kind": "section",
+      "rules": {
+        "columns": 1,
+        "pageInset": 64,
+        "gap": 36,
+        "motif": "band",
+        "titlePosition": "top"
+      }
+    },
+    {
+      "id": "content",
+      "kind": "content",
+      "rules": {
+        "columns": 2,
+        "pageInset": 64,
+        "gap": 36,
+        "motif": "band",
+        "titlePosition": "top"
+      }
+    },
+    {
+      "id": "data",
+      "kind": "data",
+      "rules": {
+        "columns": 1,
+        "pageInset": 64,
+        "gap": 36,
+        "motif": "band",
+        "titlePosition": "top"
+      }
+    },
+    {
+      "id": "image",
+      "kind": "image",
+      "rules": {
+        "columns": 1,
+        "pageInset": 64,
+        "gap": 36,
+        "motif": "band",
+        "titlePosition": "top"
+      }
+    }
+  ],
+  "assets": [],
+  "preview": {
+    "kinds": [
+      "cover",
+      "content",
+      "data",
+      "image",
+      "section"
+    ],
+    "limitations": [
+      "System fonts vary by device; no fonts are bundled.",
+      "Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.",
+      "Sample data and illustration are original demonstration content, not live project data.",
+      "Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed."
+    ]
+  },
+  "designLanguage": {
+    "identity": {
+      "principles": [
+        "Reading hierarchy",
+        "Editorial rhythm"
+      ],
+      "suitableFor": [
+        "Narrative reports",
+        "Long-form explanation"
+      ],
+      "avoid": [
+        "Dense specification tables",
+        "Decorative gradients"
+      ],
+      "distinctiveFeatures": [
+        "Serif display paired with generous body leading",
+        "Asymmetric image and copy",
+        "Square page bands"
+      ]
+    },
+    "origin": {
+      "type": "original",
+      "ref": "J-X-C-Z/Superior-Point",
+      "sourceRevision": "sp-design-language-1.0.0",
+      "license": "MIT",
+      "attribution": "Original Superior Point rules and geometric sample; no Design-Systems code, images or fonts copied."
+    },
+    "visual": {
+      "grid": "editorial",
+      "imageTreatment": "editorial-crop",
+      "shape": "square",
+      "spacingUnit": 8
+    },
+    "motion": {
+      "principles": [
+        "Reading hierarchy",
+        "Editorial rhythm"
+      ],
+      "timing": {
+        "shortMs": 180,
+        "standardMs": 420,
+        "longMs": 640
+      },
+      "easing": "ease-in-out",
+      "enter": "fade",
+      "exit": "fade",
+      "transition": "fade",
+      "reducedMotion": "none",
+      "unsupportedBehavior": "preserve-intent-and-report"
+    }
+  },
+  "sourceRef": {
+    "id": "sp-editorial-language",
+    "version": "1.0.0",
+    "hash": "sha256:6c7ec83842e1800c2e040bd6eeef487d395668f38ffa7db91b2010f1df7fe316",
+    "source": "builtin",
+    "accountId": null
+  }
+}

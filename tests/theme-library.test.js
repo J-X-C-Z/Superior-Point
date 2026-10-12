@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import 'fake-indexeddb/auto';
 import {JSDOM} from 'jsdom';
 import {ThemeStore} from '../storage/theme-store.js';
+import {CloudThemeStore} from '../storage/cloud-theme-store.js';
 import {listBuiltinThemes} from '../core/builtin-themes.js';
 import {createThemeRef} from '../core/theme-schema.js';
 import {copyPersonalTheme,filterThemes,mountThemeLibrary,nextThemeVersion,themeIdentity,uploadLocalTheme} from '../web/theme-library.js';
@@ -41,7 +42,10 @@ test('gallery JSON import verifies package before saving a new local identity an
  const mounted=mountThemeLibrary({container,localStore:local,notify:message=>messages.push(message)});await mounted.refresh();const file=container.querySelector('input[type=file]'),original=listBuiltinThemes()[0];
  Object.defineProperty(file,'files',{configurable:true,value:[{size:1024,text:async()=>JSON.stringify(original)}]});file.dispatchEvent(new dom.window.Event('change'));await until(()=>messages.includes('主题已验证并导入为新的本地主题'));
  const records=await local.list();assert.equal(records.length,1);assert.notEqual(records[0].id,original.id);const record=await local.get(records[0].id);assert.deepEqual(record.ref.snapshot.tokens,original.tokens);
- Object.defineProperty(file,'files',{configurable:true,value:[{size:1,text:async()=>JSON.stringify({...original,schemaVersion:99})}]});file.dispatchEvent(new dom.window.Event('change'));await until(()=>messages.some(message=>message==='Theme validation failed'));assert.equal((await local.list()).length,1);
+ Object.defineProperty(file,'files',{configurable:true,value:[{size:1,text:async()=>JSON.stringify({...original,schemaVersion:99})}]});file.dispatchEvent(new dom.window.Event('change'));await until(()=>messages.some(message=>message.includes('主题格式或资源校验失败')));assert.match(messages.at(-1),/检查主题 JSON.*重新导入/);assert.match(messages.at(-1),/已有主题和原始文件保留/);assert.equal(file.value,'');assert.equal((await local.list()).length,1);
+ Object.defineProperty(file,'files',{configurable:true,value:[{size:13*1024*1024,text:async()=>assert.fail('oversized input must not be read')}]});file.dispatchEvent(new dom.window.Event('change'));await until(()=>messages.at(-1)==='主题文件超过 12 MiB 限制');assert.equal((await local.list()).length,1);
+ const save=local.save;local.save=async()=>{throw new Error('本地存储不可用');};
+ try{Object.defineProperty(file,'files',{configurable:true,value:[{size:1024,text:async()=>JSON.stringify(original)}]});file.dispatchEvent(new dom.window.Event('change'));await until(()=>messages.at(-1)==='本地存储不可用');assert.equal((await local.list()).length,1);}finally{local.save=save;}
  const source=container.querySelector('select');source.value='local';await mounted.refresh();container.querySelector('.theme-actions button').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);
  let exported;const create=URL.createObjectURL,revoke=URL.revokeObjectURL;URL.createObjectURL=blob=>{exported=blob;return 'blob:test';};URL.revokeObjectURL=()=>{};dom.window.HTMLAnchorElement.prototype.click=function(){};
  try{findButton(dom.window.document.querySelector('dialog'),'导出 JSON').click();await until(()=>exported);assert.deepEqual(JSON.parse(await exported.text()),record.ref.snapshot);}finally{URL.createObjectURL=create;URL.revokeObjectURL=revoke;}
@@ -76,4 +80,58 @@ test('gallery keeps large library reads bounded to the visible page and opens an
  container.querySelector('select').value='local';await mounted.refresh();container.querySelector('.theme-actions button').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);findButton(dom.window.document.querySelector('dialog'),'查看历史版本').click();await until(()=>dom.window.document.querySelector('dialog h2')?.textContent.startsWith('主题版本'));
  findButton(dom.window.document.querySelector('dialog'),'1.0.0').click();await until(()=>dom.window.document.querySelector('dialog h2')?.textContent==='历史主题');assert.match(dom.window.document.querySelector('dialog').textContent,/固定历史版本：1.0.0/);assert.equal(findButton(dom.window.document.querySelector('dialog'),'编辑 / 重命名'),undefined);assert.equal((await local.get(theme.id)).version,'1.0.1');
  mounted.destroy();local.close();dom.window.close();
+});
+
+test('pending dry-runs cannot authorize changed scope, mode or page choices',async()=>{
+ const dom=new JSDOM('<body><main></main></body>',{url:'http://localhost'}),container=dom.window.document.querySelector('main'),local=store(),calls=[],pending=[];
+ const doc={revision:7,slides:[{id:'one',title:'封面'},{id:'two',title:'正文'}]};
+ const mounted=mountThemeLibrary({container,localStore:local,getProjects:async()=>[{id:'project',source:'local'}],onReadProject:async()=>({document:doc}),onPreview:async()=>new Promise(resolve=>pending.push(resolve)),onApply:async(theme,options)=>calls.push(options)});
+ try{
+  await mounted.refresh();container.querySelector('.theme-actions button').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);findButton(dom.window.document.querySelector('dialog'),'应用到已有项目').click();await until(()=>dom.window.document.querySelectorAll('.theme-page-selection input').length===2);
+  const d=dom.window.document.querySelector('dialog'),scope=d.querySelectorAll('select')[2],mode=d.querySelectorAll('select')[1],confirm=findButton(d,'确认应用'),preview=findButton(d,'预览变更');
+  for(const change of [()=>{scope.value='selected';scope.dispatchEvent(new dom.window.Event('change'));},()=>{mode.value='reset';mode.dispatchEvent(new dom.window.Event('change'));},()=>{const choice=d.querySelectorAll('.theme-page-selection input')[1];choice.checked=true;choice.dispatchEvent(new dom.window.Event('change'));}]){
+   preview.click();await until(()=>pending.length===1);change();pending.shift()({revision:7,plan:{changes:[],summary:{preservedOverrides:0}}});await until(()=>!preview.disabled);
+   assert.equal(confirm.disabled,true,'a result for previous choices must stay invalid');assert.match(d.querySelector('.theme-status').textContent,/重新预览/);confirm.click();assert.equal(calls.length,0);
+  }
+  mode.value='preserve';mode.dispatchEvent(new dom.window.Event('change'));preview.click();await until(()=>pending.length===1);pending.shift()({revision:8,plan:{changes:[],summary:{preservedOverrides:0}}});await until(()=>!confirm.disabled);confirm.click();await until(()=>calls.length===1);assert.equal(calls[0].expectedRevision,8);assert.deepEqual(calls[0].slideIds,['one','two']);
+ }finally{mounted.destroy();local.close();dom.window.close();}
+});
+
+test('project page reads survive scope changes and discard an old project response',async()=>{
+ const dom=new JSDOM('<body><main></main></body>',{url:'http://localhost'}),container=dom.window.document.querySelector('main'),local=store(),reads=[];
+ const mounted=mountThemeLibrary({container,localStore:local,getProjects:async()=>[{id:'first',source:'local'},{id:'second',source:'local'}],onReadProject:async(project)=>new Promise(resolve=>reads.push({id:project.id,resolve})),onApply:async()=>true});
+ try{
+  await mounted.refresh();container.querySelector('.theme-actions button').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);findButton(dom.window.document.querySelector('dialog'),'应用到已有项目').click();await until(()=>reads.length===1);
+  const d=dom.window.document.querySelector('dialog'),project=d.querySelectorAll('select')[0],scope=d.querySelectorAll('select')[2];scope.value='selected';scope.dispatchEvent(new dom.window.Event('change'));
+  reads.shift().resolve({document:{slides:[{id:'first-page',title:'第一页'}]}});await until(()=>d.querySelector('.theme-page-selection input')?.value==='first-page');
+  project.value='1';project.dispatchEvent(new dom.window.Event('change'));await until(()=>reads.length===1);assert.equal(d.querySelectorAll('.theme-page-selection input').length,0,'previous project pages are cleared while loading');
+  project.value='0';project.dispatchEvent(new dom.window.Event('change'));await until(()=>reads.length===2);reads.shift().resolve({document:{slides:[{id:'second-page',title:'第二页'}]}});reads.shift().resolve({document:{slides:[{id:'current-page',title:'当前页'}]}});await until(()=>d.querySelector('.theme-page-selection input')?.value==='current-page');
+  assert.equal(d.querySelectorAll('.theme-page-selection input').length,1);
+ }finally{mounted.destroy();local.close();dom.window.close();}
+});
+
+
+test('cloud provenance metadata cannot replace UI storage routing in edit, history, apply or archive',async()=>{
+ const dom=new JSDOM('<body><main></main></body>',{url:'http://localhost'}),container=dom.window.document.querySelector('main'),local=store(),errors=[],applied=[];
+ const original=copyPersonalTheme(listBuiltinThemes()[0],{name:'云端主题测试'}),refs=new Map([[original.version,await createThemeRef(original)]]),provenance={id:'builtin-origin',version:'1.0.0',hash:refs.get(original.version).hash};
+ let current=original.version,revision=0,archived=false,publishes=0;
+ const metadata=()=>({id:original.id,name:refs.get(current).snapshot.name,version:current,revision,source:provenance,archived,updatedAt:'2026-10-12T00:00:00.000Z'});
+ const api={user:{id:'cloud-owner'},async request(path,{method='GET',body}={}){
+  if(path==='/themes'||path==='/themes?archived=true')return (path.includes('?')?archived:!archived)?[{...metadata(),author:original.author,tags:original.tags,supportedRatios:original.supportedRatios,colors:original.tokens.colors}]:[];
+  if(path.includes('/versions?'))return [...refs.keys()].map(version=>({version,current:version===current}));
+  if(path.includes('/versions/'))return refs.get(path.split('/').at(-1));
+  if(method==='POST'&&path.endsWith('/publish')){assert.equal(body.expectedRevision,revision);const ref=await createThemeRef(body.theme);refs.set(ref.version,ref);current=ref.version;revision++;publishes++;return {...metadata(),ref};}
+  if(method==='PATCH'){assert.equal(body.expectedRevision,revision);archived=body.archived;revision++;return metadata();}
+  if(path==='/themes/'+original.id)return {...metadata(),ref:refs.get(current)};
+  assert.fail('unexpected cloud request '+method+' '+path);
+ }};
+ const cloud=new CloudThemeStore({api}),mounted=mountThemeLibrary({container,localStore:local,getCloudStore:()=>cloud,notify:message=>errors.push(message),getProjects:async()=>[{id:'project',source:'local',record:{document:{slides:[{id:'page',title:'封面'}]}}}],onPreview:async()=>({revision:3,plan:{changes:[]}}),onApply:async(theme,options)=>{applied.push({theme,options});return true;}});
+ const open=async()=>{container.querySelector('.theme-actions button').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);return dom.window.document.querySelector('dialog');};
+ try{
+  container.querySelector('select').value='cloud';await mounted.refresh();let d=await open();assert.match(d.querySelector('p').textContent,/云端主题/);
+  findButton(d,'编辑 / 重命名').click();await until(()=>dom.window.document.querySelector('dialog form'));const name=dom.window.document.querySelector('form input');name.value='云端编辑新版本';name.dispatchEvent(new dom.window.Event('input'));dom.window.document.querySelector('form').dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await until(()=>!dom.window.document.querySelector('dialog'));assert.equal(publishes,1);assert.equal(current,'1.0.1');assert.deepEqual((await cloud.get(original.id)).source,provenance);
+  d=await open();findButton(d,'查看历史版本').click();await until(()=>dom.window.document.querySelector('dialog h2')?.textContent.startsWith('主题版本'));findButton(dom.window.document.querySelector('dialog'),'1.0.0').click();await until(()=>dom.window.document.querySelectorAll('dialog .theme-sample').length===4);d=dom.window.document.querySelector('dialog');assert.match(d.querySelector('p').textContent,/云端主题/);assert.equal(findButton(d,'编辑 / 重命名'),undefined);
+  findButton(d,'应用到已有项目').click();await until(()=>findButton(dom.window.document.querySelector('dialog'),'预览变更'));d=dom.window.document.querySelector('dialog');findButton(d,'预览变更').click();await until(()=>!findButton(d,'确认应用').disabled);findButton(d,'确认应用').click();await until(()=>!dom.window.document.querySelector('dialog'));assert.equal(applied.length,1);assert.deepEqual(applied[0].theme,original);assert.equal(applied[0].options.expectedRevision,3);assert.equal(current,'1.0.1');
+  d=await open();findButton(d,'归档 / 删除').click();await until(()=>findButton(dom.window.document.querySelector('dialog'),'确认归档 / 删除'));findButton(dom.window.document.querySelector('dialog'),'确认归档 / 删除').click();await until(()=>!dom.window.document.querySelector('dialog'));assert.equal(archived,true);container.querySelector('select').value='trash';await mounted.refresh();d=await open();findButton(d,'恢复主题').click();await until(()=>!dom.window.document.querySelector('dialog'));assert.equal(archived,false);assert.equal(refs.size,2);assert.deepEqual(errors,[]);
+ }finally{mounted.destroy();local.close();dom.window.close();}
 });

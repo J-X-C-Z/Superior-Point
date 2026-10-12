@@ -3,12 +3,14 @@ import type {JSONValue} from './document-core.js';
 export interface FontToken {fontFamily:string;fallback:string[];license:string;fontSize:number;fontWeight?:number;lineHeight?:number;[key:string]:JSONValue|undefined}
 export interface ThemeAsset {id:string;mimeType:'image/png'|'image/jpeg'|'image/webp';data:string;hash:string;license:string;[key:string]:JSONValue}
 export interface ThemeLayout {id:string;kind:'cover'|'section'|'content'|'data'|'image';rules:Record<string,JSONValue>;[key:string]:JSONValue}
-export interface Theme {
+export interface ThemePackage {
   format:'superior-point-theme';schemaVersion:1;id:string;name:string;version:string;author:string;license:string;tags:string[];supportedRatios:('16:9'|'4:3')[];
-  tokens:{colors:Record<string,string>;typography:Record<string,FontToken>;spacing:Record<string,number>;components:Record<string,Record<string,JSONValue>>;motion?:{durationMs:number;easing:'linear'|'ease'|'ease-in'|'ease-out'|'ease-in-out'};[key:string]:unknown};
+  tokens:{colors:Record<string,string>;typography:Record<string,FontToken>;spacing:Record<string,number>;components?:Record<string,Record<string,JSONValue>>;motion?:{durationMs:number;easing:'linear'|'ease'|'ease-in'|'ease-out'|'ease-in-out'};[key:string]:unknown};
   designLanguage?:DesignLanguage;
-  layouts:ThemeLayout[];assets:ThemeAsset[];[key:string]:unknown;
+  layouts?:ThemeLayout[];assets:ThemeAsset[];[key:string]:unknown;
 }
+/** Imported packages normalize omitted optional presets without changing supplied fields. */
+export interface Theme extends ThemePackage {layouts:ThemeLayout[];tokens:ThemePackage['tokens'] & {components:Record<string,Record<string,JSONValue>>}}
 export interface ThemeRef {id:string;version:string;hash:string;snapshot:Theme}
 export interface ThemeValidation {valid:boolean;errors:string[];warnings:string[]}
 export const THEME_FORMAT:'superior-point-theme';

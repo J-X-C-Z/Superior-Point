@@ -38,3 +38,14 @@ test('manual > page > component > global > default, nested values cascade withou
   assert.equal(resolveThemeStyle({defaults,global,component,page}).color,'yellow');assert.equal(resolveThemeStyle({defaults,global,component}).color,'green');assert.equal(resolveThemeStyle({defaults,global}).color,'blue');
   assert.deepEqual(defaults.padding,[1,2]);assert.throws(()=>resolveThemeStyle({manual:JSON.parse('{"__proto__":{}}')}));
 });
+
+test('layout and component presets are optional, normalized only at import, and still validated when supplied',async()=>{
+  const input=theme();delete input.layouts;delete input.tokens.components;
+  assert.equal(validateTheme(input).valid,true);
+  const imported=importTheme(input);assert.deepEqual(imported.layouts,[]);assert.deepEqual(imported.tokens.components,{});
+  assert.equal(Object.hasOwn(input,'layouts'),false);assert.equal(Object.hasOwn(input.tokens,'components'),false);
+  assert.equal((await validateThemeRef(await createThemeRef(input))).valid,true);
+  for(const value of [null,{},'layouts'])assert.equal(validateTheme({...input,layouts:value}).valid,false);
+  for(const value of [null,[],'components'])assert.equal(validateTheme({...input,tokens:{...input.tokens,components:value}}).valid,false);
+  assert.throws(()=>importTheme({...input,tokens:{...input.tokens,components:{chart:{onclick:'evil'}}}}),{code:'INVALID_THEME'});
+});

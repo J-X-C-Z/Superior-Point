@@ -4081,11 +4081,11 @@ claude mcp list
     if (timing && !(timing.shortMs <= timing.standardMs && timing.standardMs <= timing.longMs)) errors.push("Motion durations must be ordered short <= standard <= long");
     return errors;
   }
-  var string, list, choice, number, record, behavior, DESIGN_LANGUAGE_SCHEMA, THEME_MANIFEST_SCHEMA;
+  var string, list, choice, number, record, behavior, DESIGN_LANGUAGE_SCHEMA, shortText, color2, fontName, styleBounds, forbiddenFields, forbiddenPattern, THEME_MANIFEST_SCHEMA;
   var init_theme_manifest = __esm({
     "core/theme-manifest.js"() {
       init_theme_schema();
-      string = { type: "string", minLength: 1, maxLength: 500 };
+      string = { type: "string", minLength: 1, maxLength: 500, pattern: "\\S", not: { pattern: "[<>\\u0000-\\u001f]" } };
       list = { type: "array", minItems: 1, maxItems: 32, items: string };
       choice = (...values) => ({ enum: values });
       number = (minimum, maximum) => ({ type: "number", minimum, maximum });
@@ -4097,14 +4097,46 @@ claude mcp list
         visual: record({ grid: choice("modular", "editorial", "freeform", "radial"), imageTreatment: choice("editorial-crop", "contain", "monochrome", "duotone", "none"), shape: choice("square", "rounded", "organic"), spacingUnit: number(0, 512) }),
         motion: record({ principles: list, timing: record({ shortMs: number(0, 1e4), standardMs: number(0, 1e4), longMs: number(0, 1e4) }), easing: choice("linear", "ease", "ease-in", "ease-out", "ease-in-out"), enter: behavior, exit: behavior, transition: choice("none", "fade", "slide"), reducedMotion: choice("none", "fade"), unsupportedBehavior: choice("preserve-intent-and-report") })
       });
+      shortText = (maxLength) => ({ type: "string", minLength: 1, maxLength, pattern: "\\S" });
+      color2 = { type: "string", pattern: "^#[a-fA-F0-9]{6}(?:[a-fA-F0-9]{2})?$" };
+      fontName = (maxLength) => ({ ...shortText(maxLength), not: { pattern: "[;{}<>\\n\\r]" } });
+      styleBounds = { fontSize: number(6, 240), fontWeight: number(100, 900), lineHeight: number(0.5, 4), opacity: number(0, 1), borderWidth: number(0, 64), borderRadius: number(0, 512), padding: number(0, 512), gap: number(0, 512) };
+      forbiddenFields = ["script", "scripts", "javascript", "html", "css", "src", "href", "url", "code", "onload", "onclick"];
+      forbiddenPattern = "^(?:" + forbiddenFields.map((key) => key.replace(/[a-z]/g, (c) => "[" + c + c.toUpperCase() + "]")).join("|") + ")$";
       THEME_MANIFEST_SCHEMA = {
         $schema: "https://json-schema.org/draft/2020-12/schema",
         title: "Superior Point Theme Manifest v1",
         type: "object",
-        required: ["format", "schemaVersion", "id", "name", "version", "author", "license", "tags", "supportedRatios", "tokens", "layouts", "assets"],
-        properties: { format: { const: "superior-point-theme" }, schemaVersion: { const: 1 }, id: string, name: string, version: { type: "string", pattern: "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$" }, author: string, license: string, tags: { type: "array", items: string }, supportedRatios: { type: "array", minItems: 1, uniqueItems: true, items: choice("16:9", "4:3") }, tokens: { type: "object", required: ["colors", "typography", "spacing", "components"] }, layouts: { type: "array" }, assets: { type: "array" }, designLanguage: DESIGN_LANGUAGE_SCHEMA },
+        required: ["format", "schemaVersion", "id", "name", "version", "author", "license", "tags", "supportedRatios", "tokens", "assets"],
+        allOf: [{ $ref: "#/$defs/safeValue" }, { if: { required: ["designLanguage"] }, then: { properties: { tokens: { properties: { colors: { minProperties: 1 }, typography: { minProperties: 1 } } } } } }],
+        properties: {
+          format: { const: "superior-point-theme" },
+          schemaVersion: { const: 1 },
+          id: { ...shortText(128), pattern: "^[a-zA-Z0-9][a-zA-Z0-9._-]*$" },
+          name: shortText(200),
+          version: { type: "string", maxLength: 64, pattern: "^\\d+\\.\\d+\\.\\d+(?:-[a-zA-Z0-9.-]+)?$" },
+          author: shortText(200),
+          license: shortText(200),
+          tags: { type: "array", maxItems: 32, items: shortText(64) },
+          supportedRatios: { type: "array", minItems: 1, uniqueItems: true, items: choice("16:9", "4:3") },
+          tokens: { type: "object", required: ["colors", "typography", "spacing"], properties: {
+            colors: { type: "object", additionalProperties: color2 },
+            typography: { type: "object", additionalProperties: { type: "object", required: ["fontFamily", "fallback", "license", "fontSize"], properties: { fontFamily: fontName(200), fallback: { type: "array", minItems: 1, items: fontName(100) }, license: shortText(200), fontSize: number(6, 240), fontWeight: { ...number(100, 900), type: "integer" }, lineHeight: number(0.5, 4) } } },
+            spacing: { type: "object", additionalProperties: number(0, 512) },
+            components: { type: "object", additionalProperties: { $ref: "#/$defs/style" }, description: "Optional named declarative styles, including chart styles at components.chart; omitted groups normalize to an empty object." },
+            motion: { type: "object", required: ["durationMs", "easing"], properties: { durationMs: number(0, 1e4), easing: choice("linear", "ease", "ease-in", "ease-out", "ease-in-out") } }
+          } },
+          layouts: { type: "array", maxItems: 32, description: "Optional recommendations; omission normalizes to an empty list and Skin never changes geometry.", items: { type: "object", required: ["id", "kind", "rules"], allOf: [{ $ref: "#/$defs/layoutRules" }], properties: { id: shortText(64), kind: choice("cover", "section", "content", "data", "image"), rules: { type: "object", properties: { columns: number(1, 12), gap: number(0, 512), pageInset: number(0, 512) } } } } },
+          assets: { type: "array", maxItems: 16, items: { type: "object", required: ["id", "mimeType", "data", "hash", "license"], properties: { id: shortText(128), mimeType: choice("image/png", "image/jpeg", "image/webp"), data: { type: "string", minLength: 4, pattern: "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$" }, hash: { type: "string", pattern: "^sha256:[a-f0-9]{64}$" }, license: shortText(200) } } },
+          designLanguage: DESIGN_LANGUAGE_SCHEMA
+        },
+        $defs: {
+          safeValue: { type: ["object", "array", "string", "number", "boolean", "null"], propertyNames: { not: { anyOf: [{ enum: ["__proto__", "prototype", "constructor"] }, { pattern: forbiddenPattern }] } }, additionalProperties: { $ref: "#/$defs/safeValue" }, items: { $ref: "#/$defs/safeValue" } },
+          style: { type: "object", properties: styleBounds, additionalProperties: { if: { type: "object" }, then: { $ref: "#/$defs/style" } } },
+          layoutRules: { propertyNames: { not: { enum: ["x", "y", "w", "h", "elements", "slides"] } }, additionalProperties: { $ref: "#/$defs/layoutRules" }, items: { $ref: "#/$defs/layoutRules" } }
+        },
         additionalProperties: true,
-        description: "Safe legacy extension fields survive. Runtime validateTheme additionally enforces asset bytes/hashes, fonts, token bounds and executable-field restrictions. New curated themes must include designLanguage."
+        description: "Unknown safe JSON fields roundtrip without interpretation; executable/external-load and prototype keys are forbidden recursively. designLanguage rejects unknown fields. Runtime validation additionally checks duplicate IDs, asset bytes/signatures/hashes, ordered motion durations and package size. New curated themes must include designLanguage."
       };
     }
   });
@@ -4150,7 +4182,7 @@ claude mcp list
     if (!object3(theme.tokens)) errors.push("tokens must be an object");
     else {
       const t = theme.tokens;
-      for (const k of ["colors", "typography", "spacing", "components"]) if (!object3(t[k])) errors.push(`tokens.${k} must be an object`);
+      for (const k of ["colors", "typography", "spacing"]) if (!object3(t[k])) errors.push(`tokens.${k} must be an object`);
       for (const [key, v] of Object.entries(object3(t.colors) ? t.colors : {})) if (typeof v !== "string" || !/^#[a-fA-F0-9]{6}(?:[a-fA-F0-9]{2})?$/.test(v)) errors.push(`Invalid color: ${key}`);
       for (const [role, v] of Object.entries(object3(t.typography) ? t.typography : {})) {
         if (!object3(v)) {
@@ -4165,15 +4197,16 @@ claude mcp list
         if (v.lineHeight !== void 0 && !bounded(v.lineHeight, 0.5, 4)) errors.push(`Invalid lineHeight: ${role}`);
       }
       for (const [key, v] of Object.entries(object3(t.spacing) ? t.spacing : {})) if (!bounded(v, 0, 512)) errors.push(`Invalid spacing: ${key}`);
+      if (t.components !== void 0 && !object3(t.components)) errors.push("tokens.components must be an object");
       for (const [key, v] of Object.entries(object3(t.components) ? t.components : {})) {
         if (!object3(v)) {
           errors.push(`Component style must be an object: ${key}`);
           continue;
         }
-        const styleBounds = { fontSize: [6, 240], fontWeight: [100, 900], lineHeight: [0.5, 4], opacity: [0, 1], borderWidth: [0, 64], borderRadius: [0, 512], padding: [0, 512], gap: [0, 512] };
+        const styleBounds2 = { fontSize: [6, 240], fontWeight: [100, 900], lineHeight: [0.5, 4], opacity: [0, 1], borderWidth: [0, 64], borderRadius: [0, 512], padding: [0, 512], gap: [0, 512] };
         const checkStyle = (style) => {
           for (const [k, x] of Object.entries(style)) {
-            if (styleBounds[k] && !bounded(x, ...styleBounds[k])) errors.push(`Invalid component ${k}: ${key}`);
+            if (styleBounds2[k] && !bounded(x, ...styleBounds2[k])) errors.push(`Invalid component ${k}: ${key}`);
             if (object3(x)) checkStyle(x);
           }
         };
@@ -4188,8 +4221,8 @@ claude mcp list
       if (!Object.keys(theme.tokens?.colors || {}).length || !Object.keys(theme.tokens?.typography || {}).length) errors.push("Design language requires color and typography tokens");
     }
     const layoutIds = /* @__PURE__ */ new Set();
-    if (!Array.isArray(theme.layouts) || theme.layouts.length > 32) errors.push("Invalid layouts");
-    else for (const layout of theme.layouts) {
+    if (theme.layouts !== void 0 && (!Array.isArray(theme.layouts) || theme.layouts.length > 32)) errors.push("Invalid layouts");
+    else for (const layout of theme.layouts || []) {
       if (!object3(layout) || !text(layout.id, 64) || layoutIds.has(layout.id) || !["cover", "section", "content", "data", "image"].includes(layout.kind) || !object3(layout.rules)) {
         errors.push("Invalid or duplicate layout");
         continue;
@@ -4237,6 +4270,8 @@ claude mcp list
     }
     const result = validateTheme(theme);
     if (!result.valid) fail2("Theme validation failed", result);
+    theme.layouts ??= [];
+    theme.tokens.components ??= {};
     return theme;
   }
   function canonical(value) {
@@ -4826,9 +4861,9 @@ claude mcp list
   });
 
   // web/theme-library.js
-  function filterThemes(entries, { source = "all", query = "", ratio = "", tag = "", color: color2 = "", favorites = /* @__PURE__ */ new Set() } = {}) {
+  function filterThemes(entries, { source = "all", query = "", ratio = "", tag = "", color: color3 = "", favorites = /* @__PURE__ */ new Set() } = {}) {
     const needle = query.trim().toLocaleLowerCase();
-    return entries.filter((e) => (source === "all" || source === "favorites" && favorites.has(themeIdentity(e)) || source === "recent" && e.lastUsedAt || e.source === source || source === "trash" && e.deletedAt) && (!ratio || e.theme.supportedRatios.includes(ratio)) && (!tag || e.theme.tags.includes(tag)) && (!color2 || Object.values(e.theme.tokens.colors).some((value) => value.toLowerCase() === color2.toLowerCase())) && (!needle || [e.theme.name, e.theme.author, ...e.theme.tags].join(" ").toLocaleLowerCase().includes(needle))).sort((a, b) => source === "recent" ? (b.lastUsedAt || 0) - (a.lastUsedAt || 0) : a.theme.name.localeCompare(b.theme.name));
+    return entries.filter((e) => (source === "all" || source === "favorites" && favorites.has(themeIdentity(e)) || source === "recent" && e.lastUsedAt || e.source === source || source === "trash" && e.deletedAt) && (!ratio || e.theme.supportedRatios.includes(ratio)) && (!tag || e.theme.tags.includes(tag)) && (!color3 || Object.values(e.theme.tokens.colors).some((value) => value.toLowerCase() === color3.toLowerCase())) && (!needle || [e.theme.name, e.theme.author, ...e.theme.tags].join(" ").toLocaleLowerCase().includes(needle))).sort((a, b) => source === "recent" ? (b.lastUsedAt || 0) - (a.lastUsedAt || 0) : a.theme.name.localeCompare(b.theme.name));
   }
   function copyPersonalTheme(theme, { name = theme.name + " \xB7 \u6211\u7684\u4E3B\u9898", id = crypto.randomUUID() } = {}) {
     return { ...structuredClone(theme), id, name, version: "1.0.0", sourceRef: { id: theme.id, version: theme.version } };
@@ -4935,7 +4970,7 @@ claude mcp list
         if (await getCloudStore() !== store2) throw new Error("\u4E91\u7AEF\u8D26\u53F7\u5DF2\u53D8\u5316\uFF0C\u8BF7\u5237\u65B0\u4E3B\u9898\u5E93");
       }
       if (!record2) throw new Error("\u4E3B\u9898\u4E0D\u5B58\u5728\uFF0C\u8BF7\u5237\u65B0");
-      return { ...entry, ...record2, theme: record2.ref.snapshot };
+      return { ...entry, ...record2, source: entry.source, accountId: entry.accountId, theme: record2.ref.snapshot };
     };
     const heading = el("div", void 0, "theme-heading");
     heading.append(el("h1", "\u4E3B\u9898\u5E93"), el("p", "\u72EC\u7ACB\u8BBE\u8BA1\u8BED\u8A00\u4E0E\u53EF\u7F16\u8F91\u591A\u9875\u6837\u4F8B\u3002\u4E2A\u4EBA\u4E3B\u9898\u56FA\u5B9A\u7248\u672C\uFF1B\u4E91\u7AEF\u4E3B\u9898\u4EC5\u5F53\u524D\u8D26\u53F7\u53EF\u89C1\u3002", "subtitle"));
@@ -4944,7 +4979,7 @@ claude mcp list
     const search = field(toolbar, "\u641C\u7D22\u540D\u79F0\u3001\u4F5C\u8005\u3001\u6807\u7B7E", input("", "search"));
     const ratio = field(toolbar, "\u753B\u5E03\u6BD4\u4F8B", select([["", "\u5168\u90E8\u6BD4\u4F8B"], ["16:9", "16:9"], ["4:3", "4:3"]]));
     const tag = field(toolbar, "\u6807\u7B7E", select([["", "\u5168\u90E8\u6807\u7B7E"]]));
-    const color2 = field(toolbar, "\u989C\u8272", select([["", "\u5168\u90E8\u989C\u8272"]]));
+    const color3 = field(toolbar, "\u989C\u8272", select([["", "\u5168\u90E8\u989C\u8272"]]));
     const importInput = input("", "file");
     importInput.accept = ".json,application/json";
     importInput.hidden = true;
@@ -4969,7 +5004,7 @@ claude mcp list
     async function render() {
       const current = ++epoch;
       grid.replaceChildren();
-      const favorites = new Set(entries.filter((e) => e.source === "cloud" ? e.favorite : preferences.some((p) => p.key === themeIdentity(e) && p.favorite)).map(themeIdentity)), rows = filterThemes(entries, { source: source.value, query: search.value, ratio: ratio.value, tag: tag.value, color: color2.value, favorites });
+      const favorites = new Set(entries.filter((e) => e.source === "cloud" ? e.favorite : preferences.some((p) => p.key === themeIdentity(e) && p.favorite)).map(themeIdentity)), rows = filterThemes(entries, { source: source.value, query: search.value, ratio: ratio.value, tag: tag.value, color: color3.value, favorites });
       status.textContent = rows.length ? `${rows.length} \u4E2A\u4E3B\u9898` : "\u6CA1\u6709\u5339\u914D\u7684\u4E3B\u9898";
       page = Math.min(page, Math.max(0, Math.ceil(rows.length / 24) - 1));
       pager.replaceChildren();
@@ -5037,7 +5072,7 @@ claude mcp list
         error = new Error("\u8D26\u53F7\u5DF2\u53D8\u5316\uFF0C\u4E91\u7AEF\u4E3B\u9898\u672A\u5C55\u793A\uFF0C\u8BF7\u5237\u65B0");
       }
       entries = [...builtins, ...personal].map((entry) => ({ ...entry, lastUsedAt: preferences.find((p) => p.key === themeIdentity(entry))?.lastUsedAt }));
-      const selected = tag.value, selectedColor = color2.value;
+      const selected = tag.value, selectedColor = color3.value;
       tag.replaceChildren(...[...new Set(entries.flatMap((e) => e.theme.tags))].sort().map((t) => {
         const option = el("option", t);
         option.value = t;
@@ -5047,15 +5082,15 @@ claude mcp list
       all.value = "";
       tag.prepend(all);
       tag.value = [...tag.options].some((o) => o.value === selected) ? selected : "";
-      color2.replaceChildren(...[...new Set(entries.flatMap((e) => Object.values(e.theme.tokens.colors)))].sort().map((value) => {
+      color3.replaceChildren(...[...new Set(entries.flatMap((e) => Object.values(e.theme.tokens.colors)))].sort().map((value) => {
         const option = el("option", value);
         option.value = value;
         return option;
       }));
       const allColors = el("option", "\u5168\u90E8\u989C\u8272");
       allColors.value = "";
-      color2.prepend(allColors);
-      color2.value = [...color2.options].some((o) => o.value === selectedColor) ? selectedColor : "";
+      color3.prepend(allColors);
+      color3.value = [...color3.options].some((o) => o.value === selectedColor) ? selectedColor : "";
       await render();
       if (error) notify2(error.message, "error");
     }
@@ -5092,7 +5127,7 @@ claude mcp list
               const record2 = await store2.get(entry.id, version.version);
               if (!record2?.ref) throw new Error("\u8BE5\u4E3B\u9898\u7248\u672C\u5DF2\u4E0D\u53EF\u7528");
               if (entry.source === "cloud") checkCloud(store2);
-              await details({ ...entry, ...record2, version: version.version, pinned: true, theme: record2.ref.snapshot });
+              await details({ ...entry, ...record2, source: entry.source, accountId: entry.accountId, version: version.version, pinned: true, theme: record2.ref.snapshot });
             }));
           }
           history.append(button("\u5173\u95ED", close));
@@ -5237,7 +5272,7 @@ claude mcp list
       const samples = el("div", void 0, "theme-samples");
       d.append(samples);
       await previews(samples, entry.theme, selectedRatio);
-      let targetDocument = null, preview = null, generation = 0;
+      let targetDocument = null, preview = null, generation = 0, loadGeneration = 0;
       const options = () => ({ mode: mode.value, projectRef: projects[Number(project.value)], ...scope.value === "all" ? {} : { slideIds: [...pages.querySelectorAll("input:checked")].map((node) => node.value) } });
       const applyButton = button("\u786E\u8BA4\u5E94\u7528", async () => {
         if (onPreview && !preview) throw new Error("\u8BF7\u5148\u9884\u89C8\u5F53\u524D\u9009\u62E9\u7684\u53D8\u66F4");
@@ -5256,9 +5291,11 @@ claude mcp list
         } else await perform();
       }, false);
       const invalidate = () => {
+        generation++;
         preview = null;
         applyButton.disabled = !!onPreview;
         summary.textContent = "\u9009\u62E9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u9884\u89C8\u3002";
+        d.querySelector(".theme-change-list")?.remove();
       };
       const drawPages = () => {
         pages.replaceChildren();
@@ -5275,11 +5312,13 @@ claude mcp list
         }
       };
       const load = async () => {
-        const ticket = ++generation;
+        const ticket = ++loadGeneration;
         invalidate();
+        targetDocument = null;
+        drawPages();
         const selected = projects[Number(project.value)];
         const record2 = onReadProject ? await onReadProject(selected) : selected.record;
-        if (ticket !== generation || !d.isConnected) return;
+        if (ticket !== loadGeneration || !d.isConnected) return;
         targetDocument = record2?.document || null;
         drawPages();
       };
@@ -5325,6 +5364,9 @@ ${rendererNames[renderer] || renderer}\uFF1A\u652F\u6301 ${count("supported")} \
         await localStore2.save(copyPersonalTheme(theme, { name: theme.name }), { expectedRevision: null });
         notify2("\u4E3B\u9898\u5DF2\u9A8C\u8BC1\u5E76\u5BFC\u5165\u4E3A\u65B0\u7684\u672C\u5730\u4E3B\u9898");
         await refresh();
+      } catch (error) {
+        if (error.code === "INVALID_THEME") throw new Error("\u4E3B\u9898\u683C\u5F0F\u6216\u8D44\u6E90\u6821\u9A8C\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u4E3B\u9898 JSON \u7684\u89C4\u8303\u3001\u8D44\u6E90\u4E0E\u54C8\u5E0C\u540E\u91CD\u65B0\u5BFC\u5165\uFF1B\u5DF2\u6709\u4E3B\u9898\u548C\u539F\u59CB\u6587\u4EF6\u4FDD\u7559\u3002");
+        throw error;
       } finally {
         importInput.value = "";
       }
@@ -5337,7 +5379,7 @@ ${rendererNames[renderer] || renderer}\uFF1A\u652F\u6301 ${count("supported")} \
       page = 0;
       return run(render);
     };
-    for (const control of [ratio, tag, color2]) control.onchange = () => {
+    for (const control of [ratio, tag, color3]) control.onchange = () => {
       page = 0;
       return run(render);
     };

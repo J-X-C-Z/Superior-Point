@@ -34,3 +34,19 @@ test('motion diagnostics report renderer limitations while Skin keeps every anim
 });
 
 test('all scope accepts an empty document while explicit empty selection rejects',async()=>{const doc=createDocument();const plan=await planThemeApplication(doc,theme());assert.equal(plan.summary.selectedSlides,0);assert.deepEqual(plan.motionDiagnostics,[]);assert.equal(new DocumentCore(doc).edit(plan.operations).extensions.theme.ref.id,theme().id);await assert.rejects(planThemeApplication(doc,theme(),{slideIds:[]}),{code:'INVALID_THEME_SCOPE'});});
+
+test('manifest declares optional presets and a usable version pattern; no-preset themes create and apply through Core',async()=>{
+ const input=theme();delete input.layouts;delete input.tokens.components;
+ assert.equal(THEME_MANIFEST_SCHEMA.required.includes('layouts'),false);
+ assert.equal(THEME_MANIFEST_SCHEMA.properties.tokens.required.includes('components'),false);
+ const versionPattern=new RegExp(THEME_MANIFEST_SCHEMA.properties.version.pattern);
+ assert.equal(versionPattern.test('1.2.0'),true);assert.equal(versionPattern.test('1.2.0-beta.1'),true);assert.equal(versionPattern.test('v1.2'),false);
+ const forbidden=new RegExp(THEME_MANIFEST_SCHEMA.$defs.safeValue.propertyNames.not.anyOf[1].pattern);
+ for(const field of ['script','SCRIPT','href'])assert.equal(forbidden.test(field),true);
+ assert.equal(forbidden.test('motionHint'),false);assert.deepEqual(THEME_MANIFEST_SCHEMA.$defs.safeValue.propertyNames.not.anyOf[0].enum,['__proto__','prototype','constructor']);
+ const doc=await createThemePreviewDocument(input);assert.equal(doc.slides.length,5);
+ const core=new DocumentCore(doc),plan=await planThemeApplication(doc,input),applied=core.edit(plan.operations,{expectedRevision:doc.revision});
+ assert.deepEqual(applied.slides.map(s=>s.elements.map(e=>e.id)),doc.slides.map(s=>s.elements.map(e=>e.id)));
+ assert.deepEqual(applied.extensions.theme.ref.snapshot.layouts,[]);assert.deepEqual(applied.extensions.theme.ref.snapshot.tokens.components,{});
+ assert.equal((await validateThemeRef(applied.extensions.theme.ref)).valid,true);
+});
