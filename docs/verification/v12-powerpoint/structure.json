@@ -1,0 +1,230 @@
+{
+  "verification": "ZIP/XML structure only; not PowerPoint visual acceptance",
+  "decks": [
+    {
+      "name": "editorial",
+      "path": "docs/verification/v12-powerpoint/editorial.pptx",
+      "SHA256": "96073ab321e5af7ef934d3785bb7d4f182820ea60e62175444afe9a1caedd314",
+      "zipIntegrity": true,
+      "slideCount": 5,
+      "canonicalElementCount": 31,
+      "totalObjects": 31,
+      "totals": {
+        "editableTextOrShape": 29,
+        "images": 1,
+        "editableChartFrames": 1,
+        "editableTables": 0,
+        "groupObjects": 0,
+        "transition": 0,
+        "timing": 0
+      },
+      "notesParts": 5,
+      "chartParts": 1,
+      "mediaParts": 1,
+      "slides": [
+        {
+          "slide": 1,
+          "editableTextOrShape": 6,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 2,
+          "editableTextOrShape": 9,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 3,
+          "editableTextOrShape": 5,
+          "images": 0,
+          "editableChartFrames": 1,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 4,
+          "editableTextOrShape": 6,
+          "images": 1,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 5,
+          "editableTextOrShape": 3,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        }
+      ],
+      "fontEmbeddingParts": [],
+      "checksPassed": true
+    },
+    {
+      "name": "technical",
+      "path": "docs/verification/v12-powerpoint/technical.pptx",
+      "SHA256": "78ae1a412570106dd06d50ecb75904134759384334bafeb514cd2856b2ebef58",
+      "zipIntegrity": true,
+      "slideCount": 5,
+      "canonicalElementCount": 31,
+      "totalObjects": 31,
+      "totals": {
+        "editableTextOrShape": 29,
+        "images": 1,
+        "editableChartFrames": 1,
+        "editableTables": 0,
+        "groupObjects": 0,
+        "transition": 0,
+        "timing": 0
+      },
+      "notesParts": 5,
+      "chartParts": 1,
+      "mediaParts": 1,
+      "slides": [
+        {
+          "slide": 1,
+          "editableTextOrShape": 6,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 2,
+          "editableTextOrShape": 9,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 3,
+          "editableTextOrShape": 5,
+          "images": 0,
+          "editableChartFrames": 1,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 4,
+          "editableTextOrShape": 6,
+          "images": 1,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 5,
+          "editableTextOrShape": 3,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        }
+      ],
+      "fontEmbeddingParts": [],
+      "checksPassed": true
+    },
+    {
+      "name": "warm",
+      "path": "docs/verification/v12-powerpoint/warm.pptx",
+      "SHA256": "23b1b845021209569d69ae505264f0ee4990c49ec685d77faa18baaca456095e",
+      "zipIntegrity": true,
+      "slideCount": 5,
+      "canonicalElementCount": 27,
+      "totalObjects": 27,
+      "totals": {
+        "editableTextOrShape": 25,
+        "images": 1,
+        "editableChartFrames": 1,
+        "editableTables": 0,
+        "groupObjects": 0,
+        "transition": 0,
+        "timing": 0
+      },
+      "notesParts": 5,
+      "chartParts": 1,
+      "mediaParts": 1,
+      "slides": [
+        {
+          "slide": 1,
+          "editableTextOrShape": 5,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 2,
+          "editableTextOrShape": 6,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 3,
+          "editableTextOrShape": 5,
+          "images": 0,
+          "editableChartFrames": 1,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 4,
+          "editableTextOrShape": 6,
+          "images": 1,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        },
+        {
+          "slide": 5,
+          "editableTextOrShape": 3,
+          "images": 0,
+          "editableChartFrames": 0,
+          "editableTables": 0,
+          "groupObjects": 0,
+          "transition": 0,
+          "timing": 0
+        }
+      ],
+      "fontEmbeddingParts": [],
+      "checksPassed": true
+    }
+  ]
+}

@@ -1,0 +1,1165 @@
+{
+  "format": "superior-point",
+  "schemaVersion": 1,
+  "id": "ff19f068-b4b1-4bc1-bef7-1016829e54fe",
+  "title": "标尺精度 · 设计语言 · 演示文稿",
+  "revision": 0,
+  "canvas": {
+    "width": 1280,
+    "height": 720
+  },
+  "slides": [
+    {
+      "id": "preview-cover",
+      "title": "标题页",
+      "background": "#EEF3F5",
+      "themeLayout": "cover",
+      "elements": [
+        {
+          "id": "cover-1",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 44,
+          "w": 1192,
+          "h": 632,
+          "fill": "#D9E6EC",
+          "stroke": "#4C6370",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "cover-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 44,
+          "w": 1192,
+          "h": 4,
+          "fill": "#185A79",
+          "stroke": "#185A79",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "cover-3",
+          "type": "text",
+          "text": "SUPERIOR POINT / 16:9",
+          "x": 60,
+          "y": 72,
+          "w": 1176,
+          "h": 40,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "cover-4",
+          "type": "text",
+          "text": "标尺精度 · 设计语言",
+          "x": 60,
+          "y": 290,
+          "w": 1176,
+          "h": 120,
+          "fontFamily": "Courier New",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#20323C",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "cover-5",
+          "type": "text",
+          "text": "让内容形成清晰的节奏",
+          "x": 60,
+          "y": 445,
+          "w": 1176,
+          "h": 60,
+          "fontFamily": "Courier New",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#20323C",
+          "lineHeight": 1.15,
+          "themeRole": "body"
+        },
+        {
+          "id": "cover-6",
+          "type": "text",
+          "text": "原创主题 / 标题 · 内容 · 数据 · 图像",
+          "x": 60,
+          "y": 550,
+          "w": 1176,
+          "h": 40,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-cover-entrance",
+          "targetId": "cover-4",
+          "type": "fade-left",
+          "trigger": "click",
+          "duration": 0.24,
+          "delay": 0,
+          "easing": "linear",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "slide",
+      "duration": 240,
+      "themeMotionIntent": {
+        "enter": "slide",
+        "exit": "slide",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 120,
+          "standardMs": 240,
+          "longMs": 360
+        }
+      }
+    },
+    {
+      "id": "preview-content",
+      "title": "文字内容页",
+      "background": "#EEF3F5",
+      "themeLayout": "content",
+      "elements": [
+        {
+          "id": "content-1",
+          "type": "text",
+          "text": "从信息到叙事",
+          "x": 44,
+          "y": 70,
+          "w": 1192,
+          "h": 100,
+          "fontFamily": "Courier New",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#20323C",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "content-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 188,
+          "w": 1192,
+          "h": 4,
+          "fill": "#185A79",
+          "stroke": "#185A79",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "content-3",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 230,
+          "w": 588,
+          "h": 320,
+          "fill": "#D9E6EC",
+          "stroke": "#4C6370",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "content-4",
+          "type": "shape",
+          "shape": "rect",
+          "x": 648,
+          "y": 230,
+          "w": 588,
+          "h": 320,
+          "fill": "#D9E6EC",
+          "stroke": "#4C6370",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "content-5",
+          "type": "text",
+          "text": "01 / 结构",
+          "x": 64,
+          "y": 250,
+          "w": 548,
+          "h": 50,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "content-6",
+          "type": "text",
+          "text": "先给读者一个方向\n再展开关键证据\n最后留下行动线索",
+          "x": 64,
+          "y": 320,
+          "w": 548,
+          "h": 190,
+          "fontFamily": "Courier New",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#20323C",
+          "lineHeight": 1.15,
+          "themeRole": "body"
+        },
+        {
+          "id": "content-7",
+          "type": "text",
+          "text": "02 / 节奏",
+          "x": 668,
+          "y": 250,
+          "w": 548,
+          "h": 50,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "content-8",
+          "type": "text",
+          "text": "标题建立层级\n留白区分段落\n颜色标记重点",
+          "x": 668,
+          "y": 320,
+          "w": 548,
+          "h": 190,
+          "fontFamily": "Courier New",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#20323C",
+          "lineHeight": 1.15,
+          "themeRole": "body"
+        },
+        {
+          "id": "content-9",
+          "type": "text",
+          "text": "共同样例内容 / 主题决定层级与阅读密度",
+          "x": 44,
+          "y": 620,
+          "w": 1192,
+          "h": 35,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-content-entrance",
+          "targetId": "content-1",
+          "type": "fade-left",
+          "trigger": "click",
+          "duration": 0.24,
+          "delay": 0,
+          "easing": "linear",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "slide",
+      "duration": 240,
+      "themeMotionIntent": {
+        "enter": "slide",
+        "exit": "slide",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 120,
+          "standardMs": 240,
+          "longMs": 360
+        }
+      }
+    },
+    {
+      "id": "preview-data",
+      "title": "数据图表页",
+      "background": "#EEF3F5",
+      "themeLayout": "data",
+      "elements": [
+        {
+          "id": "data-1",
+          "type": "text",
+          "text": "把趋势变成判断",
+          "x": 44,
+          "y": 70,
+          "w": 1192,
+          "h": 100,
+          "fontFamily": "Courier New",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#20323C",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "data-2",
+          "type": "text",
+          "text": "季度完成量 / 演示数据",
+          "x": 44,
+          "y": 180,
+          "w": 1192,
+          "h": 40,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "data-3",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 245,
+          "w": 1192,
+          "h": 345,
+          "fill": "#F8FAFC",
+          "stroke": "#DCE3EA",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "data-4",
+          "type": "chart",
+          "chartType": "bar",
+          "x": 60,
+          "y": 265,
+          "w": 1160,
+          "h": 250,
+          "values": [
+            24,
+            38,
+            52,
+            76
+          ],
+          "labels": [
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4"
+          ],
+          "fill": "#F8FAFC",
+          "chartColor": "#185A79",
+          "color": "#20323C",
+          "fontSize": 18,
+          "chartTitle": "季度完成量",
+          "themeRole": "chart"
+        },
+        {
+          "id": "data-5",
+          "type": "text",
+          "text": "24 → 76",
+          "x": 44,
+          "y": 615,
+          "w": 596,
+          "h": 55,
+          "fontFamily": "Courier New",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#20323C",
+          "lineHeight": 1.15,
+          "themeRole": "body"
+        },
+        {
+          "id": "data-6",
+          "type": "text",
+          "text": "样例值 / 非实时数据",
+          "x": 640,
+          "y": 620,
+          "w": 596,
+          "h": 40,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-data-entrance",
+          "targetId": "data-1",
+          "type": "fade-left",
+          "trigger": "click",
+          "duration": 0.24,
+          "delay": 0,
+          "easing": "linear",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "slide",
+      "duration": 240,
+      "themeMotionIntent": {
+        "enter": "slide",
+        "exit": "slide",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 120,
+          "standardMs": 240,
+          "longMs": 360
+        }
+      }
+    },
+    {
+      "id": "preview-image",
+      "title": "图片组合页",
+      "background": "#EEF3F5",
+      "themeLayout": "image",
+      "elements": [
+        {
+          "id": "image-1",
+          "type": "text",
+          "text": "图像，也是一种语言",
+          "x": 44,
+          "y": 70,
+          "w": 1192,
+          "h": 100,
+          "fontFamily": "Courier New",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#20323C",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "image-2",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 245,
+          "w": 560,
+          "h": 340,
+          "fill": "#D9E6EC",
+          "stroke": "#4C6370",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "panel"
+        },
+        {
+          "id": "image-3",
+          "type": "image",
+          "assetId": "preview-landscape",
+          "x": 60,
+          "y": 261,
+          "w": 528,
+          "h": 308,
+          "fit": "contain"
+        },
+        {
+          "id": "image-4",
+          "type": "text",
+          "text": "山色与暖光",
+          "x": 620,
+          "y": 285,
+          "w": 616,
+          "h": 70,
+          "fontFamily": "Courier New",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#20323C",
+          "lineHeight": 1.15,
+          "themeRole": "body"
+        },
+        {
+          "id": "image-5",
+          "type": "text",
+          "text": "原创几何风景\n无外部加载\n图片与文字独立可编辑",
+          "x": 620,
+          "y": 390,
+          "w": 616,
+          "h": 150,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        },
+        {
+          "id": "image-6",
+          "type": "shape",
+          "shape": "rect",
+          "x": 620,
+          "y": 565,
+          "w": 100,
+          "h": 8,
+          "fill": "#185A79",
+          "stroke": "#185A79",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "image-7",
+          "type": "text",
+          "text": "图像 + 面板 + 标注 / 可编辑组合元素",
+          "x": 44,
+          "y": 630,
+          "w": 1192,
+          "h": 35,
+          "fontFamily": "Courier New",
+          "fontSize": 18,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#4C6370",
+          "lineHeight": 1.25,
+          "themeRole": "caption"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-image-entrance",
+          "targetId": "image-1",
+          "type": "fade-left",
+          "trigger": "click",
+          "duration": 0.24,
+          "delay": 0,
+          "easing": "linear",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "slide",
+      "duration": 240,
+      "themeMotionIntent": {
+        "enter": "slide",
+        "exit": "slide",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 120,
+          "standardMs": 240,
+          "longMs": 360
+        }
+      }
+    },
+    {
+      "id": "preview-section",
+      "title": "章节页",
+      "background": "#EEF3F5",
+      "themeLayout": "section",
+      "elements": [
+        {
+          "id": "section-1",
+          "type": "shape",
+          "shape": "rect",
+          "x": 44,
+          "y": 130,
+          "w": 1192,
+          "h": 12,
+          "fill": "#185A79",
+          "stroke": "#185A79",
+          "strokeWidth": 2,
+          "radius": 0,
+          "themeRole": "accent"
+        },
+        {
+          "id": "section-2",
+          "type": "text",
+          "text": "02 / 下一章节",
+          "x": 44,
+          "y": 390,
+          "w": 1192,
+          "h": 110,
+          "fontFamily": "Courier New",
+          "fontSize": 48,
+          "fontWeight": 700,
+          "bold": true,
+          "color": "#20323C",
+          "lineHeight": 1.25,
+          "themeRole": "title"
+        },
+        {
+          "id": "section-3",
+          "type": "text",
+          "text": "让证据引出下一步行动",
+          "x": 44,
+          "y": 535,
+          "w": 1192,
+          "h": 60,
+          "fontFamily": "Courier New",
+          "fontSize": 26,
+          "fontWeight": 400,
+          "bold": false,
+          "color": "#20323C",
+          "lineHeight": 1.15,
+          "themeRole": "body"
+        }
+      ],
+      "animations": [
+        {
+          "id": "preview-section-entrance",
+          "targetId": "section-2",
+          "type": "fade-left",
+          "trigger": "click",
+          "duration": 0.24,
+          "delay": 0,
+          "easing": "linear",
+          "order": 0
+        }
+      ],
+      "notes": "原创演示内容；数值与图像不来自用户项目。",
+      "transition": "slide",
+      "duration": 240,
+      "themeMotionIntent": {
+        "enter": "slide",
+        "exit": "slide",
+        "reducedMotion": "none",
+        "timing": {
+          "shortMs": 120,
+          "standardMs": 240,
+          "longMs": 360
+        }
+      }
+    }
+  ],
+  "assets": [
+    {
+      "id": "preview-landscape",
+      "mimeType": "image/png",
+      "license": "MIT",
+      "author": "Superior Point",
+      "description": "Original geometric landscape, generated for theme preview.",
+      "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAABkCAIAAACO1KzYAAACJElEQVR4nO3RwU0DQRBE0c2RCylwJAbEnQgIiAtJEAIBcLBkWWDZ7GzPVE3Nl34A3fW2768PCm6TX0BdAzg8gMMDODyAwwM4PIDDAzg8gMMDODyAwwO4ss/Xh9uNPwngmu7SqpgBPtou2vHMAB+qWXeYMcCNHaQdxgxwYwAnV6jb2xjg3ZXrdjUGeHcAJ9dJt58xwADTEN1OxgADTAAv0kTAb+8vpwDOAT6jXgbw3MBXUQGeG/guKsDzAe9CBXgO4GZUgH2BS1AB9gIuRwVYb9wVFWAN8DBUgMcZS1AB7gssRwW43lgOCXC9sRwP4PrkYACDCnA6KsDhqACHo64OLB8dYFABBnVNYPmgbiUAy0d0blZg+XDmPT4/nZoJWL6aeWfUy9yB5auZdxXVHVi+mnl3UR2B5auZtwvVBVi+mnnNqEpg+WrmlaCOBpavZl456ghg+WrmdUXtBSxfzbxhqJXA8tXMk6AeBZavZp4ctQVYvpp5csgWYPlq5snxWoDlq5knB2sBlq9mnhzpELB8Ps/kMACDCvCqqKsDy0cHGFSAQV0TWD6oWwnA8hGdmxVYPtwszQQsH2vG3IHlA82eI7B8lKRcgOVDpKYElj+/QqOB5Q+v1ghg+ZMr1wtY/hidqgSWP0N/Owosf4Bu1wIsP5r+33+B5YdSW7eA5cfR8X4Dyw+i2jZQs9vkF1DXAA4P4PAADg/g8AAOD+DwAA4P4PAADu8HLOSaMBl0psQAAAAASUVORK5CYII="
+    }
+  ],
+  "metadata": {
+    "createdAt": "2026-10-12T01:21:25.519Z",
+    "updatedAt": "2026-10-12T01:21:25.519Z"
+  },
+  "extensions": {
+    "theme": {
+      "ref": {
+        "id": "sp-technical-language",
+        "version": "1.0.0",
+        "hash": "sha256:118df275a7cba34d6f0445f4dff7c870b1f21c139ac80a35bf16b3e3f65b86da",
+        "snapshot": {
+          "format": "superior-point-theme",
+          "schemaVersion": 1,
+          "id": "sp-technical-language",
+          "name": "标尺精度 · 设计语言",
+          "version": "1.0.0",
+          "author": "Superior Point",
+          "license": "MIT",
+          "provenance": "Original Superior Point theme; not an imported or licensed third-party Design System.",
+          "description": "等宽标注、紧凑留白和规格面板。 完整原创视觉与运动语言。",
+          "tags": [
+            "industrial",
+            "technical",
+            "规格",
+            "design-language"
+          ],
+          "supportedRatios": [
+            "16:9",
+            "4:3"
+          ],
+          "tokens": {
+            "colors": {
+              "background": "#EEF3F5",
+              "text": "#20323C",
+              "accent": "#185A79",
+              "surface": "#D9E6EC",
+              "muted": "#4C6370"
+            },
+            "typography": {
+              "title": {
+                "fontFamily": "Courier New",
+                "fallback": [
+                  "Arial",
+                  "sans-serif"
+                ],
+                "fontSize": 48,
+                "fontWeight": 700,
+                "lineHeight": 1.25,
+                "license": "System font reference only; no font files redistributed. Availability depends on the device."
+              },
+              "body": {
+                "fontFamily": "Courier New",
+                "fallback": [
+                  "Arial",
+                  "sans-serif"
+                ],
+                "fontSize": 26,
+                "fontWeight": 400,
+                "lineHeight": 1.15,
+                "license": "System font reference only; no font files redistributed. Availability depends on the device."
+              },
+              "caption": {
+                "fontFamily": "Courier New",
+                "fallback": [
+                  "Arial",
+                  "sans-serif"
+                ],
+                "fontSize": 18,
+                "fontWeight": 400,
+                "lineHeight": 1.25,
+                "license": "System font reference only; no font files redistributed. Availability depends on the device."
+              }
+            },
+            "spacing": {
+              "unit": 4,
+              "pageInset": 44,
+              "gap": 16
+            },
+            "components": {
+              "panel": {
+                "radius": 0,
+                "strokeWidth": 2
+              },
+              "accent": {
+                "motif": "frame"
+              },
+              "chart": {
+                "chartType": "bar",
+                "color": "#185A79",
+                "surface": "#F8FAFC",
+                "text": "#20323C"
+              }
+            },
+            "motion": {
+              "durationMs": 240,
+              "easing": "linear"
+            }
+          },
+          "layouts": [
+            {
+              "id": "cover",
+              "kind": "cover",
+              "rules": {
+                "columns": 1,
+                "pageInset": 44,
+                "gap": 16,
+                "motif": "frame",
+                "titlePosition": "inset"
+              }
+            },
+            {
+              "id": "section",
+              "kind": "section",
+              "rules": {
+                "columns": 1,
+                "pageInset": 44,
+                "gap": 16,
+                "motif": "frame",
+                "titlePosition": "inset"
+              }
+            },
+            {
+              "id": "content",
+              "kind": "content",
+              "rules": {
+                "columns": 2,
+                "pageInset": 44,
+                "gap": 16,
+                "motif": "frame",
+                "titlePosition": "inset"
+              }
+            },
+            {
+              "id": "data",
+              "kind": "data",
+              "rules": {
+                "columns": 1,
+                "pageInset": 44,
+                "gap": 16,
+                "motif": "frame",
+                "titlePosition": "inset"
+              }
+            },
+            {
+              "id": "image",
+              "kind": "image",
+              "rules": {
+                "columns": 1,
+                "pageInset": 44,
+                "gap": 16,
+                "motif": "frame",
+                "titlePosition": "inset"
+              }
+            }
+          ],
+          "assets": [],
+          "preview": {
+            "kinds": [
+              "cover",
+              "content",
+              "data",
+              "image",
+              "section"
+            ],
+            "limitations": [
+              "System fonts vary by device; no fonts are bundled.",
+              "Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.",
+              "Sample data and illustration are original demonstration content, not live project data.",
+              "Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed."
+            ]
+          },
+          "designLanguage": {
+            "identity": {
+              "principles": [
+                "Measurement before decoration",
+                "Indexed evidence"
+              ],
+              "suitableFor": [
+                "Technical review",
+                "Specification reports"
+              ],
+              "avoid": [
+                "Emotive collage",
+                "Soft decorative silhouettes"
+              ],
+              "distinctiveFeatures": [
+                "Monospaced display and compact body scale",
+                "Two aligned specification columns",
+                "Hard frames and indexed rules"
+              ]
+            },
+            "origin": {
+              "type": "original",
+              "ref": "J-X-C-Z/Superior-Point",
+              "sourceRevision": "sp-design-language-1.0.0",
+              "license": "MIT",
+              "attribution": "Original Superior Point rules and geometric sample; no Design-Systems code, images or fonts copied."
+            },
+            "visual": {
+              "grid": "modular",
+              "imageTreatment": "contain",
+              "shape": "square",
+              "spacingUnit": 4
+            },
+            "motion": {
+              "principles": [
+                "Measurement before decoration",
+                "Indexed evidence"
+              ],
+              "timing": {
+                "shortMs": 120,
+                "standardMs": 240,
+                "longMs": 360
+              },
+              "easing": "linear",
+              "enter": "slide",
+              "exit": "slide",
+              "transition": "slide",
+              "reducedMotion": "none",
+              "unsupportedBehavior": "preserve-intent-and-report"
+            }
+          }
+        }
+      },
+      "bindings": {
+        "slides": {
+          "preview-cover": {
+            "background": "#EEF3F5"
+          },
+          "preview-content": {
+            "background": "#EEF3F5"
+          },
+          "preview-data": {
+            "background": "#EEF3F5"
+          },
+          "preview-image": {
+            "background": "#EEF3F5"
+          },
+          "preview-section": {
+            "background": "#EEF3F5"
+          }
+        },
+        "elements": {
+          "preview-cover": {
+            "cover-1": {
+              "fill": "#D9E6EC",
+              "stroke": "#4C6370",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "cover-2": {
+              "fill": "#185A79",
+              "stroke": "#185A79",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "cover-3": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            },
+            "cover-4": {
+              "fontFamily": "Courier New",
+              "fontSize": 48,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25,
+              "color": "#20323C"
+            },
+            "cover-5": {
+              "fontFamily": "Courier New",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.15,
+              "color": "#20323C"
+            },
+            "cover-6": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            }
+          },
+          "preview-content": {
+            "content-1": {
+              "fontFamily": "Courier New",
+              "fontSize": 48,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25,
+              "color": "#20323C"
+            },
+            "content-2": {
+              "fill": "#185A79",
+              "stroke": "#185A79",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "content-3": {
+              "fill": "#D9E6EC",
+              "stroke": "#4C6370",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "content-4": {
+              "fill": "#D9E6EC",
+              "stroke": "#4C6370",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "content-5": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            },
+            "content-6": {
+              "fontFamily": "Courier New",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.15,
+              "color": "#20323C"
+            },
+            "content-7": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            },
+            "content-8": {
+              "fontFamily": "Courier New",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.15,
+              "color": "#20323C"
+            },
+            "content-9": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            }
+          },
+          "preview-data": {
+            "data-1": {
+              "fontFamily": "Courier New",
+              "fontSize": 48,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25,
+              "color": "#20323C"
+            },
+            "data-2": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            },
+            "data-3": {
+              "fill": "#F8FAFC",
+              "stroke": "#DCE3EA",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "data-4": {
+              "fontSize": 18,
+              "color": "#20323C",
+              "fill": "#F8FAFC",
+              "chartColor": "#185A79"
+            },
+            "data-5": {
+              "fontFamily": "Courier New",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.15,
+              "color": "#20323C"
+            },
+            "data-6": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            }
+          },
+          "preview-image": {
+            "image-1": {
+              "fontFamily": "Courier New",
+              "fontSize": 48,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25,
+              "color": "#20323C"
+            },
+            "image-2": {
+              "fill": "#D9E6EC",
+              "stroke": "#4C6370",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "image-4": {
+              "fontFamily": "Courier New",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.15,
+              "color": "#20323C"
+            },
+            "image-5": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            },
+            "image-6": {
+              "fill": "#185A79",
+              "stroke": "#185A79",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "image-7": {
+              "fontFamily": "Courier New",
+              "fontSize": 18,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.25,
+              "color": "#4C6370"
+            }
+          },
+          "preview-section": {
+            "section-1": {
+              "fill": "#185A79",
+              "stroke": "#185A79",
+              "strokeWidth": 2,
+              "radius": 0
+            },
+            "section-2": {
+              "fontFamily": "Courier New",
+              "fontSize": 48,
+              "fontWeight": 700,
+              "bold": true,
+              "lineHeight": 1.25,
+              "color": "#20323C"
+            },
+            "section-3": {
+              "fontFamily": "Courier New",
+              "fontSize": 26,
+              "fontWeight": 400,
+              "bold": false,
+              "lineHeight": 1.15,
+              "color": "#20323C"
+            }
+          }
+        }
+      }
+    },
+    "themePreview": {
+      "ratio": "16:9",
+      "kinds": [
+        "cover",
+        "content",
+        "data",
+        "image",
+        "section"
+      ],
+      "limitations": [
+        "System fonts vary by device; no fonts are bundled.",
+        "Generic SVG preview substitutes Arial and does not reproduce custom line height; editor fields retain the selected fonts.",
+        "Sample data and illustration are original demonstration content, not live project data.",
+        "Slide and scale entrance intents require native playback; generic HTML preserves intent and reports a gap. Exit intent and timing have explicit renderer diagnostics; PPTX motion is not guaranteed.",
+        "Generic chart labels and light chart surface are fixed for legibility; native editor chart styling may differ."
+      ]
+    }
+  }
+}

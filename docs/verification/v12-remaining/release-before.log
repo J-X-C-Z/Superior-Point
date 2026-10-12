@@ -1,0 +1,34 @@
+Mon Oct 12 04:48:25 AM UTC 2026
+/opt/superior-point/releases/c90c4ff
+Image=superior-point-app:c90c4ff Running=true Health=healthy OOM=false Restarts=0
+Digest=sha256:fb0570d1c848247bde90f695f3945035d1ede1dadde9b7dfd19c57a0834d1d7a Revision=c90c4ff74b7407e5af2cd29abe80120eacf5fb50
+Id=nginx.service
+ActiveState=active
+MainPID=25721
+NRestarts=0
+
+Id=postgresql@18-main.service
+ActiveState=active
+MainPID=153229
+NRestarts=0
+
+Id=hindsight.service
+ActiveState=active
+MainPID=7525
+NRestarts=0
+
+Id=hindsight-ui.service
+ActiveState=active
+MainPID=137426
+NRestarts=0
+
+Id=hbrclient.service
+ActiveState=active
+MainPID=2016
+NRestarts=0
+
+Id=mihomo.service
+ActiveState=active
+MainPID=37005
+NRestarts=0
+{"source":"hakari-host","generatedAt":"2026-10-12T04:48:02.215791+00:00","cpu":{"percent":4.761904761904767},"memory":{"totalBytes":1820123136,"availableBytes":714903552},"disk":{"totalBytes":41882943488,"availableBytes":14167433216},"containers":{"source":"hakari-fixed-docker-inspect","generatedAt":"2026-10-12T04:48:02.284273+00:00","rows":[{"name":"superior-point-app-1","status":"ok","state":"running","health":"healthy","restartCount":0,"oomKilled":false},{"name":"superior-point-db-1","status":"ok","state":"running","health":"healthy","restartCount":0,"oomKilled":false},{"name":"superior-point-caddy-1","status":"ok","state":"running","health":"none","restartCount":0,"oomKilled":false}]}}

@@ -1,3 +1,4 @@
+import {inspectThemeDiagnostics} from '../../core/theme-diagnostics.js';
 import {quotaBefore,enforceStorageQuota,lockStorageQuota,projectContentBytes} from './quota-service.js';
 import {createHash, randomUUID} from 'node:crypto';
 import {createDocument, DocumentCore, cloneJSON, CoreError, importDocument} from '../../core/document-core.js';
@@ -191,7 +192,7 @@ export class ProjectService {
     requireScope(actor,'projects:read',id);requireScope(actor,'themes:read');
     return transaction(this.db,async client=>{
       await this.active(client,actor);const row=await this.owned(client,actor,id);if(row.deleted_at)throw errors.missing();
-      return {projectId:id,revision:Number(row.revision),motionDiagnostics:inspectThemeCompatibility(row.document_jsonb),renderCompatibility:inspectRenderCompatibility(row.document_jsonb)};
+      const diagnostics=await inspectThemeDiagnostics(row.document_jsonb);return {...diagnostics,projectId:id,revision:Number(row.revision),motionDiagnostics:inspectThemeCompatibility(row.document_jsonb),renderCompatibility:inspectRenderCompatibility(row.document_jsonb)};
     });
   }
 

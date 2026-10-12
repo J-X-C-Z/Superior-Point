@@ -46,7 +46,7 @@ export function validateTheme(raw) {
   if(!object(theme.tokens))errors.push('tokens must be an object');
   else {
     const t=theme.tokens;
-    for(const k of ['colors','typography','spacing','components'])if(!object(t[k]))errors.push(`tokens.${k} must be an object`);
+    for(const k of ['colors','typography','spacing'])if(!object(t[k]))errors.push(`tokens.${k} must be an object`);
     for(const [key,v] of Object.entries(object(t.colors)?t.colors:{}))if(typeof v!=='string'||!/^#[a-fA-F0-9]{6}(?:[a-fA-F0-9]{2})?$/.test(v))errors.push(`Invalid color: ${key}`);
     for(const [role,v] of Object.entries(object(t.typography)?t.typography:{})) {
       if(!object(v)){errors.push(`Invalid typography role: ${role}`);continue;}
@@ -58,6 +58,7 @@ export function validateTheme(raw) {
       if(v.lineHeight!==undefined&&!bounded(v.lineHeight,0.5,4))errors.push(`Invalid lineHeight: ${role}`);
     }
     for(const [key,v] of Object.entries(object(t.spacing)?t.spacing:{}))if(!bounded(v,0,512))errors.push(`Invalid spacing: ${key}`);
+    if(t.components!==undefined&&!object(t.components))errors.push('tokens.components must be an object');
     for(const [key,v] of Object.entries(object(t.components)?t.components:{})) {
       if(!object(v)){errors.push(`Component style must be an object: ${key}`);continue;}
       const styleBounds={fontSize:[6,240],fontWeight:[100,900],lineHeight:[0.5,4],opacity:[0,1],borderWidth:[0,64],borderRadius:[0,512],padding:[0,512],gap:[0,512]};
@@ -71,8 +72,8 @@ export function validateTheme(raw) {
     if(!Object.keys(theme.tokens?.colors||{}).length||!Object.keys(theme.tokens?.typography||{}).length)errors.push('Design language requires color and typography tokens');
   }
   const layoutIds=new Set();
-  if(!Array.isArray(theme.layouts)||theme.layouts.length>32)errors.push('Invalid layouts');
-  else for(const layout of theme.layouts){
+  if(theme.layouts!==undefined&&(!Array.isArray(theme.layouts)||theme.layouts.length>32))errors.push('Invalid layouts');
+  else for(const layout of theme.layouts||[]){
     if(!object(layout)||!text(layout.id,64)||layoutIds.has(layout.id)||!['cover','section','content','data','image'].includes(layout.kind)||!object(layout.rules)){errors.push('Invalid or duplicate layout');continue;}
     layoutIds.add(layout.id);
     const checkRules=v=>{if(!v||typeof v!=='object')return;for(const [k,x]of Object.entries(v)){if(['x','y','w','h','elements','slides'].includes(k))errors.push('Layout must contain design rules, not coordinate snapshots');checkRules(x);}};
@@ -92,7 +93,7 @@ export function validateTheme(raw) {
 /** V1 is the first package contract: future schemas fail closed, unknown safe fields survive. */
 export function importTheme(input) {
   let theme;try{if(typeof input==='string'&&utf8(input).length>THEME_LIMITS.packageBytes)fail('Theme package exceeds size limit');theme=cloneJSON(typeof input==='string'?JSON.parse(input):input);}catch(e){if(e instanceof CoreError)throw e;fail('Invalid theme JSON');}
-  const result=validateTheme(theme);if(!result.valid)fail('Theme validation failed',result);return theme;
+  const result=validateTheme(theme);if(!result.valid)fail('Theme validation failed',result);theme.layouts??=[];theme.tokens.components??={};return theme;
 }
 function canonical(value){if(Array.isArray(value))return `[${value.map(canonical).join(',')}]`;if(object(value))return `{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`;return JSON.stringify(value);}
 async function sha256(bytes){return 'sha256:'+Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');}

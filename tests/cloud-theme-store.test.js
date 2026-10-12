@@ -10,3 +10,5 @@ test('cloud theme upload readback is verified and timeout retries the same recei
  committed.ref.snapshot.name='tampered';await assert.rejects(store.save(input),{code:'THEME_READBACK_MISMATCH'});
  api.user={id:'other'};await assert.rejects(store.get(saved.id),{code:'ACCOUNT_CHANGED'});
 });
+
+ test('cloud version index is account-bound and passes bounded paging to the service',async()=>{let route;const api={user:{id:'u'},async request(path){route=path;return [{version:'1.0.0',hash:'fixed',current:false,createdAt:'2026-01-01'}];}},store=new CloudThemeStore({api});assert.equal((await store.versions('id/x',{limit:20,offset:10}))[0].version,'1.0.0');assert.equal(route,'/themes/id%2Fx/versions?limit=20&offset=10');api.user={id:'other'};await assert.rejects(store.versions('id/x'),{code:'ACCOUNT_CHANGED'});});

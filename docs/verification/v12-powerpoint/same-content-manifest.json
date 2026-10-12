@@ -1,0 +1,905 @@
+{
+  "source": "docs/verification/v12-powerpoint/editorial.json",
+  "sourceSHA256": "40b9f8314e422b59f36035995c291f69f4f11a1ddc609788193d442f260961cd",
+  "sourceKind": "canonical document downloaded through formal UI",
+  "mode": "preserve",
+  "visualAcceptance": false,
+  "fixtures": [
+    {
+      "name": "editorial",
+      "path": ".scratch/pp-same-editorial.json",
+      "SHA256": "a44fd19ef8a17d6fd99572cb4b6b3dbcff51b6b95f16438698126cc807e89b2a",
+      "themeRef": {
+        "id": "sp-editorial-language",
+        "version": "1.0.0",
+        "hash": "sha256:6c7ec83842e1800c2e040bd6eeef487d395668f38ffa7db91b2010f1df7fe316"
+      },
+      "summary": {
+        "styleChanges": 3,
+        "manualOverrides": 0,
+        "preservedOverrides": 0,
+        "selectedSlides": 5
+      },
+      "changes": [
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-4",
+          "property": "color"
+        }
+      ],
+      "changedFonts": 0,
+      "preservedManualFonts": 0,
+      "assertions": {
+        "contentIDsGeometryNotesAssetsAnimationIntentUnchanged": true
+      },
+      "counts": {
+        "slides": 5,
+        "elements": 31
+      }
+    },
+    {
+      "name": "technical",
+      "path": ".scratch/pp-same-technical.json",
+      "SHA256": "a4f05f63cbdb0540de1006b82c28379ac537506616d9be9836a926cf19f1831a",
+      "themeRef": {
+        "id": "sp-technical-language",
+        "version": "1.0.0",
+        "hash": "sha256:118df275a7cba34d6f0445f4dff7c870b1f21c139ac80a35bf16b3e3f65b86da"
+      },
+      "summary": {
+        "styleChanges": 81,
+        "manualOverrides": 0,
+        "preservedOverrides": 0,
+        "selectedSlides": 5
+      },
+      "changes": [
+        {
+          "slideId": "preview-cover",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-1",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-1",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-2",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-2",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-2",
+          "property": "strokeWidth"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-3",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-3",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-4",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-4",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-4",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-5",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-6",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-6",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-1",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-1",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-1",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-2",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-2",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-3",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-3",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-3",
+          "property": "strokeWidth"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-4",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-4",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-4",
+          "property": "strokeWidth"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-6",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-6",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-6",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-7",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-7",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-8",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-8",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-8",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-9",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-9",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-1",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-1",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-1",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-2",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-2",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "strokeWidth"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-4",
+          "property": "chartColor"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-4",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-5",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-6",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-6",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-1",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-1",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-1",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-2",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-2",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-2",
+          "property": "strokeWidth"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-4",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-4",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-4",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-6",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-6",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-7",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-7",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-section",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-1",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-1",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-2",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-2",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-2",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-3",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-3",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-3",
+          "property": "lineHeight"
+        }
+      ],
+      "changedFonts": 20,
+      "preservedManualFonts": 0,
+      "assertions": {
+        "contentIDsGeometryNotesAssetsAnimationIntentUnchanged": true
+      },
+      "counts": {
+        "slides": 5,
+        "elements": 31
+      }
+    },
+    {
+      "name": "warm",
+      "path": ".scratch/pp-same-warm.json",
+      "SHA256": "42276add397f87f6a3a89290b2a1b6cc69e8b2db95aed0fc9cc28b1bbdef332f",
+      "themeRef": {
+        "id": "sp-warm-language",
+        "version": "1.0.0",
+        "hash": "sha256:4f748f9464968e5997f90574311788517de2856b74d938bc5890ac23c2fb6e64"
+      },
+      "summary": {
+        "styleChanges": 81,
+        "manualOverrides": 0,
+        "preservedOverrides": 0,
+        "selectedSlides": 5
+      },
+      "changes": [
+        {
+          "slideId": "preview-cover",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-1",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-1",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-2",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-2",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-2",
+          "property": "radius"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-3",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-3",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-4",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-4",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-4",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-5",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-6",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-cover",
+          "elementId": "cover-6",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-1",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-1",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-1",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-2",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-2",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-3",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-3",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-3",
+          "property": "radius"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-4",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-4",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-4",
+          "property": "radius"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-6",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-6",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-6",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-7",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-7",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-8",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-8",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-8",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-9",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-content",
+          "elementId": "content-9",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-1",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-1",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-1",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-2",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-2",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-3",
+          "property": "radius"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-4",
+          "property": "chartColor"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-4",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-5",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-6",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-data",
+          "elementId": "data-6",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-1",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-1",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-1",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-2",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-2",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-2",
+          "property": "radius"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-4",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-4",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-4",
+          "property": "lineHeight"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-5",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-5",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-6",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-6",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-7",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-image",
+          "elementId": "image-7",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-section",
+          "property": "background"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-1",
+          "property": "fill"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-1",
+          "property": "stroke"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-2",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-2",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-2",
+          "property": "fontSize"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-3",
+          "property": "color"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-3",
+          "property": "fontFamily"
+        },
+        {
+          "slideId": "preview-section",
+          "elementId": "section-3",
+          "property": "lineHeight"
+        }
+      ],
+      "changedFonts": 20,
+      "preservedManualFonts": 0,
+      "assertions": {
+        "contentIDsGeometryNotesAssetsAnimationIntentUnchanged": true
+      },
+      "counts": {
+        "slides": 5,
+        "elements": 31
+      }
+    }
+  ]
+}

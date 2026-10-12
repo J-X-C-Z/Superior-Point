@@ -1,0 +1,16 @@
+ Container superior-point-migrate-run-671a1a9d4e0a Creating 
+ Container superior-point-migrate-run-671a1a9d4e0a Created 
+ Container superior-point-migrate-run-dcc9cd663aa3 Creating 
+ Container superior-point-migrate-run-dcc9cd663aa3 Created 
+ Container superior-point-app-1 Recreate 
+ Container superior-point-app-1 Recreated 
+ Container superior-point-app-1 Starting 
+ Container superior-point-app-1 Started 
+Applied migration checksums match
+
+> superior-point-framework@0.1.0-alpha service:migrate
+> node --import tsx server/db/migrate.ts
+
+Database migrations committed
+Existing projects preserved: 16
+running=superior-point-app:0887d41 digest=sha256:8154dbd1bad5f774db21a33e8bc04a59d14c1b6870c1c6962a6275810c7a706b OOM=false restarts=0

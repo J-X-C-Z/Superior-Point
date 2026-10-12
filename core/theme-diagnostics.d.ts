@@ -1,0 +1,3 @@
+export interface ThemeDiagnostic {code:string;status:'supported'|'degraded'|'refused'|'invalid';message:string;renderer?:string;slideId?:string;elementId?:string;assetId?:string;path?:string;[key:string]:unknown}
+export interface ThemeDiagnosticReport {kind:'manifest'|'document';valid:boolean;themeReferences:{path:string;id?:string;version?:string;hash?:string}[];diagnostics:ThemeDiagnostic[];renderCompatibility?:unknown;motion?:ThemeDiagnostic[]}
+export function inspectThemeDiagnostics(input:unknown,options?:{kind?:'manifest'|'document';availableFonts?:string[]}):Promise<ThemeDiagnosticReport>;
